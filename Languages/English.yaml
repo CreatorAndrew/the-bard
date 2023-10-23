@@ -1,0 +1,39 @@
+# Do not modify the variable names. Only modify their values (i.e., what's inside the quotes ("")).
+# Also do not modify whatever's in %{}. Those are placeholders.
+
+strings:
+    invalid_command: "Invalid command usage. Type `+help` for assistance."
+    invalid_number: "%{index} was not a track number in the queue."
+    not_in_voice: "%{user} is not in a voice channel."
+    now_playing: "Now playing: %{song} (%{index}/%{max})"
+    no_songs: "There are no songs in the queue."
+    queue: "List of songs in the queue:"
+    song: "#%{index}: %{song}"
+    play: "%{song} has been added to the queue (#%{index})."
+    not_media: "%{song} is not an audio or video file."
+    insert: "%{song} has been inserted into the queue (#%{index})"
+    move: "%{song} has been moved to position #%{index} in the queue."
+    remove: "%{song} (#%{index}) has been removed from the queue."
+    volume: "Volume is now set to %{volume}."
+    repeat: "Playlists will %{now_or_no_longer} repeat."
+    keep: "%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing."
+    whatever_voice: "whatever voice channel it's in"
+    now: "now"
+    no_longer: "no longer"
+    language: "The language was changed to %{language}."
+    language_file_exists: "A language file of the name, \"%{language},\" already exists."
+    help: "`+add_me` to allow music to be played on this server
+         \n`+language <attached YAML/language name>` to change the language of %{bot}
+         \n`+play <attached file/url> <name (optional)>` to play or add music to the queue
+         \n`+insert <attached file/url> <name (optional)> <index>` to add the song to the queue at the specified index
+         \n`+move <index to move from> <index to move to>` to change a song's position within the queue
+         \n`+remove <index>` to remove a song of the specified index within the queue
+         \n`+skip` to skip a song
+         \n`+previous` to go back to the previous song in the queue
+         \n`+stop` to stop all music and clear the queue
+         \n`+pause` to toggle whether a playlist is paused
+         \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}
+         \n`+loop` to toggle whether playlists repeat
+         \n`+queue` to look at the list of songs to be played
+         \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
+         \n`+dismiss` to kick %{bot} from a voice channel"
