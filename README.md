@@ -5,7 +5,7 @@ Type `+help` to see a list of commands.
 
 # Setup:
 
-Make sure that FFmpeg is installed and is in in the path.
+Make sure that FFmpeg is installed and is in the path.
 
 For Debian-based distros:
 `sudo apt install ffmpeg`
