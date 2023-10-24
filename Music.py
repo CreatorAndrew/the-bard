@@ -1,4 +1,3 @@
-import os
 import requests
 import yaml
 import asyncio
@@ -9,7 +8,6 @@ class Music(commands.Cog):
     def __init__(self, bot, config, language_directory):
         self.bot = bot
         self.servers = []
-        self.music_directory = "Music"
         self.language_directory = language_directory
         self.config = config
 
@@ -17,7 +15,7 @@ class Music(commands.Cog):
         if name is not None: return name
         temp_file = file
         if temp_file.startswith("COPY_") and "_OF_" in temp_file: temp_file = temp_file[temp_file.index("_OF_") + 4:]
-        return temp_file.replace("_", "\\_")
+        return temp_file
 
     def polished_message(self, message, user = None, bot = None, voice = None, song = None, index = None,
                          maximum = None, volume = None, now = None, no_longer = None, enabled = False):
@@ -68,39 +66,20 @@ class Music(commands.Cog):
     async def play_song(self, context, url, name = None):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                try: file = url[url.rindex("/") + 1:url.index("?")]
-                except Exception: file = url[url.rindex("/") + 1:]
-                # ensure that if there are two files of the same name being uploaded, then each file after the first will have a prefix with a number
-                for server_searched in self.servers:
-                    for song in server_searched["queue"]:
-                        if song["file"] == file:
-                            index = 0
-                            while True:
-                                if os.path.exists(f"{self.music_directory}/COPY_{str(index)}_OF_{file}"): index += 1
-                                else:
-                                    file = f"COPY_{str(index)}_OF_{file}"
-                                    break
-                            break
-
                 try: voice_channel = context.message.author.voice.channel
                 except Exception: voice_channel = None
                 if voice_channel is not None:
                     request = requests.get(url, stream = True)
-                    # verify that the download is a media container
-                    if "audio" in request.headers.get("Content-Type", "") or "video" in request.headers.get("Content-Type", ""):
-                        # download the attached file
-                        open(f"{self.music_directory}/{file}", "wb").write(request.content)
-                    else:
-                        await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(file, name)))
+                    # verify that the url file is a media container
+                    if "audio" not in request.headers.get("Content-Type", "") and "video" not in request.headers.get("Content-Type", ""):
+                        await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                         return
-                    # ensure that the attached file is fully transferred before it is added to the queue
-                    while not os.path.exists(f"{self.music_directory}/{file}"): await asyncio.sleep(.1)
                     # add the attached file to the queue
                     await context.reply(self.polished_message(message = server["strings"]["play"],
-                                                              song = self.polished_song_name(file, name),
+                                                              song = self.polished_song_name(url, name),
                                                               index = str(len(server['queue']) + 1)))
 
-                    server["queue"].append({"file": file, "name": name})
+                    server["queue"].append({"file": url, "name": name})
                     if not server["connected"]:
                         voice = await voice_channel.connect()
                         server["connected"] = True
@@ -116,7 +95,7 @@ class Music(commands.Cog):
                                                                          maximum = str(len(server['queue']))))
                             # play the attached audio file
                             if not voice.is_playing():
-                                source = discord.FFmpegPCMAudio(f"{self.music_directory}/{server['queue'][server['index']]['file']}")
+                                source = discord.FFmpegPCMAudio(url)
                                 source.read()
                                 voice.play(source)
                                 voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
@@ -151,36 +130,19 @@ class Music(commands.Cog):
         try: voice_channel = context.message.author.voice.channel
         except Exception: voice_channel = None
         if voice_channel is not None:
-            file = url[url.rindex("/") + 1:url.index("?")]
-            # ensure that if there are two files of the same name being uploaded, then each file after the first will have a prefix with a number
-            for server in self.servers:
-                for song in server["queue"]:
-                    if song["file"] == file:
-                        song_index = 0
-                        while True:
-                            if os.path.exists(f"{self.music_directory}/COPY_{str(song_index)}_OF_{file}"): song_index += 1
-                            else:
-                                file = f"COPY_{str(song_index)}_OF_{file}"
-                                break
-                        break
-
             for server in self.servers:
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 1:
                         request = requests.get(url, stream = True)
-                        if "audio" in request.headers.get("Content-Type", "") or "video" in request.headers.get("Content-Type", ""):
-                            # download the attached file
-                            open(f"{self.music_directory}/{file}", "wb").write(request.content)
-                        else:
-                            await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(file, name)))
+                        # verify that the url file is a media container
+                        if "audio" not in request.headers.get("Content-Type", "") and "video" not in request.headers.get("Content-Type", ""):
+                            await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                             return
-                        # ensure that the attached file is fully transferred before it is added to the queue
-                        while not os.path.exists(f"{self.music_directory}/{file}"): await asyncio.sleep(.1)
                         # add the attached file to the queue
-                        server["queue"].insert(int(index) - 1, {"file": file, "name": name})
+                        server["queue"].insert(int(index) - 1, {"file": url, "name": name})
                         if int(index) - 1 <= server["index"]: server["index"] += 1
                         await context.reply(self.polished_message(message = server["strings"]["insert"],
-                                                                  song = self.polished_song_name(file, name),
+                                                                  song = self.polished_song_name(url, name),
                                                                   index = index))
                         break
                     else: await context.reply(self.polished_message(message = server["strings"]["invalid_index"], index = index))
@@ -214,8 +176,6 @@ class Music(commands.Cog):
                                                               song = self.polished_song_name(server["queue"][int(index) - 1]["file"],
                                                                                              server["queue"][int(index) - 1]["name"]),
                                                               index = index))
-                    # remove the audio file from the filesystem
-                    os.remove(f"{self.music_directory}/{server['queue'][int(index) - 1]['file']}")
                     # remove the audio file from the queue
                     server["queue"].remove(server["queue"][int(index) - 1])
                     if int(index) - 1 < server["index"]: server["index"] -= 1
@@ -245,8 +205,6 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == id:
                 while server["queue"]:
-                    # remove the audio file from the filesystem
-                    os.remove(f"{self.music_directory}/{server['queue'][0]['file']}")
                     # remove the audio file from the queue
                     server["queue"].remove(server["queue"][0])
                 if context.voice_client.is_playing():
