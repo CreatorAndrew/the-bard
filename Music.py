@@ -12,7 +12,7 @@ class Music(commands.Cog):
         self.config = config
 
     def polished_song_name(self, file, name):
-        if name is not None: return name + " - " + file
+        if name is not None: return name + "(" + file + ")"
         return file
 
     def polished_message(self, message, user = None, bot = None, voice = None, song = None, index = None,
