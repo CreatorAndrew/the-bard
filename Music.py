@@ -12,10 +12,8 @@ class Music(commands.Cog):
         self.config = config
 
     def polished_song_name(self, file, name):
-        if name is not None: return name
-        temp_file = file
-        if temp_file.startswith("COPY_") and "_OF_" in temp_file: temp_file = temp_file[temp_file.index("_OF_") + 4:]
-        return temp_file
+        if name is not None: return name + " - " + file
+        return file
 
     def polished_message(self, message, user = None, bot = None, voice = None, song = None, index = None,
                          maximum = None, volume = None, now = None, no_longer = None, enabled = False):
