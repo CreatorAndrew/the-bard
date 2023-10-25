@@ -313,4 +313,3 @@ class Music(commands.Cog):
                     if list(voice_channel.voice_states)[0] == self.bot.user.id and len(list(voice_channel.voice_states)) == 1:
                         await self.stop_music(member.guild, True, member.guild)
                         break
-                    

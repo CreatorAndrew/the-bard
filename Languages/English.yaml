@@ -39,4 +39,3 @@ strings:
          \n`+queue` to look at the list of songs to be played
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
          \n`+dismiss` to kick %{bot} from a voice channel"
-         
