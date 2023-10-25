@@ -65,7 +65,7 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 try: voice_channel = context.message.author.voice.channel
-                except Exception: voice_channel = None
+                except: voice_channel = None
                 if voice_channel is not None:
                     response = requests.get(url, stream = True)
                     # verify that the url file is a media container
@@ -124,7 +124,7 @@ class Music(commands.Cog):
 
     async def insert_song(self, context, url, name, index):
         try: voice_channel = context.message.author.voice.channel
-        except Exception: voice_channel = None
+        except: voice_channel = None
         if voice_channel is not None:
             for server in self.servers:
                 if server["id"] == context.message.guild.id:

@@ -56,14 +56,14 @@ class Main(commands.Cog):
                     content = yaml.safe_load(response.content.decode("utf-8"))
                     try:
                         if content["strings"] is not None: pass
-                    except Exception:
+                    except:
                         await context.reply(invalid_language.replace("%{language}", file))
                         return
                     with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.load(read_file, yaml.Loader)
                     for string in language_strings["names"]:
                         try:
                             if content["strings"][string] is not None: pass
-                        except Exception:
+                        except:
                             await context.reply(invalid_language.replace("%{language}", file))
                             return
                     open(f"{self.language_directory}/{file}", "wb").write(response.content)
