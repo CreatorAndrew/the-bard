@@ -93,9 +93,7 @@ class Music(commands.Cog):
                                                                          maximum = str(len(server['queue']))))
                             # play the attached audio file
                             if not voice.is_playing():
-                                source = discord.FFmpegPCMAudio(server["queue"][server["index"]["file"]])
-                                source.read()
-                                voice.play(source)
+                                voice.play(discord.FFmpegPCMAudio(server["queue"][server["index"]]["file"]))
                                 voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
                                 voice.source.volume = server["volume"]
                             # ensure that the audio file plays completely or is skipped by command before proceeding
