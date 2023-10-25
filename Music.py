@@ -67,9 +67,9 @@ class Music(commands.Cog):
                 try: voice_channel = context.message.author.voice.channel
                 except Exception: voice_channel = None
                 if voice_channel is not None:
-                    request = requests.get(url, stream = True)
+                    response = requests.get(url, stream = True)
                     # verify that the url file is a media container
-                    if "audio" not in request.headers.get("Content-Type", "") and "video" not in request.headers.get("Content-Type", ""):
+                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                         await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                         return
                     # add the attached file to the queue
@@ -129,9 +129,9 @@ class Music(commands.Cog):
             for server in self.servers:
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 1:
-                        request = requests.get(url, stream = True)
+                        response = requests.get(url, stream = True)
                         # verify that the url file is a media container
-                        if "audio" not in request.headers.get("Content-Type", "") and "video" not in request.headers.get("Content-Type", ""):
+                        if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                             await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                             return
                         # add the attached file to the queue
@@ -218,17 +218,19 @@ class Music(commands.Cog):
         else: context.voice_client.pause()
 
     @commands.command()
-    async def volume(self, context, volume):
+    async def volume(self, context, *args):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                if volume.endswith("%"): server["volume"] = float(volume.replace("%", "")) / 100
-                else: server["volume"] = float(volume)
-                if context.voice_client is not None:
-                    if context.voice_client.is_playing(): context.voice_client.source.volume = server["volume"]
+                if args:
+                    if args[0].endswith("%"): server["volume"] = float(args[0].replace("%", "")) / 100
+                    else: server["volume"] = float(args[0])
+                    if context.voice_client is not None:
+                        if context.voice_client.is_playing(): context.voice_client.source.volume = server["volume"]
                 volume_percent = server["volume"] * 100
                 if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
-                await context.reply(self.polished_message(message = server["strings"]["volume"], volume = str(volume_percent) + "%"))
+                if args: await context.reply(self.polished_message(message = server["strings"]["volume_change"], volume = str(volume_percent) + "%"))
+                else: await context.reply(self.polished_message(message = server["strings"]["volume"], volume = str(volume_percent) + "%"))
                 break
 
     @commands.command()
@@ -245,7 +247,7 @@ class Music(commands.Cog):
             if server["id"] == context.message.guild.id:
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
-                # modify the YAML file to reflect the change in whether playlist looping is enabled or disabled
+                # modify the YAML file to reflect the change of whether playlist looping is enabled or disabled
                 with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
 
                 if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
@@ -285,7 +287,7 @@ class Music(commands.Cog):
             if server["id"] == context.message.guild.id:
                 keep = not server["keep"]
                 server["keep"] = keep
-                # modify the YAML file to reflect the change in whether keeping this bot in a voice call when no music is playing is enabled or disabled
+                # modify the YAML file to reflect the change of whether to keep this bot in a voice call when no music is playing
                 with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
 
                 if self.servers: self.servers[data["servers"].index(server)]["keep"] = keep
@@ -311,3 +313,4 @@ class Music(commands.Cog):
                     if list(voice_channel.voice_states)[0] == self.bot.user.id and len(list(voice_channel.voice_states)) == 1:
                         await self.stop_music(member.guild, True, member.guild)
                         break
+                    

@@ -44,6 +44,7 @@ class Main(commands.Cog):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 invalid_command = server["strings"]["invalid_command"]
+                invalid_language = server["strings"]["invalid_language"]
                 language_file_exists = server["strings"]["language_file_exists"]
                 break
         if context.message.attachments:
@@ -51,11 +52,25 @@ class Main(commands.Cog):
             file = str(attachment)[str(attachment).rindex("/") + 1:str(attachment).index("?")].replace("_", " ")
             if file.endswith(".yaml"):
                 if not os.path.exists(f"{self.language_directory}/{file}"):
-                    open(f"{self.language_directory}/{file}", "wb").write(requests.get(str(attachment)).content)
+                    response = requests.get(str(attachment))
+                    content = yaml.safe_load(response.content.decode("utf-8"))
+                    try:
+                        if content["strings"] is not None: pass
+                    except Exception:
+                        await context.reply(invalid_language.replace("%{language}", file))
+                        return
+                    with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.load(read_file, yaml.Loader)
+                    for string in language_strings["names"]:
+                        try:
+                            if content["strings"][string] is not None: pass
+                        except Exception:
+                            await context.reply(invalid_language.replace("%{language}", file))
+                            return
+                    open(f"{self.language_directory}/{file}", "wb").write(response.content)
                 else:
                     await context.reply(language_file_exists.replace("%{language}", file))
                     return
-                # ensure that the attached file is fully transferred before the language is changed to it
+                # ensure that the attached YAML file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file}"): await asyncio.sleep(.1)
 
                 language = file.replace(".yaml", "")

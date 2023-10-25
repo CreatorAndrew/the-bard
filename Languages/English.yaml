@@ -14,13 +14,15 @@ strings:
     insert: "%{song} has been inserted into the queue (#%{index})"
     move: "%{song} has been moved to position #%{index} in the queue."
     remove: "%{song} (#%{index}) has been removed from the queue."
-    volume: "Volume is now set to %{volume}."
+    volume: "The volume is currently at %{volume}."
+    volume_change: "The volume is now set to %{volume}."
     repeat: "Playlists will %{now_or_no_longer} repeat."
     keep: "%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing."
     whatever_voice: "whatever voice channel it's in"
     now: "now"
     no_longer: "no longer"
     language: "The language was changed to %{language}."
+    invalid_language: "The file \"%{language}\" does not have sufficient data for a full translation."
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
     help: "`+add_me` to allow music to be played on this server
          \n`+language <attached YAML/language name>` to change the language of %{bot}
@@ -37,3 +39,4 @@ strings:
          \n`+queue` to look at the list of songs to be played
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
          \n`+dismiss` to kick %{bot} from a voice channel"
+         
