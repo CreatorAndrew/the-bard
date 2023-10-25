@@ -30,12 +30,15 @@ strings:
          \n`+insert <attached file/url> <name (optional)> <index>` to add the song to the queue at the specified index
          \n`+move <index to move from> <index to move to>` to change a song's position within the queue
          \n`+remove <index>` to remove a song of the specified index within the queue
-         \n`+skip` to skip a song
+         \n`+skip` to skip to the next song in the queue
          \n`+previous` to go back to the previous song in the queue
-         \n`+stop` to stop all music and clear the queue
+         \n`+stop` to stop all audio from playing and clear the queue
          \n`+pause` to toggle whether a playlist is paused
-         \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}
+         \n`+jump <time>` to play the current song at the specified time marker
+         \n`+rewind <seconds>` to rewind the current song by the specified number of seconds
+         \n`+forward <seconds>` to fast forward the current song by the specified number of seconds
          \n`+loop` to toggle whether playlists repeat
          \n`+queue` to look at the list of songs to be played
+         \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
          \n`+dismiss` to kick %{bot} from a voice channel"

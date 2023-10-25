@@ -43,7 +43,8 @@ class Music(commands.Cog):
                                                                  "queue": [],
                                                                  "index": 0,
                                                                  "connected": False,
-                                                                 "strings": language["strings"]})
+                                                                 "strings": language["strings"],
+                                                                 "time": .0})
 
     @commands.command()
     async def play(self, context, *args):
@@ -76,8 +77,7 @@ class Music(commands.Cog):
                     await context.reply(self.polished_message(message = server["strings"]["play"],
                                                               song = self.polished_song_name(url, name),
                                                               index = str(len(server['queue']) + 1)))
-
-                    server["queue"].append({"file": url, "name": name})
+                    server["queue"].append({"file": url, "name": name, "time": "00:00:00.00", "silence": False})
                     if not server["connected"]:
                         voice = await voice_channel.connect()
                         server["connected"] = True
@@ -86,18 +86,26 @@ class Music(commands.Cog):
                     if not voice.is_playing():
                         while server["index"] < len(server["queue"]):
                             if server["connected"]:
-                                await context.send(self.polished_message(message = server["strings"]["now_playing"],
-                                                                         song = self.polished_song_name(server["queue"][server["index"]]["file"],
-                                                                                                        server["queue"][server["index"]]["name"]),
-                                                                         index = str(server["index"] + 1),
-                                                                         maximum = str(len(server['queue']))))
+                                if not server["queue"][server["index"]]["silence"]:
+                                    await context.send(self.polished_message(message = server["strings"]["now_playing"],
+                                                                             song = self.polished_song_name(server["queue"][server["index"]]["file"],
+                                                                                                            server["queue"][server["index"]]["name"]),
+                                                                             index = str(server["index"] + 1),
+                                                                             maximum = str(len(server['queue']))))
+                                    server["time"] = .0
+                                else: server["queue"][server["index"]]["silence"] = False
                             # play the attached audio file
                             if not voice.is_playing():
-                                voice.play(discord.FFmpegPCMAudio(server["queue"][server["index"]]["file"]))
+                                voice.play(discord.FFmpegPCMAudio(source = server["queue"][server["index"]]["file"],
+                                                                  before_options = f"-ss {server['queue'][server['index']]['time']}"))
+                                
+                                server["queue"][server["index"]]["time"] = "00:00:00.00"
                                 voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
                                 voice.source.volume = server["volume"]
                             # ensure that the audio file plays completely or is skipped by command before proceeding
-                            while voice.is_playing() or voice.is_paused(): await asyncio.sleep(.1)
+                            while voice.is_playing() or voice.is_paused():
+                                await asyncio.sleep(.1)
+                                if voice.is_playing(): await self.add_time(context, .1)
 
                             server["index"] += 1
                             if server["index"] == len(server["queue"]):
@@ -105,6 +113,10 @@ class Music(commands.Cog):
                                 server["index"] = 0
                 else: await context.reply(self.polished_message(message = server["strings"]["not_in_voice"], user = str(context.message.author.mention)))
                 break
+
+    async def add_time(self, context, time):
+        for server in self.servers:
+            if server["id"] == context.message.guild.id: server["time"] += time
 
     @commands.command()
     async def insert(self, context, *args):
@@ -122,26 +134,26 @@ class Music(commands.Cog):
         elif len(args) == 3: await self.insert_song(context, args[0], args[1], args[2])
         else: await context.reply(self.polished_message(invalid_command))
 
-    async def insert_song(self, context, url, name, index):
+    async def insert_song(self, context, url, name, index, time = "00:00:00.00", silence = False):
         try: voice_channel = context.message.author.voice.channel
         except: voice_channel = None
         if voice_channel is not None:
             for server in self.servers:
                 if server["id"] == context.message.guild.id:
-                    if int(index) > 0 and int(index) < len(server["queue"]) + 1:
+                    if int(index) > 0 and int(index) < len(server["queue"]) + 2:
                         response = requests.get(url, stream = True)
                         # verify that the url file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                             await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                             return
                         # add the attached file to the queue
-                        server["queue"].insert(int(index) - 1, {"file": url, "name": name})
+                        server["queue"].insert(int(index) - 1, {"file": url, "name": name, "time": time, "silence": silence})
                         if int(index) - 1 <= server["index"]: server["index"] += 1
-                        await context.reply(self.polished_message(message = server["strings"]["insert"],
-                                                                  song = self.polished_song_name(url, name),
-                                                                  index = index))
+                        if not silence: await context.reply(self.polished_message(message = server["strings"]["insert"],
+                                                                                  song = self.polished_song_name(url, name),
+                                                                                  index = index))
                         break
-                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_index"], index = index))
+                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
         else: await context.reply(self.polished_message(message = server["strings"]["not_in_voice"], user = str(context.message.author.mention)))
 
     @commands.command()
@@ -160,18 +172,20 @@ class Music(commands.Cog):
                     if int(index) - 1 < server["index"] and int(move_to_index) - 1 >= server["index"]: server["index"] -= 1
                     elif int(index) - 1 > server["index"] and int(move_to_index) - 1 <= server["index"]: server["index"] += 1
                     elif int(index) - 1 == server["index"] and int(move_to_index) - 1 != server["index"]: server["index"] = int(move_to_index) - 1
-                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_index"], index = move_to_index))
-                else: await context.reply(self.polished_message(message = server["strings"]["invalid_index"], index = index))
+                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = move_to_index))
+                else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
 
     @commands.command()
-    async def remove(self, context, index):
+    async def remove(self, context, index): await self.remove_song(context, index)
+    
+    async def remove_song(self, context, index, silence = False):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 if int(index) > 0 and int(index) < len(server["queue"]) + 1:
-                    await context.reply(self.polished_message(message = server["strings"]["remove"],
-                                                              song = self.polished_song_name(server["queue"][int(index) - 1]["file"],
-                                                                                             server["queue"][int(index) - 1]["name"]),
-                                                              index = index))
+                    if not silence: await context.reply(self.polished_message(message = server["strings"]["remove"],
+                                                                              song = self.polished_song_name(server["queue"][int(index) - 1]["file"],
+                                                                                                             server["queue"][int(index) - 1]["name"]),
+                                                                              index = index))
                     # remove the audio file from the queue
                     server["queue"].remove(server["queue"][int(index) - 1])
                     if int(index) - 1 < server["index"]: server["index"] -= 1
@@ -179,7 +193,7 @@ class Music(commands.Cog):
                         server["index"] -= 1
                         context.voice_client.stop()
                     break
-                else: await context.reply(self.polished_message(message = server["strings"]["invalid_index"], index = index))
+                else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
 
     @commands.command()
     async def skip(self, context): context.voice_client.stop()
@@ -187,9 +201,10 @@ class Music(commands.Cog):
     @commands.command()
     async def previous(self, context):
         for server in self.servers:
-            if server["index"] > 0: server["index"] -= 2
-            elif server["queue"]: server["index"] = len(server["queue"]) - 2
-            context.voice_client.stop()
+            if server["id"] == context.message.guild.id:
+                if server["index"] > 0: server["index"] -= 2
+                elif server["queue"]: server["index"] = len(server["queue"]) - 2
+                context.voice_client.stop()
 
     @commands.command()
     async def stop(self, context): await self.stop_music(context)
@@ -218,20 +233,30 @@ class Music(commands.Cog):
         else: context.voice_client.pause()
 
     @commands.command()
-    async def volume(self, context, *args):
-        self.initialize_servers()
+    async def jump(self, context, time): await self.jump_to(context, time)
+
+    async def jump_to(self, context, time):
+        segments = []
+        if ":" in time: segments = time.split(":")
+        if len(segments) == 2: seconds = float(segments[0]) * 60 + float(segments[1])
+        elif len(segments) == 3: seconds = float(segments[0]) * 60 + float(segments[1]) * 60 + float(segments[2])
+        else: seconds = float(time)
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                if args:
-                    if args[0].endswith("%"): server["volume"] = float(args[0].replace("%", "")) / 100
-                    else: server["volume"] = float(args[0])
-                    if context.voice_client is not None:
-                        if context.voice_client.is_playing(): context.voice_client.source.volume = server["volume"]
-                volume_percent = server["volume"] * 100
-                if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
-                if args: await context.reply(self.polished_message(message = server["strings"]["volume_change"], volume = str(volume_percent) + "%"))
-                else: await context.reply(self.polished_message(message = server["strings"]["volume"], volume = str(volume_percent) + "%"))
+                server["time"] = seconds
+                await self.insert_song(context, server["queue"][server["index"]]["file"], server["queue"][server["index"]]["name"], server["index"] + 2, seconds, True)
+                await self.remove_song(context, server["index"] + 1, True)
                 break
+
+    @commands.command()
+    async def rewind(self, context, time):
+        for server in self.servers:
+            if server["id"] == context.message.guild.id: await self.jump_to(context, float(server["time"]) - float(time))
+
+    @commands.command()
+    async def forward(self, context, time):
+        for server in self.servers:
+            if server["id"] == context.message.guild.id: await self.jump_to(context, float(server["time"]) + float(time))
 
     @commands.command()
     async def loop(self, context):
@@ -271,6 +296,22 @@ class Music(commands.Cog):
                     index += 1
                 await context.reply(message)
         if not self.servers: await context.reply(self.polished_message(no_songs_message))
+
+    @commands.command()
+    async def volume(self, context, *args):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.message.guild.id:
+                if args:
+                    if args[0].endswith("%"): server["volume"] = float(args[0].replace("%", "")) / 100
+                    else: server["volume"] = float(args[0])
+                    if context.voice_client is not None:
+                        if context.voice_client.is_playing(): context.voice_client.source.volume = server["volume"]
+                volume_percent = server["volume"] * 100
+                if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
+                if args: await context.reply(self.polished_message(message = server["strings"]["volume_change"], volume = str(volume_percent) + "%"))
+                else: await context.reply(self.polished_message(message = server["strings"]["volume"], volume = str(volume_percent) + "%"))
+                break
 
     @commands.command()
     async def keep(self, context):
