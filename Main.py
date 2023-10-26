@@ -33,7 +33,11 @@ class Main(commands.Cog):
             ids = []
             for server in data["servers"]: ids.append(server["id"])
             if context.message.guild.id not in ids:
-                data["servers"].append({"id": context.message.guild.id, "language": "English", "repeat": False, "keep": False, "users": [], "role": None})
+                data["servers"].append({"id": context.message.guild.id,
+                                        "language": "English",
+                                        "repeat": False,
+                                        "keep": False,
+                                        "playlists": []})
                 await context.send("Server added.\nType `+help` for a list of commands.")
             else: await context.send("This server was already added.")
             yaml.dump(data, write_file, yaml.Dumper, indent = 4)

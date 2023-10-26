@@ -9,9 +9,18 @@ strings:
     no_songs: "There are no songs in the queue."
     queue: "List of songs in the queue:"
     song: "#%{index}: %{song}"
+    playlists: "List of playlists for this server:"
+    playlist: "List of songs in playlist \"%{playlist}\":"
+    remove_playlist: "Playlist \"%{playlist}\" has been deleted."
+    playlist_remove: "%{song} (#%{index}) has been removed from playlist \"%{playlist}.\""
+    add_playlist: "Playlist \"%{playlist}\" has been created."
+    playlist_add: "%{song} has been added to playlist \"%{playlist}\" (#%{index})."
+    invalid_playlist: "Playlist \"%{playlist}\" is not a playlist."
+    empty_playlist: "Playlist \"%{playlist}\" has no songs."
+    no_playlists: "No playlists exist for this server."
     play: "%{song} has been added to the queue (#%{index})."
     not_media: "%{song} is not an audio or video file."
-    insert: "%{song} has been inserted into the queue (#%{index})"
+    insert: "%{song} has been inserted into the queue (#%{index})."
     move: "%{song} has been moved to position #%{index} in the queue."
     remove: "%{song} (#%{index}) has been removed from the queue."
     volume: "The volume is currently at %{volume}."
@@ -26,6 +35,8 @@ strings:
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
     help: "`+add_me` to allow music to be played on this server
          \n`+language <attached YAML/language name>` to change the language of %{bot}
+         \n`+playlist <add <name> | remove <index> | load <name> | list | <name <add <url> <name (optional)> <index (optional)> | remove <index> | list>>`
+         to interact with playlists.
          \n`+play <attached file/url> <name (optional)>` to play or add music to the queue
          \n`+insert <attached file/url> <name (optional)> <index>` to add the song to the queue at the specified index
          \n`+move <index to move from> <index to move to>` to change a song's position within the queue
@@ -35,8 +46,9 @@ strings:
          \n`+stop` to stop all audio from playing and clear the queue
          \n`+pause` to toggle whether a playlist is paused
          \n`+jump <time>` to play the current song at the specified time marker
-         \n`+rewind <seconds>` to rewind the current song by the specified number of seconds
          \n`+forward <seconds>` to fast forward the current song by the specified number of seconds
+         \n`+rewind <seconds>` to rewind the current song by the specified number of seconds
+         \n`+when` to show how far %{bot} is into the current song
          \n`+loop` to toggle whether playlists repeat
          \n`+queue` to look at the list of songs to be played
          \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}

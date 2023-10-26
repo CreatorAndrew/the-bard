@@ -6,6 +6,15 @@ names:
 -   no_songs
 -   queue
 -   song
+-   playlists
+-   playlist
+-   remove_playlist
+-   playlist_remove
+-   add_playlist
+-   playlist_add
+-   invalid_playlist
+-   empty_playlist
+-   no_playlists
 -   play
 -   not_media
 -   insert
