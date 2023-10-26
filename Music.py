@@ -251,12 +251,12 @@ class Music(commands.Cog):
     @commands.command()
     async def rewind(self, context, time):
         for server in self.servers:
-            if server["id"] == context.message.guild.id: await self.jump_to(context, float(server["time"]) - float(time))
+            if server["id"] == context.message.guild.id: await self.jump_to(context, str(float(server["time"]) - float(time)))
 
     @commands.command()
     async def forward(self, context, time):
         for server in self.servers:
-            if server["id"] == context.message.guild.id: await self.jump_to(context, float(server["time"]) + float(time))
+            if server["id"] == context.message.guild.id: await self.jump_to(context, str(float(server["time"]) + float(time)))
 
     @commands.command()
     async def loop(self, context):
