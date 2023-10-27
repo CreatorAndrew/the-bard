@@ -3,44 +3,52 @@
 
 strings:
     invalid_command: "Invalid command usage. Type `+help` for assistance."
-    invalid_number: "%{index} was not a track number in the queue."
-    not_in_voice: "%{user} is not in a voice channel."
     now_playing: "Now playing: %{song} (%{index}/%{max})"
-    no_songs: "There are no songs in the queue."
-    queue: "List of songs in the queue:"
-    song: "#%{index}: %{song}"
-    playlists: "List of playlists for this server:"
-    playlist: "List of songs in playlist \"%{playlist}\":"
-    remove_playlist: "Playlist \"%{playlist}\" has been deleted."
-    playlist_remove: "%{song} (#%{index}) has been removed from playlist \"%{playlist}.\""
-    add_playlist: "Playlist \"%{playlist}\" has been created."
-    playlist_add: "%{song} has been added to playlist \"%{playlist}\" (#%{index})."
-    invalid_playlist: "Playlist \"%{playlist}\" is not a playlist."
-    empty_playlist: "Playlist \"%{playlist}\" has no songs."
     no_playlists: "No playlists exist for this server."
-    play: "%{song} has been added to the queue (#%{index})."
+    playlists_header: "Playlists for this server:"
+    add_playlist: "Playlist \"%{playlist}\" has been created (#%{playlist_index})."
+    rename_playlist: "Playlist \"%{playlist}\" (#%{playlist_index}) has been renamed to \"%{name}.\""
+    remove_playlist: "Playlist \"%{playlist}\" (#%{playlist_index}) has been deleted."
+    playlist_no_songs: "Playlist \"%{playlist}\" (#%{playlist_index}) has no songs."
+    playlist_songs_header: "List of songs in playlist \"%{playlist}\" (#%{playlist_index}):"
+    playlist_add_song: "%{song} has been added to playlist \"%{playlist}\" (#%{playlist_index}) (#%{index})."
+    playlist_move_song: "%{song} has been moved to position #%{index} in playlist \"%{playlist}\" (#%{playlist_index})."
+    playlist_rename_song: "%{song} (#%{index}) has been renamed to \"%{name}\" in playlist \"%{playlist}\" (#%{playlist_index})."
+    playlist_remove_song: "%{song} (#%{index}) has been removed from playlist \"%{playlist}\" (#%{playlist_index})."
+    playlist: "#%{playlist_index}: %{playlist}"
+    invalid_playlist: "Playlist \"%{playlist}\" does not exist."
+    invalid_playlist_number: "Playlist #%{playlist_index} does not exist."
+    queue_no_songs: "There are no songs in the queue."
+    queue_songs_header: "List of songs in the queue:"
+    queue_add_song: "%{song} has been added to the queue (#%{index})."
+    queue_insert_song: "%{song} has been inserted into the queue (#%{index})."
+    queue_move_song: "%{song} has been moved to position #%{index} in the queue."
+    queue_rename_song: "%{song} (#%{index}) has been renamed to \"%{name}\" in the queue."
+    queue_remove_song: "%{song} (#%{index}) has been removed from the queue."
+    song: "#%{index}: %{song}"
+    invalid_song_number: "%{index} was not a track number in the queue."
     not_media: "%{song} is not an audio or video file."
-    insert: "%{song} has been inserted into the queue (#%{index})."
-    move: "%{song} has been moved to position #%{index} in the queue."
-    remove: "%{song} (#%{index}) has been removed from the queue."
     volume: "The volume is currently at %{volume}."
     volume_change: "The volume is now set to %{volume}."
     repeat: "Playlists will %{now_or_no_longer} repeat."
     keep: "%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing."
-    whatever_voice: "whatever voice channel it's in"
     now: "now"
     no_longer: "no longer"
+    whatever_voice: "whatever voice channel it's in"
+    not_in_voice: "%{user} is not in a voice channel."
     language: "The language was changed to %{language}."
     invalid_language: "The file \"%{language}\" does not have sufficient data for a full translation."
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
     help: "`+add_me` to allow music to be played on this server
-         \n`+language <attached YAML/language name>` to change the language of %{bot}
-         \n`+playlist [add <name> | remove <index> | load <name> | list |
-         [<name> [add <attached file or url> <name (optional)> <index (optional)> | remove <index> | list]]]`
+         \n`+language <attached YAML or language name>` to change the language of %{bot}
+         \n`+playlist [add <name> | rename <index or name to rename from> <name to rename to>
+         | remove <index> | load <name> | list | <name> [add <attached file or url> <name (optional)> <index (optional)>
+         | move <index to move from> <index to move to> | rename <index> | remove <index> | list]]`
          to interact with playlists
-         \n`+play <attached file/url> <name (optional)>` to play or add music to the queue
-         \n`+insert <attached file/url> <name (optional)> <index>` to add the song to the queue at the specified index
+         \n`+play <attached file or url> <name (optional)>` to play or add music to the queue
+         \n`+insert <attached file or url> <name (optional)> <index>` to add the song to the queue at the specified index
          \n`+move <index to move from> <index to move to>` to change a song's position within the queue
+         \n`+rename <index> <name>` to rename a song in the queue
          \n`+remove <index>` to remove a song of the specified index within the queue
          \n`+skip` to skip to the next song in the queue
          \n`+previous` to go back to the previous song in the queue

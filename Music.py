@@ -15,15 +15,17 @@ class Music(commands.Cog):
         if name is not None: return name + " (" + file + ")"
         return file
 
-    def polished_message(self, message, user = None, bot = None, voice = None, playlist = None, song = None, index = None,
-                         maximum = None, volume = None, now = None, no_longer = None, enabled = False):
+    def polished_message(self, message, user = None, bot = None, voice = None, playlist = None, playlist_index = None, song = None, 
+                         index = None, maximum = None, name = None, volume = None, now = None, no_longer = None, enabled = False):
         if user is not None: message = message.replace("%{user}", user)
         if bot is not None: message = message.replace("%{bot}", bot)
         if voice is not None: message = message.replace("%{voice}", voice)
         if playlist is not None: message = message.replace("%{playlist}", playlist)
+        if playlist_index is not None: message = message.replace("%{playlist_index}", str(playlist_index))
         if song is not None: message = message.replace("%{song}", song)
         if index is not None: message = message.replace("%{index}", str(index))
         if maximum is not None: message = message.replace("%{max}", str(maximum))
+        if name is not None: message = message.replace("%{name}", name)
         if volume is not None: message = message.replace("%{volume}", volume)
         if now is not None and enabled: message = message.replace("%{now_or_no_longer}", now)
         if no_longer is not None and not enabled: message = message.replace("%{now_or_no_longer}", no_longer)
@@ -53,121 +55,192 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 invalid_command = server["strings"]["invalid_command"]
-                song_message = server["strings"]["song"]
-                not_media = server["strings"]["not_media"]
-                playlists_message = server["strings"]["playlists"]
-                playlist_message = server["strings"]["playlist"]
-                remove_playlist = server["strings"]["remove_playlist"]
-                playlist_remove = server["strings"]["playlist_remove"]
-                add_playlist = server["strings"]["add_playlist"]
-                playlist_add = server["strings"]["playlist_add"]
-                invalid_playlist = server["strings"]["invalid_playlist"]
-                empty_playlist = server["strings"]["empty_playlist"]
                 no_playlists = server["strings"]["no_playlists"]
-                playlists = []
+                playlists_header = server["strings"]["playlists_header"]
+                add_playlist = server["strings"]["add_playlist"]
+                rename_playlist = server["strings"]["rename_playlist"]
+                remove_playlist = server["strings"]["remove_playlist"]
+                playlist_no_songs = server["strings"]["playlist_no_songs"]
+                playlist_songs_header = server["strings"]["playlist_songs_header"]
+                playlist_add_song = server["strings"]["playlist_add_song"]
+                playlist_move_song = server["strings"]["playlist_move_song"]
+                playlist_rename_song = server["strings"]["playlist_rename_song"]
+                playlist_remove_song = server["strings"]["playlist_remove_song"]
+                playlist_listing = server["strings"]["playlist"]
+                invalid_playlist = server["strings"]["invalid_playlist"]
+                invalid_playlist_number = server["strings"]["invalid_playlist_number"]
+                song_listing = server["strings"]["song"]
+                not_media = server["strings"]["not_media"]
                 break
         with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
         for server in data["servers"]:
             if server["id"] == context.message.guild.id:
+                playlists = []
                 if server["playlists"]:
                     for playlist in server["playlists"]: playlists.append(playlist["name"])
                 if args[0] == "add":
                     if len(args) == 2:
                         server["playlists"].append({"name": args[1], "songs": []})
-                        await context.reply(self.polished_message(message = add_playlist, playlist = args[1]))
+                        await context.reply(self.polished_message(message = add_playlist, playlist = args[1], playlist_index = len(server["playlists"])))
                     else:
-                        await context.reply(self.polished_message(invalid_command))
+                        await context.reply(invalid_command)
+                        return
+                elif args[0] == "rename":
+                    if len(args) == 3:
+                        try: index = int(args[1]) - 1
+                        except ValueError: index = playlists.index(args[1])
+                        await context.reply(self.polished_message(message = rename_playlist,
+                                                                  playlist = playlists[index],
+                                                                  playlist_index = index + 1,
+                                                                  name = args[2]))
+                        server["playlists"][index]["name"] = args[2]
+                    else:
+                        await context.reply(invalid_command)
                         return
                 elif args[0] == "remove":
                     if len(args) == 2:
-                        server["playlists"].remove(server["playlists"][playlists.index(args[1])])
-                        await context.reply(self.polished_message(message = remove_playlist, playlist = args[1]))
+                        try: index = int(args[1]) - 1
+                        except ValueError: index = playlists.index(args[1])
+                        server["playlists"].remove(server["playlists"][index])
+                        await context.reply(self.polished_message(message = remove_playlist, playlist = playlists[index], playlist_index = index + 1))
                     else:
-                        await context.reply(self.polished_message(invalid_command))
+                        await context.reply(invalid_command)
                         return
                 elif args[0] == "load":
                     if len(args) == 2:
-                        songs = server["playlists"][playlists.index(args[1])]["songs"]
-                        await self.play_song(context, playlist = songs)
+                        try: index = int(args[1]) - 1
+                        except ValueError: index = playlists.index(args[1])
+                        await self.play_song(context, playlist = server["playlists"][index]["songs"])
+                        return
                 elif args[0] == "list":
                     message = ""
-                    if server["playlists"]: message += playlists_message + "\n"
-                    else: await context.reply(self.polished_message(no_playlists))
+                    if server["playlists"]: message += playlists_header + "\n"
+                    else:
+                        await context.reply(no_playlists)
+                        return
                     index = 0
                     while index < len(server["playlists"]):
-                        message += "- " + server["playlists"][index]["name"] + "\n"
+                        message += self.polished_message(message = playlist_listing, playlist = playlists[index], playlist_index = index + 1) + "\n"
                         index += 1
                     await context.reply(message)
-                elif args[0] in playlists:
-                    if args[1] == "add":
-                        if len(args) >= 3 and len(args) <= 5 and not context.message.attachments: url = args[2]
-                        elif len(args) < 5 and context.message.attachments: url = str(context.message.attachments[0])
-                        else:
-                            await context.reply(self.polished_message(invalid_command))
-                            return
-                        name = None
-                        index = len(server["playlists"][playlists.index(args[0])]["songs"]) + 1
-                        if len(args) == 3 and context.message.attachments:
-                            try: index = int(args[2])
-                            except ValueError:
-                                index = len(server["playlists"][playlists.index(args[0])]["songs"]) + 1
-                                name = args[2]
-                        elif len(args) == 4 and not context.message.attachments:
-                            try: index = int(args[3])
-                            except ValueError:
-                                index = len(server["playlists"][playlists.index(args[0])]["songs"]) + 1
-                                name = args[3]
-                        elif len(args) == 4:
-                            name = args[2]
-                            index = int(args[3])
-                        elif len(args) == 5:
-                            name = args[3] 
-                            index = int(args[4])
-                        response = requests.get(url, stream = True)
-                        # verify that the url file is a media container
-                        if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                            await context.reply(self.polished_message(message = not_media, song = self.polished_song_name(url, name)))
-                            return
-
-                        server["playlists"][playlists.index(args[0])]["songs"].insert(index - 1, {"file": url, "name": name, "time": "00:00:00.00", "silence": False})
-                        await context.reply(self.polished_message(message = playlist_add,
-                                                                  playlist = args[0],
-                                                                  song = self.polished_song_name(url, name),
-                                                                  index = index))
-                    elif args[1] == "remove":
-                        if len(args) == 3:
-                            await context.reply(self.polished_message(message = playlist_remove,
-                                                                      playlist = server["playlists"][playlists.index(args[0])]["name"],
-                                                                      song = self.polished_song_name(server["playlists"][playlists.index(args[0])]["songs"]
-                                                                                                     [int(args[2]) - 1]["file"],
-                                                                                                     server["playlists"][playlists.index(args[0])]["songs"]
-                                                                                                     [int(args[2]) - 1]["name"]),
-                                                                      index = args[2]))
-                            server["playlists"][playlists.index(args[0])]["songs"].remove(server["playlists"][playlists.index(args[0])]["songs"][int(args[2]) - 1])
-                        else:
-                            await context.reply(self.polished_message(invalid_command))
-                            return
-                    elif args[1] == "list":
-                        message = ""
-                        if server["playlists"]:
-                            if server["playlists"][playlists.index(args[0])]: message += self.polished_message(message = playlist_message, playlist = args[0]) + "\n"
-                            else: await context.reply(self.polished_message(no_playlists))
-                        else: await context.reply(self.polished_message(message = empty_playlist, playlist = args[0]))
-                        index = 0
-                        while index < len(server["playlists"][playlists.index(args[0])]["songs"]):
-                            message += self.polished_message(message = song_message + "\n",
-                                                             song = self.polished_song_name(server["playlists"][playlists.index(args[0])]["songs"][index]["file"],
-                                                                                            server["playlists"][playlists.index(args[0])]["songs"][index]["name"]),
-                                                             index = index + 1)
-                            index += 1
-                        await context.reply(message)
-                else:
-                    await context.reply(self.polished_message(message = invalid_playlist, playlist = args[0]))
                     return
+                else:
+                    try:
+                        if args[0] in playlists or int(args[0]) > 0:
+                            try:
+                                playlist_index = int(args[0]) - 1
+                                if playlist_index >= len(server["playlists"]) or playlist_index < 0:
+                                    await context.reply(self.polished_message(message = invalid_playlist_number, playlist_index = playlist_index + 1))
+                                    return
+                            except ValueError: playlist_index = playlists.index(args[0])
+                            if args[1] == "add":
+                                if len(args) >= 3 and len(args) <= 5 and not context.message.attachments: url = args[2]
+                                elif len(args) < 5 and context.message.attachments: url = str(context.message.attachments[0])
+                                else:
+                                    await context.reply(invalid_command)
+                                    return
+                                name = None
+                                index = len(server["playlists"][playlist_index]["songs"]) + 1
+                                if len(args) == 3 and context.message.attachments:
+                                    try: index = int(args[2])
+                                    except ValueError:
+                                        index = len(server["playlists"][playlist_index]["songs"]) + 1
+                                        name = args[2]
+                                elif len(args) == 4 and not context.message.attachments:
+                                    try: index = int(args[3])
+                                    except ValueError:
+                                        index = len(server["playlists"][playlist_index]["songs"]) + 1
+                                        name = args[3]
+                                elif len(args) == 4:
+                                    name = args[2]
+                                    index = int(args[3])
+                                elif len(args) == 5:
+                                    name = args[3] 
+                                    index = int(args[4])
+                                response = requests.get(url, stream = True)
+                                # verify that the URL file is a media container
+                                if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                                    await context.reply(self.polished_message(message = not_media, song = self.polished_song_name(url, name)))
+                                    return
 
-                # modify the YAML file to reflect changes regarding playlists
-                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
-                break
+                                server["playlists"][playlist_index]["songs"].insert(index - 1, {"file": url, "name": name, "time": "00:00:00.00", "silence": False})
+                                await context.reply(self.polished_message(message = playlist_add_song,
+                                                                          playlist = playlists[playlist_index],
+                                                                          playlist_index = playlist_index + 1,
+                                                                          song = self.polished_song_name(url, name),
+                                                                          index = index))
+                            elif args[1] == "move":
+                                if len(args) == 4:
+                                    song = server["playlists"][playlist_index]["songs"][int(args[2]) - 1]
+                                    server["playlists"][playlist_index]["songs"].remove(song)
+                                    server["playlists"][playlist_index]["songs"].insert(int(args[3]) - 1, song)
+                                    await context.reply(self.polished_message(message = playlist_move_song,
+                                                                              playlist = playlists[playlist_index],
+                                                                              playlist_index = playlist_index + 1,
+                                                                              song = self.polished_song_name(song["file"], song["name"]),
+                                                                              index = args[3]))
+                                else:
+                                    await context.reply(invalid_command)
+                                    return
+                            elif args[1] == "rename":
+                                if len(args) == 4:
+                                    song = server["playlists"][playlist_index]["songs"][int(args[2]) - 1]
+                                    await context.reply(self.polished_message(message = playlist_rename_song,
+                                                                              playlist = server["playlists"][playlist_index]["name"],
+                                                                              playlist_index = playlist_index + 1,
+                                                                              song = self.polished_song_name(song["file"], song["name"]),
+                                                                              index = args[2],
+                                                                              name = args[3]))
+                                    song["name"] = args[3]
+                                else:
+                                    await context.reply(invalid_command)
+                                    return
+                            elif args[1] == "remove":
+                                if len(args) == 3:
+                                    song = server["playlists"][playlist_index]["songs"][int(args[2]) - 1]
+                                    server["playlists"][playlist_index]["songs"].remove(song)
+                                    await context.reply(self.polished_message(message = playlist_remove_song,
+                                                                              playlist = server["playlists"][playlist_index]["name"],
+                                                                              playlist_index = playlist_index + 1,
+                                                                              song = self.polished_song_name(song["file"], song["name"]),
+                                                                              index = args[2]))
+                                else:
+                                    await context.reply(invalid_command)
+                                    return
+                            elif args[1] == "list":
+                                message = ""
+                                if server["playlists"][playlist_index]["songs"]:
+                                    if server["playlists"][playlist_index]:
+                                        message += self.polished_message(message = playlist_songs_header,
+                                                                         playlist = playlists[playlist_index],
+                                                                         playlist_index = playlist_index + 1) + "\n"
+                                    else:
+                                        await context.reply(no_playlists)
+                                        return
+                                else:
+                                    await context.reply(self.polished_message(message = playlist_no_songs,
+                                                                              playlist = playlists[playlist_index],
+                                                                              playlist_index = playlist_index + 1))
+                                    return
+                                index = 0
+                                while index < len(server["playlists"][playlist_index]["songs"]):
+                                    message += self.polished_message(message = song_listing + "\n",
+                                                                     song = self.polished_song_name(server["playlists"][playlist_index]["songs"][index]["file"],
+                                                                                                    server["playlists"][playlist_index]["songs"][index]["name"]),
+                                                                     index = index + 1)
+                                    index += 1
+                                await context.reply(message)
+                                return
+                            else:
+                                await context.reply(invalid_command)
+                                return
+                    except ValueError:
+                        await context.reply(self.polished_message(message = invalid_playlist, playlist = args[0]))
+                        return
+
+                    # modify the YAML file to reflect changes regarding playlists
+                    with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
+                    break
 
     @commands.command()
     async def play(self, context, *args):
@@ -178,12 +251,12 @@ class Music(commands.Cog):
                 break
         if not args:
             if context.message.attachments: await self.play_song(context, str(context.message.attachments[0]))
-            else: await context.reply(self.polished_message(invalid_command))
+            else: await context.reply(invalid_command)
         elif len(args) == 1:
             if context.message.attachments: await self.play_song(context, str(context.message.attachments[0]), args[0])
             else: await self.play_song(context, args[0])
         elif len(args) == 2: await self.play_song(context, args[0], args[1])
-        else: await context.reply(self.polished_message(invalid_command))
+        else: await context.reply(invalid_command)
 
     async def play_song(self, context, url = None, name = None, playlist = []):
         for server in self.servers:
@@ -193,18 +266,18 @@ class Music(commands.Cog):
                 if voice_channel is not None:
                     if url is not None:
                         response = requests.get(url, stream = True)
-                        # verify that the url file is a media container
+                        # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                             await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                             return
-                        await context.reply(self.polished_message(message = server["strings"]["play"],
+                        await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
                                                                   song = self.polished_song_name(url, name),
                                                                   index = str(len(server['queue']) + 1)))
-                        # add the attached file to the queue
+                        # add the song to the queue
                         server["queue"].append({"file": url, "name": name, "time": "00:00:00.00", "silence": False})
                     else:
                         for song in playlist:
-                            await context.reply(self.polished_message(message = server["strings"]["play"],
+                            await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
                                                                       song = self.polished_song_name(song["file"], song["name"]),
                                                                       index = str(len(server['queue']) + 1)))
                             # add the song to the queue
@@ -225,7 +298,7 @@ class Music(commands.Cog):
                                                                              maximum = str(len(server['queue']))))
                                     server["time"] = .0
                                 else: server["queue"][server["index"]]["silence"] = False
-                            # play the attached audio file
+                            # play the song
                             if not voice.is_playing():
                                 voice.play(discord.FFmpegPCMAudio(source = server["queue"][server["index"]]["file"],
                                                                   before_options = f"-ss {server['queue'][server['index']]['time']}"))
@@ -233,7 +306,7 @@ class Music(commands.Cog):
                                 server["queue"][server["index"]]["time"] = "00:00:00.00"
                                 voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
                                 voice.source.volume = server["volume"]
-                            # ensure that the audio file plays completely or is skipped by command before proceeding
+                            # ensure that the song plays completely or is skipped by command before proceeding
                             while voice.is_playing() or voice.is_paused():
                                 await asyncio.sleep(.1)
                                 if voice.is_playing(): await self.add_time(context, .1)
@@ -258,12 +331,12 @@ class Music(commands.Cog):
                 break
         if len(args) == 1:
             if context.message.attachments: await self.insert_song(context, str(context.message.attachments[0]), None, args[0])
-            else: await context.reply(self.polished_message(invalid_command))
+            else: await context.reply(invalid_command)
         elif len(args) == 2:
             if context.message.attachments: await self.insert_song(context, str(context.message.attachments[0]), args[0], args[1])
             else: await self.insert_song(context, args[0], None, args[1])
         elif len(args) == 3: await self.insert_song(context, args[0], args[1], args[2])
-        else: await context.reply(self.polished_message(invalid_command))
+        else: await context.reply(invalid_command)
 
     async def insert_song(self, context, url, name, index, time = "00:00:00.00", silence = False):
         try: voice_channel = context.message.author.voice.channel
@@ -273,18 +346,18 @@ class Music(commands.Cog):
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 2:
                         response = requests.get(url, stream = True)
-                        # verify that the url file is a media container
+                        # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                             await context.reply(self.polished_message(message = server["strings"]["not_media"], song = self.polished_song_name(url, name)))
                             return
-                        # add the attached file to the queue
+                        # add the song to the queue
                         server["queue"].insert(int(index) - 1, {"file": url, "name": name, "time": time, "silence": silence})
                         if int(index) - 1 <= server["index"]: server["index"] += 1
-                        if not silence: await context.reply(self.polished_message(message = server["strings"]["insert"],
+                        if not silence: await context.reply(self.polished_message(message = server["strings"]["queue_insert_song"],
                                                                                   song = self.polished_song_name(url, name),
                                                                                   index = index))
                         break
-                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
+                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_song_number"], index = index))
         else: await context.reply(self.polished_message(message = server["strings"]["not_in_voice"], user = str(context.message.author.mention)))
 
     @commands.command()
@@ -296,15 +369,26 @@ class Music(commands.Cog):
                         queue = server["queue"].copy()
                         server["queue"].remove(queue[int(index) - 1])
                         server["queue"].insert(int(move_to_index) - 1, queue[int(index) - 1])
-                        await context.reply(self.polished_message(message = server["strings"]["move"],
+                        await context.reply(self.polished_message(message = server["strings"]["queue_move_song"],
                                                                   song = self.polished_song_name(queue[int(index) - 1]['file'],
                                                                                                  queue[int(index) - 1]['name']),
                                                                   index = move_to_index))
                     if int(index) - 1 < server["index"] and int(move_to_index) - 1 >= server["index"]: server["index"] -= 1
                     elif int(index) - 1 > server["index"] and int(move_to_index) - 1 <= server["index"]: server["index"] += 1
                     elif int(index) - 1 == server["index"] and int(move_to_index) - 1 != server["index"]: server["index"] = int(move_to_index) - 1
-                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = move_to_index))
-                else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
+                    else: await context.reply(self.polished_message(message = server["strings"]["invalid_song_number"], index = move_to_index))
+                else: await context.reply(self.polished_message(message = server["strings"]["invalid_song_number"], index = index))
+
+    @commands.command()
+    async def rename(self, context, index, name):
+        for server in self.servers:
+            if server["id"] == context.message.guild.id:
+                await context.reply(self.polished_message(message = server["strings"]["queue_rename_song"],
+                                                          song = self.polished_song_name(server["queue"][int(index) - 1]["file"],
+                                                                                         server["queue"][int(index) - 1]["name"]),
+                                                          name = name,
+                                                          index = index))
+                server["queue"][int(index) - 1]["name"] = name
 
     @commands.command()
     async def remove(self, context, index): await self.remove_song(context, index)
@@ -313,18 +397,18 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 if int(index) > 0 and int(index) < len(server["queue"]) + 1:
-                    if not silence: await context.reply(self.polished_message(message = server["strings"]["remove"],
+                    if not silence: await context.reply(self.polished_message(message = server["strings"]["queue_remove_song"],
                                                                               song = self.polished_song_name(server["queue"][int(index) - 1]["file"],
                                                                                                              server["queue"][int(index) - 1]["name"]),
                                                                               index = index))
-                    # remove the audio file from the queue
+                    # remove the song from the queue
                     server["queue"].remove(server["queue"][int(index) - 1])
                     if int(index) - 1 < server["index"]: server["index"] -= 1
                     elif int(index) - 1 == server["index"]:
                         server["index"] -= 1
                         context.voice_client.stop()
                     break
-                else: await context.reply(self.polished_message(message = server["strings"]["invalid_number"], index = index))
+                else: await context.reply(self.polished_message(message = server["strings"]["invalid_song_number"], index = index))
 
     @commands.command()
     async def skip(self, context): context.voice_client.stop()
@@ -343,11 +427,11 @@ class Music(commands.Cog):
     async def stop_music(self, context, leave = False, guild = None):
         if guild is None: id = context.message.guild.id
         else: id = guild.id
-        # remove all the files by the calling Discord server
+        # remove all the songs by the calling Discord server
         for server in self.servers:
             if server["id"] == id:
                 while server["queue"]:
-                    # remove the audio file from the queue
+                    # remove the song from the queue
                     server["queue"].remove(server["queue"][0])
                 if context.voice_client.is_playing():
                     server["index"] = -1
@@ -383,7 +467,7 @@ class Music(commands.Cog):
                                                server["index"] + 2, seconds,
                                                True)
                         await self.remove_song(context, server["index"] + 1, True)
-                    else: await context.reply(self.polished_message(server["strings"]["no_songs"]))
+                    else: await context.reply(server["strings"]["queue_no_songs"])
                     break
 
     @commands.command()
@@ -402,7 +486,7 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.message.guild.id:
                 if server["queue"]: await context.reply(self.convert_to_time(server["time"]))
-                else: await context.reply(self.polished_message(server["strings"]["no_songs"]))
+                else: await context.reply(server["strings"]["queue_no_songs"])
 
     def convert_to_time(self, number):
         segments = []
@@ -430,9 +514,9 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
+                repeat_message = server["strings"]["repeat"]
                 now = server["strings"]["now"]
                 no_longer = server["strings"]["no_longer"]
-                repeat_message = server["strings"]["repeat"]
                 break
         with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
         for server in data["servers"]:
@@ -451,10 +535,12 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                no_songs = server["strings"]["no_songs"]
+                queue_no_songs = server["strings"]["queue_no_songs"]
                 message = ""
-                if server["queue"]: message += self.polished_message(server["strings"]["queue"]) + "\n"
-                else: await context.reply(self.polished_message(no_songs))
+                if server["queue"]: message += server["strings"]["queue_songs_header"] + "\n"
+                else:
+                    await context.reply(queue_no_songs)
+                    return
                 index = 0
                 while index < len(server["queue"]):
                     message += self.polished_message(message = server["strings"]["song"] + "\n",
@@ -484,9 +570,9 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
+                keep_message = server["strings"]["keep"]
                 now = server["strings"]["now"]
                 no_longer = server["strings"]["no_longer"]
-                keep_message = server["strings"]["keep"]
                 whatever = server["strings"]["whatever_voice"]
                 break
         with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
