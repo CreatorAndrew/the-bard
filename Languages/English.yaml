@@ -43,8 +43,7 @@ strings:
          \n`+language <attached YAML or language name>` to change the language of %{bot}
          \n`+playlist [add <name> | rename <index or name to rename from> <name to rename to>
          | remove <index> | load <name> | list | <name> [add <attached file or url> <name (optional)> <index (optional)>
-         | move <index to move from> <index to move to> | rename <index> | remove <index> | list]]`
-         to interact with playlists
+         | move <index to move from> <index to move to> | rename <index> <name> | remove <index> | list]]`
          \n`+play <attached file or url> <name (optional)>` to play or add music to the queue
          \n`+insert <attached file or url> <name (optional)> <index>` to add the song to the queue at the specified index
          \n`+move <index to move from> <index to move to>` to change a song's position within the queue
