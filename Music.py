@@ -237,10 +237,9 @@ class Music(commands.Cog):
                     except ValueError:
                         await context.reply(self.polished_message(message = invalid_playlist, playlist = args[0]))
                         return
-
-                    # modify the YAML file to reflect changes regarding playlists
-                    with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
-                    break
+                # modify the YAML file to reflect changes regarding playlists
+                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent = 4)
+                break
 
     @commands.command()
     async def play(self, context, *args):
