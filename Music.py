@@ -163,7 +163,7 @@ class Music(commands.Cog):
                                     await context.reply(self.polished_message(message = not_media, song = self.polished_song_name(url, name)))
                                     return
 
-                                server["playlists"][playlist_index]["songs"].insert(index - 1, {"file": url, "name": name, "time": "00:00:00.00", "silence": False})
+                                server["playlists"][playlist_index]["songs"].insert(index - 1, {"file": url, "name": name, "time": "0", "silence": False})
                                 await context.reply(self.polished_message(message = playlist_add_song,
                                                                           playlist = playlists[playlist_index],
                                                                           playlist_index = playlist_index + 1,
@@ -273,7 +273,7 @@ class Music(commands.Cog):
                                                                   song = self.polished_song_name(url, name),
                                                                   index = str(len(server['queue']) + 1)))
                         # add the song to the queue
-                        server["queue"].append({"file": url, "name": name, "time": "00:00:00.00", "silence": False})
+                        server["queue"].append({"file": url, "name": name, "time": "0", "silence": False})
                     else:
                         for song in playlist:
                             await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
@@ -299,10 +299,11 @@ class Music(commands.Cog):
                                 else: server["queue"][server["index"]]["silence"] = False
                             # play the song
                             if not voice.is_playing():
-                                voice.play(discord.FFmpegPCMAudio(source = server["queue"][server["index"]]["file"],
-                                                                  before_options = f"-ss {server['queue'][server['index']]['time']}"))
-                                
-                                server["queue"][server["index"]]["time"] = "00:00:00.00"
+                                source = discord.FFmpegPCMAudio(source = server["queue"][server["index"]]["file"],
+                                                                before_options = f"-ss {server['queue'][server['index']]['time']}")
+                                source.read()
+                                voice.play(source)
+                                server["queue"][server["index"]]["time"] = "0"
                                 voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
                                 voice.source.volume = server["volume"]
                             # ensure that the song plays completely or is skipped by command before proceeding
@@ -337,7 +338,7 @@ class Music(commands.Cog):
         elif len(args) == 3: await self.insert_song(context, args[0], args[1], args[2])
         else: await context.reply(invalid_command)
 
-    async def insert_song(self, context, url, name, index, time = "00:00:00.00", silence = False):
+    async def insert_song(self, context, url, name, index, time = "0", silence = False):
         try: voice_channel = context.message.author.voice.channel
         except: voice_channel = None
         if voice_channel is not None:
