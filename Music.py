@@ -266,7 +266,7 @@ class Music(commands.Cog):
                         await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
                                                                   placeholders = ["song", "index"],
                                                                   replacements = {"song": self.polished_song_name(url, name),
-                                                                                  "index": str(len(server['queue']) + 1)}))
+                                                                                  "index": len(server['queue']) + 1}))
                         # add the song to the queue
                         server["queue"].append({"file": url, "name": name, "time": "0", "silence": False})
                     else:
@@ -274,7 +274,7 @@ class Music(commands.Cog):
                             await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
                                                                       placeholders = ["song", "index"],
                                                                       replacements = {"song": self.polished_song_name(song["file"], song["name"]),
-                                                                                      "index": str(len(server['queue']) + 1)}))
+                                                                                      "index": len(server['queue']) + 1}))
                             # add the song to the queue
                             server["queue"].append(song)
                     if not server["connected"]:
@@ -290,8 +290,8 @@ class Music(commands.Cog):
                                                                              placeholders = ["song", "index", "max"],
                                                                              replacements = {"song": self.polished_song_name(server["queue"][server["index"]]["file"],
                                                                                                                              server["queue"][server["index"]]["name"]),
-                                                                                             "index": str(server["index"] + 1),
-                                                                                             "max": str(len(server['queue']))}))
+                                                                                             "index": server["index"] + 1,
+                                                                                             "max": len(server['queue'])}))
                                     server["time"] = .0
                                 else: server["queue"][server["index"]]["silence"] = False
                             # play the song
@@ -314,7 +314,7 @@ class Music(commands.Cog):
                                 server["index"] = 0
                 else: await context.reply(self.polished_message(message = server["strings"]["not_in_voice"],
                                                                 placeholders = ["user"],
-                                                                replacements = {"user": str(context.message.author.mention)}))
+                                                                replacements = {"user": context.message.author.mention}))
                 break
 
     @commands.command()
@@ -360,7 +360,7 @@ class Music(commands.Cog):
                                                                     replacements = {"index": index}))
         else: await context.reply(self.polished_message(message = server["strings"]["not_in_voice"],
                                                         placeholders = ["user"],
-                                                        replacements = {"user": str(context.message.author.mention)}))
+                                                        replacements = {"user": context.message.author.mention}))
 
     @commands.command()
     async def move(self, context, index, move_to_index):
