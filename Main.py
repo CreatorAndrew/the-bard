@@ -43,13 +43,11 @@ class Main(commands.Cog):
             yaml.dump(data, write_file, yaml.Dumper, indent = 4)
 
     @commands.command()
-    async def language(self, context, language_name = None):
+    async def language(self, context, name = None):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                invalid_command = server["strings"]["invalid_command"]
-                invalid_language = server["strings"]["invalid_language"]
-                language_file_exists = server["strings"]["language_file_exists"]
+                strings = server["strings"]
                 break
         if context.message.attachments:
             attachment = context.message.attachments[0]
@@ -61,26 +59,26 @@ class Main(commands.Cog):
                     try:
                         if content["strings"] is not None: pass
                     except:
-                        await context.reply(invalid_language.replace("%{language}", file))
+                        await context.reply(strings["invalid_language"].replace("%{language}", file))
                         return
                     with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.load(read_file, yaml.Loader)
                     for string in language_strings["names"]:
                         try:
                             if content["strings"][string] is not None: pass
                         except:
-                            await context.reply(invalid_language.replace("%{language}", file))
+                            await context.reply(strings["invalid_language"].replace("%{language}", file))
                             return
                     open(f"{self.language_directory}/{file}", "wb").write(response.content)
                 else:
-                    await context.reply(language_file_exists.replace("%{language}", file))
+                    await context.reply(strings["language_file_exists"].replace("%{language}", file))
                     return
                 # ensure that the attached YAML file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file}"): await asyncio.sleep(.1)
 
                 language = file.replace(".yaml", "")
-        elif language_name is not None: language = language_name
+        elif name is not None: language = name
         else:
-            await context.reply(invalid_command)
+            await context.reply(strings["invalid_command"])
             return
         with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
         for server in data["servers"]:
