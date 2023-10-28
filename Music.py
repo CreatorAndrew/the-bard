@@ -270,13 +270,15 @@ class Music(commands.Cog):
                         # add the song to the queue
                         server["queue"].append({"file": url, "name": name, "time": "0", "silence": False})
                     else:
+                        message = ""
                         for song in playlist:
-                            await context.reply(self.polished_message(message = server["strings"]["queue_add_song"],
-                                                                      placeholders = ["song", "index"],
-                                                                      replacements = {"song": self.polished_song_name(song["file"], song["name"]),
-                                                                                      "index": len(server['queue']) + 1}))
+                            message += self.polished_message(message = server["strings"]["queue_add_song"] + "\n",
+                                                             placeholders = ["song", "index"],
+                                                             replacements = {"song": self.polished_song_name(song["file"], song["name"]),
+                                                             "index": len(server['queue']) + 1})
                             # add the song to the queue
                             server["queue"].append(song)
+                        await context.reply(message)
                     if not server["connected"]:
                         voice = await voice_channel.connect()
                         server["connected"] = True
