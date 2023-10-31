@@ -468,7 +468,7 @@ class Music(commands.Cog):
         segments = []
         if ":" in time: segments = time.split(":")
         if len(segments) == 2: seconds = float(segments[0]) * 60 + float(segments[1])
-        elif len(segments) == 3: seconds = float(segments[0]) * 60 + float(segments[1]) * 60 + float(segments[2])
+        elif len(segments) == 3: seconds = float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
         else: seconds = float(time)
         for server in self.servers:
             if server["id"] == context.message.guild.id:

@@ -66,7 +66,7 @@ class Main(commands.Cog):
                         try:
                             if content["strings"][string] is not None: pass
                         except:
-                            await context.reply(strings["invalid_language"].replace("%{language}", file))
+                            await context.reply(strings["invalid_language_file"].replace("%{language}", file))
                             return
                     open(f"{self.language_directory}/{file}", "wb").write(response.content)
                 else:
@@ -76,7 +76,11 @@ class Main(commands.Cog):
                 while not os.path.exists(f"{self.language_directory}/{file}"): await asyncio.sleep(.1)
 
                 language = file.replace(".yaml", "")
-        elif name is not None: language = name
+        elif name is not None:
+            language = name
+            if not os.path.exists(f"{language}.yaml"):
+                await context.reply(strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention))
+                return
         else:
             await context.reply(strings["invalid_command"])
             return
@@ -97,7 +101,11 @@ class Main(commands.Cog):
     async def help(self, context):
         self.initialize_servers()
         for server in self.servers:
-            if server["id"] == context.message.guild.id: await context.send(server["strings"]["help"].replace("%{bot}", self.bot.user.mention))
+            if server["id"] == context.message.guild.id: 
+                await context.send(server["strings"]["help"].replace("%{bot}", self.bot.user.mention))
+                return
+        with open(f"{self.language_directory}/English.yaml", "r") as read_file: language = yaml.load(read_file, yaml.Loader)
+        await context.send(language["strings"]["help"].replace("%{bot}", self.bot.user.mention))
 
 intents = discord.Intents.default()
 intents.message_content = True
