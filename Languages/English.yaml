@@ -34,14 +34,13 @@ strings:
     keep: "%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing."
     now: "now"
     no_longer: "no longer"
-    whatever_voice: "whatever voice channel it's in"
+    whatever_voice: "whatever voice channel it is in"
     not_in_voice: "%{user} is not in a voice channel."
     language: "The language was changed to %{language}."
     invalid_language: "%{language} is not yet a language that %{bot} can translate to."
     invalid_language_file: "The file \"%{language}\" does not have sufficient data for a full translation."
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
-    help: "`+add_me` to allow audio to be played on this server
-         \n`+language <attached YAML or language name>` to change the language of %{bot}
+    help: "`+language <attached YAML or language name>` to change the language of %{bot}
          \n`+playlist [add <name> | rename <index or name to rename from> <name to rename to>
          | remove <index or name> | load <index or name> | list | <index or name> [add <attached file or url> <name (optional)> <index (optional)>
          | move <index to move from> <index to move to> | rename <index> <name> | remove <index> | list]]` to interact with playlists
