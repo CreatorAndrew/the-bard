@@ -17,11 +17,11 @@ class Main(commands.Cog):
 
     # initialize any registered Discord servers that weren't previously initialized
     def initialize_servers(self):
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         if len(self.servers) < len(data["servers"]):
             ids = []
             for server in data["servers"]:
-                with open(f"{self.language_directory}/{server['language']}.yaml", "r") as read_file: language = yaml.load(read_file, yaml.Loader)
+                with open(f"{self.language_directory}/{server['language']}.yaml", "r") as read_file: language = yaml.safe_load(read_file)
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"], "strings": language["strings"]})
         elif len(self.servers) > len(data["servers"]):
@@ -53,7 +53,7 @@ class Main(commands.Cog):
                     except:
                         await context.reply(strings["invalid_language"].replace("%{language}", file))
                         return
-                    with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.load(read_file, yaml.Loader)
+                    with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.safe_load(read_file)
                     for string in language_strings["names"]:
                         try:
                             if content["strings"][string] is not None: pass
@@ -81,14 +81,14 @@ class Main(commands.Cog):
             with open(f"{self.language_directory}/{default_language_file}", "r") as read_file:
                 await context.reply(content=strings["invalid_command"], file=discord.File(read_file, filename=default_language_file))
             return
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         for server in data["servers"]:
             if server["id"] == context.message.guild.id:
-                with open(f"{self.language_directory}/{language}.yaml", "r") as read_file: language_data = yaml.load(read_file, yaml.Loader)
+                with open(f"{self.language_directory}/{language}.yaml", "r") as read_file: language_data = yaml.safe_load(read_file)
                 self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
                 server["language"] = language
                 # modify the YAML file to reflect the change of language
-                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent=4)
+                with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
 
                 language_message = self.servers[data["servers"].index(server)]["strings"]["language"]
                 break
@@ -105,7 +105,7 @@ class Main(commands.Cog):
     # add a Discord server that added this bot to the YAML file
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         with open(self.config, "w") as write_file:
             ids = []
             for server in data["servers"]: ids.append(server["id"])
@@ -117,17 +117,17 @@ class Main(commands.Cog):
                                         "playlists": [],
                                         "users": [],
                                         "role": None})
-            yaml.dump(data, write_file, yaml.Dumper, indent=4)
+            yaml.safe_dump(data, write_file, indent=4)
 
     # remove a Discord server that removed this bot from the YAML file
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         with open(self.config, "w") as write_file:
             ids = []
             for server in data["servers"]: ids.append(server["id"])
             if guild.id in ids: data["servers"].remove(data["servers"][ids.index(guild.id)])
-            yaml.dump(data, write_file, yaml.Dumper, indent=4)
+            yaml.safe_dump(data, write_file, indent=4)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -144,7 +144,7 @@ default_language_file = "English.yaml"
 async def on_ready(): print(f"Logged in as {bot.user}")
 
 async def main():
-    with open("Token.yaml", "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+    with open("Token.yaml", "r") as read_file: data = yaml.safe_load(read_file)
     async with bot:
         await bot.add_cog(Main(bot, config, language_directory))
         await bot.add_cog(Music(bot, config, language_directory))

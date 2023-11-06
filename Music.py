@@ -1,13 +1,9 @@
-import platform
 import requests
 import yaml
 import asyncio
 import discord
 from discord.ext import commands
-if platform.system() == "Windows":
-    import json
-    from subprocess import check_output
-else: from pymediainfo import MediaInfo
+from subprocess import check_output
 
 class Music(commands.Cog):
     def __init__(self, bot, config, language_directory):
@@ -18,23 +14,14 @@ class Music(commands.Cog):
 
     def polished_song_name(self, file, name):
         if name is None:
-            if platform.system() == "Windows":
-                info = json.loads(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))
-                for track in info["media"]["track"]:
-                    if track["@type"] == "General":
-                        try: name = track["Title"]
+            for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
+                if track["@type"] == "General":
+                    try: name = track["Title"]
+                    except:
+                        try: name = track["Track"]
                         except:
-                            try: name = track["Track"]
-                            except:
-                                try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
-                                except: name = file[file.rindex("/") + 1:].replace("_", " ")
-            else:   
-                for track in MediaInfo.parse(file).tracks:
-                    if track.to_data()["track_type"] == "General":
-                        try: name = track.to_data()["title"]
-                        except:
-                            try: name = track.to_data()["track_name"]
-                            except: name = track.to_data()["file_name"].replace("_", " ")
+                            try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
+                            except: name = file[file.rindex("/") + 1:].replace("_", " ")
         return name + " (" + file + ")"
 
     def polished_message(self, message, placeholders, replacements):
@@ -45,11 +32,11 @@ class Music(commands.Cog):
 
     # initialize any registered Discord servers that weren't previously initialized
     def initialize_servers(self):
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         if len(self.servers) < len(data["servers"]):
             ids = []
             for server in data["servers"]:
-                with open(f"{self.language_directory}/{server['language']}.yaml", "r") as read_file: language = yaml.load(read_file, yaml.Loader)
+                with open(f"{self.language_directory}/{server['language']}.yaml", "r") as read_file: language = yaml.safe_load(read_file)
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"],
                                                                  "strings": language["strings"],
@@ -83,7 +70,7 @@ class Music(commands.Cog):
             if server["id"] == context.message.guild.id:
                 strings = server["strings"]
                 break
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         for server in data["servers"]:
             if server["id"] == context.message.guild.id:
                 playlists = []
@@ -274,7 +261,7 @@ class Music(commands.Cog):
                                                                   replacements={"playlist": args[0]}))
                         return
                 # modify the YAML file to reflect changes regarding playlists
-                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent=4)
+                with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
                 break
 
     @commands.command()
@@ -573,13 +560,13 @@ class Music(commands.Cog):
             if server["id"] == context.message.guild.id:
                 strings = server["strings"]
                 break
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         for server in data["servers"]:
             if server["id"] == context.message.guild.id:
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
                 # modify the YAML file to reflect the change of whether playlist looping is enabled or disabled
-                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent=4)
+                with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
 
                 if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
                 break
@@ -636,13 +623,13 @@ class Music(commands.Cog):
             if server["id"] == context.message.guild.id:
                 strings = server["strings"]
                 break
-        with open(self.config, "r") as read_file: data = yaml.load(read_file, yaml.Loader)
+        with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         for server in data["servers"]:
             if server["id"] == context.message.guild.id:
                 keep = not server["keep"]
                 server["keep"] = keep
                 # modify the YAML file to reflect the change of whether to keep this bot in a voice call when no audio is playing
-                with open(self.config, "w") as write_file: yaml.dump(data, write_file, yaml.Dumper, indent=4)
+                with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
 
                 if self.servers: self.servers[data["servers"].index(server)]["keep"] = keep
                 break
