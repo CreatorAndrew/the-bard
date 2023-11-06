@@ -13,15 +13,18 @@ For Debian-based distros:
 For Fedora-based distros:
 `sudo dnf install ffmpeg mediainfo`
 
-For macOS (using Homebrew)
+For macOS (using Homebrew):
 `brew install ffmpeg mediainfo`
 
-For macOS (using MacPorts)
+For macOS (using MacPorts):
 `sudo port install ffmpeg mediainfo`
 
-For Windows:
-Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` directory to your `PATH` environment variable.
-Download and install MediaInfo from https://mediaarea.net/en/MediaInfo/Download/Windows
+For Windows (using Chocolatey):
+`choco install ffmpeg mediainfo-cli`
+
+For Windows (Manual):
+Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` subfolder to your `PATH` environment variable.
+Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Download/Windows and add the folder to your `PATH` environment variable.
 
 Also make sure to grab the following Python dependencies (see the command below):
 
