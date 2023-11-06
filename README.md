@@ -28,7 +28,7 @@ Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Downloa
 
 Also make sure to grab the following Python dependencies (see the command below):
 
-`pip3 install requests PyYAML pymediainfo discord.py[voice]`
+`pip3 install requests PyYAML discord.py[voice]`
 
 To run it, type the following in Command Prompt or Terminal at the project's directory:
 
