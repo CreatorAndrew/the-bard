@@ -116,7 +116,7 @@ class Music(commands.Cog):
                 elif args[0] == "load":
                     if len(args) == 2:
                         index = index_or_name(args[1], playlists)
-                        await self.play_song(context, playlist = server["playlists"][index]["songs"])
+                        await self.play_song(context, playlist=server["playlists"][index]["songs"])
                         return
                 # return a list of playlists for the calling Discord server
                 elif args[0] == "list":
@@ -155,28 +155,29 @@ class Music(commands.Cog):
                                 else:
                                     await context.reply(strings["invalid_command"])
                                     return
-                                if len(args) == 3 and context.message.attachments: playlist = add_song_index_or_name(args[2], server, playlist_index)
-                                elif len(args) == 4 and not context.message.attachments: playlist = add_song_index_or_name(args[3], server, playlist_index)
-                                elif len(args) == 4: playlist = {"name": args[2], "index": int(args[3])}
-                                elif len(args) == 5: playlist = {"name": args[3], "index": int(args[4])}
+                                if len(args) == 2 and context.message.attachments: song = {"name": None, "index": len(server["playlists"][playlist_index]["songs"]) + 1}
+                                elif len(args) == 3 and context.message.attachments: song = add_song_index_or_name(args[2], server, playlist_index)
+                                elif len(args) == 4 and not context.message.attachments: song = add_song_index_or_name(args[3], server, playlist_index)
+                                elif len(args) == 4: song = {"name": args[2], "index": int(args[3])}
+                                elif len(args) == 5: song = {"name": args[3], "index": int(args[4])}
                                 response = requests.get(url, stream = True)
                                 # verify that the URL file is a media container
                                 if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                                     await context.reply(self.polished_message(message=strings["not_media"],
                                                                               placeholders=["song"],
-                                                                              replacements={"song": self.polished_song_name(url, playlist["name"])}))
+                                                                              replacements={"song": self.polished_song_name(url, song["name"])}))
                                     return
 
-                                server["playlists"][playlist_index]["songs"].insert(playlist["index"] - 1, {"file": url,
-                                                                                                            "name": playlist["name"],
-                                                                                                            "time": "0",
-                                                                                                            "silence": False})
+                                server["playlists"][playlist_index]["songs"].insert(song["index"] - 1, {"file": url,
+                                                                                                        "name": song["name"],
+                                                                                                        "time": "0",
+                                                                                                        "silence": False})
                                 await context.reply(self.polished_message(message=strings["playlist_add_song"],
                                                                           placeholders=["playlist", "playlist_index", "song", "index"],
                                                                           replacements={"playlist": playlists[playlist_index],
                                                                                         "playlist_index": playlist_index + 1,
-                                                                                        "song": self.polished_song_name(url, playlist["name"]),
-                                                                                        "index": playlist["index"]}))
+                                                                                        "song": self.polished_song_name(url, song["name"]),
+                                                                                        "index": song["index"]}))
                             # handle moving the position of a track within the playlist
                             elif args[1] == "move":
                                 if len(args) == 4:
@@ -280,7 +281,7 @@ class Music(commands.Cog):
         elif len(args) == 2: await self.play_song(context, args[0], args[1])
         else: await context.reply(invalid_command)
 
-    async def play_song(self, context, url=None, name=None, playlist = []):
+    async def play_song(self, context, url=None, name=None, playlist=[]):
         async def add_time(server, time): server["time"] += time
         for server in self.servers:
             if server["id"] == context.message.guild.id:
