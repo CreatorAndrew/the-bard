@@ -1,7 +1,7 @@
+import platform
 import requests
 import yaml
 import asyncio
-import platform
 import discord
 from discord.ext import commands
 if platform.system() == "Windows":
