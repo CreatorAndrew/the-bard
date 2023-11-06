@@ -1,9 +1,13 @@
 import requests
 import yaml
 import asyncio
+import platform
 import discord
 from discord.ext import commands
-from pymediainfo import MediaInfo
+if platform.system() == "Windows":
+    import json
+    from subprocess import check_output
+else: from pymediainfo import MediaInfo
 
 class Music(commands.Cog):
     def __init__(self, bot, config, language_directory):
@@ -14,12 +18,23 @@ class Music(commands.Cog):
 
     def polished_song_name(self, file, name):
         if name is None:
-            for track in MediaInfo.parse(file).tracks:
-                try:
-                    if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
-                except:
-                    try: name = track.to_data()["track_name"]
-                    except: name = track.to_data()["file_name"].replace("_", " ")
+            if platform.system() == "Windows":
+                info = json.loads(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))
+                for track in info["media"]["track"]:
+                    if track["@type"] == "General":
+                        try: name = track["Title"]
+                        except:
+                            try: name = track["Track"]
+                            except:
+                                try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
+                                except: name = file[file.rindex("/") + 1:].replace("_", " ")
+            else:   
+                for track in MediaInfo.parse(file).tracks:
+                    if track.to_data()["track_type"] == "General":
+                        try: name = track.to_data()["title"]
+                        except:
+                            try: name = track.to_data()["track_name"]
+                            except: name = track.to_data()["file_name"].replace("_", " ")
         return name + " (" + file + ")"
 
     def polished_message(self, message, placeholders, replacements):
