@@ -123,8 +123,8 @@ class Music(commands.Cog):
                 elif args[0] == "load":
                     if len(args) == 2:
                         index = index_or_name(args[1], playlists)
-                        await self.play_song(context, playlist=server["playlists"][index]["songs"])
                         self.lock.release()
+                        await self.play_song(context, playlist=server["playlists"][index]["songs"])
                         return
                 # return a list of playlists for the calling Discord server
                 elif args[0] == "list":
