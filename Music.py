@@ -62,6 +62,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def playlist(self, context, *args):
+        self.lock.acquire()
         def index_or_name(arg, playlists):
             try: return int(arg) - 1
             except ValueError: return playlists.index(arg)
@@ -89,6 +90,7 @@ class Music(commands.Cog):
                                                                                 "playlist_index": len(server["playlists"])}))
                     else:
                         await context.reply(strings["invalid_command"])
+                        self.lock.release()
                         return
                 # rename a playlist
                 elif args[0] == "rename":
@@ -102,6 +104,7 @@ class Music(commands.Cog):
                         server["playlists"][index]["name"] = args[2]
                     else:
                         await context.reply(strings["invalid_command"])
+                        self.lock.release()
                         return
                 # remove a playlist
                 elif args[0] == "remove":
@@ -114,12 +117,14 @@ class Music(commands.Cog):
                                                                                 "playlist_index": index + 1}))
                     else:
                         await context.reply(strings["invalid_command"])
+                        self.lock.release()
                         return
                 # load a playlist
                 elif args[0] == "load":
                     if len(args) == 2:
                         index = index_or_name(args[1], playlists)
                         await self.play_song(context, playlist=server["playlists"][index]["songs"])
+                        self.lock.release()
                         return
                 # return a list of playlists for the calling Discord server
                 elif args[0] == "list":
@@ -127,6 +132,7 @@ class Music(commands.Cog):
                     if server["playlists"]: message += strings["playlists_header"] + "\n"
                     else:
                         await context.reply(strings["no_playlists"])
+                        self.lock.release()
                         return
                     index = 0
                     while index < len(server["playlists"]):
@@ -143,6 +149,7 @@ class Music(commands.Cog):
                                                                           "playlist_index": index + 1})
                         index += 1
                     await context.reply(message)
+                    self.lock.release()
                     return
                 # take a playlist name or index as the first argument and make arguments after it have to do with the playlist
                 else:
@@ -155,6 +162,7 @@ class Music(commands.Cog):
                                     await context.reply(self.polished_message(message=strings["invalid_playlist_number"],
                                                                               placeholders=["playlist_index"],
                                                                               replacements={"placeholders": playlist_index + 1}))
+                                    self.lock.release()
                                     return
                             # an existent playlist name is entered
                             except ValueError: playlist_index = playlists.index(args[0])
@@ -164,6 +172,7 @@ class Music(commands.Cog):
                                 elif len(args) < 5 and context.message.attachments: url = str(context.message.attachments[0])
                                 else:
                                     await context.reply(strings["invalid_command"])
+                                    self.lock.release()
                                     return
                                 if len(args) == 2 and context.message.attachments: song = {"name": None, "index": len(server["playlists"][playlist_index]["songs"]) + 1}
                                 elif len(args) == 3 and context.message.attachments: song = add_song_index_or_name(args[2], server, playlist_index)
@@ -178,6 +187,7 @@ class Music(commands.Cog):
                                     await context.reply(self.polished_message(message=strings["not_media"],
                                                                               placeholders=["song"],
                                                                               replacements={"song": self.polished_song_name(url, song["name"])}))
+                                    self.lock.release()
                                     return
 
                                 server["playlists"][playlist_index]["songs"].insert(song["index"] - 1, {"file": url,
@@ -205,6 +215,7 @@ class Music(commands.Cog):
                                                                                             "index": args[3]}))
                                 else:
                                     await context.reply(strings["invalid_command"])
+                                    self.lock.release()
                                     return
                             # handle renaming a track in the playlist
                             elif args[1] == "rename":
@@ -220,6 +231,7 @@ class Music(commands.Cog):
                                     song["name"] = args[3]
                                 else:
                                     await context.reply(strings["invalid_command"])
+                                    self.lock.release()
                                     return
                             # handle removing a track from the playlist
                             elif args[1] == "remove":
@@ -234,6 +246,7 @@ class Music(commands.Cog):
                                                                                             "index": args[2]}))
                                 else:
                                     await context.reply(strings["invalid_command"])
+                                    self.lock.release()
                                     return
                             # return a list of tracks in the playlist
                             elif args[1] == "list":
@@ -246,12 +259,14 @@ class Music(commands.Cog):
                                                                                        "playlist_index": playlist_index + 1})
                                     else:
                                         await context.reply(strings["no_playlists"])
+                                        self.lock.release()
                                         return
                                 else:
                                     await context.reply(self.polished_message(message=strings["playlist_no_songs"],
                                                                               placeholders=["playlist", "playlist_index"],
                                                                               replacements={"playlist": playlists[playlist_index],
                                                                                             "playlist_index": playlist_index + 1}))
+                                    self.lock.release()
                                     return
                                 index = 0
                                 while index < len(server["playlists"][playlist_index]["songs"]):
@@ -274,22 +289,24 @@ class Music(commands.Cog):
                                                                                       "index": index + 1})
                                     index += 1
                                 await context.reply(message)
+                                self.lock.release()
                                 return
                             else:
                                 await context.reply(strings["invalid_command"])
+                                self.lock.release()
                                 return
                     # a playlist name is entered, but a playlist of that name does not exist
                     except ValueError:
                         await context.reply(self.polished_message(message=strings["invalid_playlist"],
                                                                   placeholders=["playlist"],
                                                                   replacements={"playlist": args[0]}))
+                        self.lock.release()
                         return
                 # modify the YAML file to reflect changes regarding playlists
-                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
-                self.lock.release()
 
                 break
+        self.lock.release()
 
     @commands.command()
     async def play(self, context, *args):
@@ -599,6 +616,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def loop(self, context):
+        self.lock.acquire()
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
@@ -610,9 +628,7 @@ class Music(commands.Cog):
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
                 # modify the YAML file to reflect the change of whether playlist looping is enabled or disabled
-                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
-                self.lock.release()
 
                 if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
                 break
@@ -621,6 +637,7 @@ class Music(commands.Cog):
         await context.reply(self.polished_message(message=strings["repeat"],
                                                   placeholders=["now_or_no_longer"],
                                                   replacements={"now_or_no_longer": now_or_no_longer}))
+        self.lock.release()
 
     @commands.command()
     async def queue(self, context):
@@ -683,6 +700,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def keep(self, context):
+        self.lock.acquire()
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
@@ -694,9 +712,7 @@ class Music(commands.Cog):
                 keep = not server["keep"]
                 server["keep"] = keep
                 # modify the YAML file to reflect the change of whether to keep this bot in a voice call when no audio is playing
-                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
-                self.lock.release()
 
                 if self.servers: self.servers[data["servers"].index(server)]["keep"] = keep
                 break
@@ -709,6 +725,7 @@ class Music(commands.Cog):
                                                   replacements={"bot": self.bot.user.mention,
                                                                 "voice": voice_channel,
                                                                 "now_or_no_longer": now_or_no_longer}))
+        self.lock.release()
 
     @commands.command()
     async def dismiss(self, context): await self.stop_music(context, True)
