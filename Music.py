@@ -12,17 +12,19 @@ class Music(commands.Cog):
         self.language_directory = language_directory
         self.config = config
 
-    def polished_song_name(self, file, name):
-        if name is None:
-            for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
-                if track["@type"] == "General":
-                    try: name = track["Title"]
-                    except:
-                        try: name = track["Track"]
-                        except:
-                            try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
-                            except: name = file[file.rindex("/") + 1:].replace("_", " ")
-        return name + " (" + file + ")"
+    def get_metadata(self, file):
+        for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
+            try: name = track["Title"]
+            except:
+                try: name = track["Track"]
+                except:
+                    try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
+                    except: name = file[file.rindex("/") + 1:].replace("_", " ")
+            try: duration = float(track["Duration"])
+            except: duration = .0
+            return {"name": name, "duration": duration}
+
+    def polished_song_name(self, file, name): return name + " (" + file + ")"
 
     def polished_message(self, message, placeholders, replacements):
         for placeholder in placeholders:
@@ -160,6 +162,8 @@ class Music(commands.Cog):
                                 elif len(args) == 4 and not context.message.attachments: song = add_song_index_or_name(args[3], server, playlist_index)
                                 elif len(args) == 4: song = {"name": args[2], "index": int(args[3])}
                                 elif len(args) == 5: song = {"name": args[3], "index": int(args[4])}
+                                if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
+                                song["duration"] = self.get_metadata(url)["duration"]
                                 response = requests.get(url, stream = True)
                                 # verify that the URL file is a media container
                                 if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
@@ -171,6 +175,7 @@ class Music(commands.Cog):
                                 server["playlists"][playlist_index]["songs"].insert(song["index"] - 1, {"file": url,
                                                                                                         "name": song["name"],
                                                                                                         "time": "0",
+                                                                                                        "duration": song["duration"],
                                                                                                         "silence": False})
                                 await context.reply(self.polished_message(message=strings["playlist_add_song"],
                                                                           placeholders=["playlist", "playlist_index", "song", "index"],
@@ -289,6 +294,7 @@ class Music(commands.Cog):
                 except: voice_channel = None
                 if voice_channel is not None:
                     if url is not None:
+                        if name is None: name = self.get_metadata(url)["name"]
                         response = requests.get(url, stream=True)
                         # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
@@ -301,7 +307,7 @@ class Music(commands.Cog):
                                                                   replacements={"song": self.polished_song_name(url, name),
                                                                                 "index": len(server['queue']) + 1}))
                         # add the track to the queue
-                        server["queue"].append({"file": url, "name": name, "time": "0", "silence": False})
+                        server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
                     else:
                         message = ""
                         for song in playlist:
@@ -375,6 +381,7 @@ class Music(commands.Cog):
             for server in self.servers:
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 2:
+                        if name is None: name = self.get_metadata(url)["name"]
                         response = requests.get(url, stream=True)
                         # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
@@ -551,7 +558,8 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                if server["queue"]: await context.reply(convert_to_time(server["time"]))
+                if server["queue"]: await context.reply(convert_to_time(server["time"]) + " / " +
+                                                        convert_to_time(server["queue"][server["index"]]["duration"]))
                 else: await context.reply(server["strings"]["queue_no_songs"])
 
     @commands.command()
@@ -596,6 +604,18 @@ class Music(commands.Cog):
                                                                    "index": index + 1})
                     index += 1
                 await context.reply(message)
+
+    @commands.command()
+    async def what(self, context):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.message.guild.id:
+                await context.reply(self.polished_message(message=server["strings"]["now_playing"],
+                                                          placeholders=["song", "index", "max"],
+                                                          replacements={"song": self.polished_song_name(server["queue"][server["index"]]["file"],
+                                                                                                        server["queue"][server["index"]]["name"]),
+                                                                        "index": server["index"] + 1,
+                                                                        "max": len(server['queue'])}))
 
     @commands.command()
     async def volume(self, context, *args):

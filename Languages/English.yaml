@@ -59,6 +59,14 @@ strings:
          \n`+when` to show how far %{bot} is into the current track
          \n`+loop` to toggle whether playlists repeat
          \n`+queue` to look at the list of tracks to be played
+         \n`+what` to show the current track
          \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
          \n`+dismiss` to kick %{bot} from a voice channel"
+    role_change: "The paying role for a user catching a drink is now %{role}."
+    already_rolled: "%{user} has already rolled in the month of %{month}."
+    win: "Alright, pay up, %{role}."
+    loss:
+    -   "Better luck next time!"
+    -   "Hey, maybe try catching the damn thing, ah?"
+    -   "_sigh_ Alright asshole, you're cleaning that up!"
