@@ -6,11 +6,12 @@ from discord.ext import commands
 from subprocess import check_output
 
 class Music(commands.Cog):
-    def __init__(self, bot, config, language_directory):
+    def __init__(self, bot, config, language_directory, lock):
+        self.lock = lock
         self.bot = bot
         self.servers = []
-        self.language_directory = language_directory
         self.config = config
+        self.language_directory = language_directory
 
     def get_metadata(self, file):
         for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
@@ -129,10 +130,17 @@ class Music(commands.Cog):
                         return
                     index = 0
                     while index < len(server["playlists"]):
+                        previous_message = "" + message
                         message += self.polished_message(message=strings["playlist"] + "\n",
                                                          placeholders=["playlist", "playlist_index"],
                                                          replacements={"playlist": playlists[index],
                                                                        "playlist_index": index + 1})
+                        if len(message) > 2000:
+                            await context.reply(previous_message)
+                            message = self.polished_message(message=strings["playlist"] + "\n",
+                                                            placeholders=["playlist", "playlist_index"],
+                                                            replacements={"playlist": playlists[index],
+                                                                          "playlist_index": index + 1})
                         index += 1
                     await context.reply(message)
                     return
@@ -247,6 +255,7 @@ class Music(commands.Cog):
                                     return
                                 index = 0
                                 while index < len(server["playlists"][playlist_index]["songs"]):
+                                    previous_message = "" + message
                                     message += self.polished_message(message=strings["song"] + "\n",
                                                                      placeholders=["song", "index"],
                                                                      replacements={"song": self.polished_song_name(server["playlists"][playlist_index]
@@ -254,6 +263,15 @@ class Music(commands.Cog):
                                                                                                                    server["playlists"][playlist_index]
                                                                                                                          ["songs"][index]["name"]),
                                                                                    "index": index + 1})
+                                    if len(message) > 2000:
+                                        await context.reply(previous_message)
+                                        message = self.polished_message(message=strings["song"] + "\n",
+                                                                        placeholders=["song", "index"],
+                                                                        replacements={"song": self.polished_song_name(server["playlists"][playlist_index]
+                                                                                                                            ["songs"][index]["file"],
+                                                                                                                      server["playlists"][playlist_index]
+                                                                                                                            ["songs"][index]["name"]),
+                                                                                      "index": index + 1})
                                     index += 1
                                 await context.reply(message)
                                 return
@@ -267,7 +285,10 @@ class Music(commands.Cog):
                                                                   replacements={"playlist": args[0]}))
                         return
                 # modify the YAML file to reflect changes regarding playlists
+                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
+                self.lock.release()
+
                 break
 
     @commands.command()
@@ -311,10 +332,18 @@ class Music(commands.Cog):
                     else:
                         message = ""
                         for song in playlist:
+                            previous_message = "" + message
                             message += self.polished_message(message=server["strings"]["queue_add_song"] + "\n",
                                                              placeholders=["song", "index"],
                                                              replacements={"song": self.polished_song_name(song["file"], song["name"]),
                                                                            "index": len(server['queue']) + 1})
+                            if len(message) > 2000:
+                                await context.reply(previous_message)
+                                message = self.polished_message(message=server["strings"]["queue_add_song"] + "\n",
+                                                                placeholders=["song", "index"],
+                                                                replacements={"song": self.polished_song_name(song["file"], song["name"]),
+                                                                              "index": len(server['queue']) + 1})
+                            
                             # add the track to the queue
                             server["queue"].append(song)
                         await context.reply(message)
@@ -581,7 +610,9 @@ class Music(commands.Cog):
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
                 # modify the YAML file to reflect the change of whether playlist looping is enabled or disabled
+                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
+                self.lock.release()
 
                 if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
                 break
@@ -604,10 +635,17 @@ class Music(commands.Cog):
                     return
                 index = 0
                 while index < len(server["queue"]):
+                    previous_message = "" + message
                     message += self.polished_message(message=server["strings"]["song"] + "\n",
                                                      placeholders=["song", "index"],
                                                      replacements={"song": self.polished_song_name(server["queue"][index]["file"], server["queue"][index]["name"]),
                                                                    "index": index + 1})
+                    if len(message) > 2000:
+                        await context.reply(previous_message)
+                        message = self.polished_message(message=server["strings"]["song"] + "\n",
+                                                        placeholders=["song", "index"],
+                                                        replacements={"song": self.polished_song_name(server["queue"][index]["file"], server["queue"][index]["name"]),
+                                                                      "index": index + 1})
                     index += 1
                 await context.reply(message)
 
@@ -656,7 +694,9 @@ class Music(commands.Cog):
                 keep = not server["keep"]
                 server["keep"] = keep
                 # modify the YAML file to reflect the change of whether to keep this bot in a voice call when no audio is playing
+                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
+                self.lock.release()
 
                 if self.servers: self.servers[data["servers"].index(server)]["keep"] = keep
                 break

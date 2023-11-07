@@ -3,16 +3,18 @@ import shutil
 import requests
 import yaml
 import asyncio
+import threading
 import discord
 from discord.ext import commands
 from Music import Music
 
 class Main(commands.Cog):
-    def __init__(self, bot, config, language_directory):
+    def __init__(self, bot, config, language_directory, lock):
+        self.lock = lock
         self.bot = bot
         self.servers = []
-        self.language_directory = language_directory
         self.config = config
+        self.language_directory = language_directory
         if not os.path.exists(self.config): shutil.copyfile(self.config.replace(".yaml", "") + "Default.yaml", self.config)
 
     # initialize any registered Discord servers that weren't previously initialized
@@ -88,7 +90,9 @@ class Main(commands.Cog):
                 self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
                 server["language"] = language
                 # modify the YAML file to reflect the change of language
+                self.lock.acquire()
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
+                self.lock.release()
 
                 language_message = self.servers[data["servers"].index(server)]["strings"]["language"]
                 break
@@ -117,7 +121,9 @@ class Main(commands.Cog):
                                         "playlists": [],
                                         "users": [],
                                         "role": None})
+            self.lock.acquire()
             yaml.safe_dump(data, write_file, indent=4)
+            self.lock.release()
 
     # remove a Discord server that removed this bot from the YAML file
     @commands.Cog.listener()
@@ -127,7 +133,9 @@ class Main(commands.Cog):
             ids = []
             for server in data["servers"]: ids.append(server["id"])
             if guild.id in ids: data["servers"].remove(data["servers"][ids.index(guild.id)])
+            self.lock.acquire()
             yaml.safe_dump(data, write_file, indent=4)
+            self.lock.release()
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -136,6 +144,7 @@ intents.guilds = True
 bot = commands.Bot(command_prefix = "+", intents = intents)
 bot.remove_command("help")
 
+lock = threading.Lock()
 config = "Servers.yaml"
 language_directory = "Languages"
 default_language_file = "English.yaml"
@@ -146,8 +155,8 @@ async def on_ready(): print(f"Logged in as {bot.user}")
 async def main():
     with open("Token.yaml", "r") as read_file: data = yaml.safe_load(read_file)
     async with bot:
-        await bot.add_cog(Main(bot, config, language_directory))
-        await bot.add_cog(Music(bot, config, language_directory))
+        await bot.add_cog(Main(bot, config, language_directory, lock))
+        await bot.add_cog(Music(bot, config, language_directory, lock))
         await bot.start(data["token"])
 
 asyncio.run(main())
