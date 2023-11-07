@@ -374,7 +374,7 @@ class Music(commands.Cog):
         elif len(args) == 3: await self.insert_song(context, args[0], args[1], args[2])
         else: await context.reply(invalid_command)
 
-    async def insert_song(self, context, url, name, index, time="0", silence=False):
+    async def insert_song(self, context, url, name, index, time="0", duration=None, silence=False):
         try: voice_channel = context.message.author.voice.channel
         except: voice_channel = None
         if voice_channel is not None:
@@ -382,6 +382,7 @@ class Music(commands.Cog):
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 2:
                         if name is None: name = self.get_metadata(url)["name"]
+                        if duration is None: duration = self.get_metadata(url)["duration"]
                         response = requests.get(url, stream=True)
                         # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
@@ -390,7 +391,11 @@ class Music(commands.Cog):
                                                                       replacements={"song": self.polished_song_name(url, name)}))
                             return
                         # add the track to the queue
-                        server["queue"].insert(int(index) - 1, {"file": url, "name": name, "time": time, "silence": silence})
+                        server["queue"].insert(int(index) - 1, {"file": url,
+                                                                "name": name,
+                                                                "time": time,
+                                                                "duration": duration,
+                                                                "silence": silence})
                         if int(index) - 1 <= server["index"]: server["index"] += 1
                         if not silence: await context.reply(self.polished_message(message=server["strings"]["queue_insert_song"],
                                                                                   placeholders=["song", "index"],
@@ -518,6 +523,7 @@ class Music(commands.Cog):
                                                server["queue"][server["index"]]["file"],
                                                server["queue"][server["index"]]["name"],
                                                server["index"] + 2, seconds,
+                                               server["queue"][server["index"]]["duration"],
                                                True)
                         await self.remove_song(context, server["index"] + 1, True)
                     else: await context.reply(server["strings"]["queue_no_songs"])
