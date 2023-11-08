@@ -360,7 +360,6 @@ class Music(commands.Cog):
                                                                 placeholders=["song", "index"],
                                                                 replacements={"song": self.polished_song_name(song["file"], song["name"]),
                                                                               "index": len(server['queue']) + 1})
-                            
                             # add the track to the queue
                             server["queue"].append(song)
                         await context.reply(message)
@@ -563,17 +562,18 @@ class Music(commands.Cog):
         else: seconds = float(time)
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                    if server["queue"]:
-                        server["time"] = seconds
-                        await self.insert_song(context,
-                                               server["queue"][server["index"]]["file"],
-                                               server["queue"][server["index"]]["name"],
-                                               server["index"] + 2, seconds,
-                                               server["queue"][server["index"]]["duration"],
-                                               True)
-                        await self.remove_song(context, server["index"] + 1, True)
-                    else: await context.reply(server["strings"]["queue_no_songs"])
-                    break
+                if server["queue"]:
+                    server["time"] = seconds
+                    await self.insert_song(context,
+                                           server["queue"][server["index"]]["file"],
+                                           server["queue"][server["index"]]["name"],
+                                           server["index"] + 2,
+                                           seconds,
+                                           server["queue"][server["index"]]["duration"],
+                                           True)
+                    await self.remove_song(context, server["index"] + 1, True)
+                else: await context.reply(server["strings"]["queue_no_songs"])
+                break
 
     @commands.command()
     async def forward(self, context, time):
@@ -610,8 +610,7 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                if server["queue"]: await context.reply(convert_to_time(server["time"]) + " / " +
-                                                        convert_to_time(server["queue"][server["index"]]["duration"]))
+                if server["queue"]: await context.reply(convert_to_time(server["time"]) + " / " + convert_to_time(server["queue"][server["index"]]["duration"]))
                 else: await context.reply(server["strings"]["queue_no_songs"])
 
     @commands.command()
@@ -679,21 +678,21 @@ class Music(commands.Cog):
                                                                         "max": len(server['queue'])}))
 
     @commands.command()
-    async def volume(self, context, *args):
+    async def volume(self, context, volume=None):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                if args:
-                    if args[0].endswith("%"): server["volume"] = float(args[0].replace("%", "")) / 100
-                    else: server["volume"] = float(args[0])
+                if volume is not None:
+                    if volume.endswith("%"): server["volume"] = float(volume.replace("%", "")) / 100
+                    else: server["volume"] = float(volume)
                     if context.voice_client is not None:
                         if context.voice_client.is_playing(): context.voice_client.source.volume = server["volume"]
                 volume_percent = server["volume"] * 100
                 if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
-                if args: await context.reply(self.polished_message(message=server["strings"]["volume_change"],
-                                                                   placeholders=["volume"],
-                                                                   replacements={"volume": str(volume_percent) + "%"}))
-                else: await context.reply(self.polished_message(message=server["strings"]["volume"],
+                if volume is None: await context.reply(self.polished_message(message=server["strings"]["volume"],
+                                                                             placeholders=["volume"],
+                                                                             replacements={"volume": str(volume_percent) + "%"}))
+                else: await context.reply(self.polished_message(message=server["strings"]["volume_change"],
                                                                 placeholders=["volume"],
                                                                 replacements={"volume": str(volume_percent) + "%"}))
                 break
