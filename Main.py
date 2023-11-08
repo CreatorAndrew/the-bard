@@ -79,7 +79,7 @@ class Main(commands.Cog):
                 language = file.replace(".yaml", "")
         elif name is not None:
             language = name
-            if not os.path.exists(f"{language}.yaml"):
+            if not os.path.exists(f"{self.language_directory}/{language}.yaml"):
                 with open(f"{self.language_directory}/{current_language_file}", "r") as read_file:
                     await context.reply(content=strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
                                         file=discord.File(read_file, filename=current_language_file))
@@ -95,6 +95,7 @@ class Main(commands.Cog):
                 with open(f"{self.language_directory}/{language}.yaml", "r") as read_file: language_data = yaml.safe_load(read_file)
                 self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
                 server["language"] = language
+                self.servers[data["servers"].index(server)]["language"] = language
                 # modify the YAML file to reflect the change of language
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
 
