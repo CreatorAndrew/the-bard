@@ -54,7 +54,7 @@ class Main(commands.Cog):
                         if content["strings"] is not None: pass
                     except:
                         await context.reply(strings["invalid_language"].replace("%{language}", file))
-                        await self.lock.release()
+                        self.lock.release()
                         return
                     with open("LanguageStringNames.yaml", "r") as read_file: language_strings = yaml.safe_load(read_file)
                     for string in language_strings["names"]:
@@ -64,12 +64,12 @@ class Main(commands.Cog):
                             with open(f"{self.language_directory}/{default_language_file}", "r") as read_file:
                                 await context.reply(content=strings["invalid_language_file"].replace("%{language}", file),
                                                     file=discord.File(read_file, filename=default_language_file))
-                            await self.lock.release()
+                            self.lock.release()
                             return
                     open(f"{self.language_directory}/{file}", "wb").write(response.content)
                 else:
                     await context.reply(strings["language_file_exists"].replace("%{language}", file))
-                    await self.lock.release()
+                    self.lock.release()
                     return
                 # ensure that the attached YAML file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file}"): await asyncio.sleep(.1)
@@ -81,12 +81,12 @@ class Main(commands.Cog):
                 with open(f"{self.language_directory}/{default_language_file}", "r") as read_file:
                     await context.reply(content=strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
                                         file=discord.File(read_file, filename=default_language_file))
-                await self.lock.release()
+                self.lock.release()
                 return
         else:
             with open(f"{self.language_directory}/{default_language_file}", "r") as read_file:
                 await context.reply(content=strings["invalid_command"], file=discord.File(read_file, filename=default_language_file))
-            await self.lock.release()
+            self.lock.release()
             return
         with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
         for server in data["servers"]:
@@ -101,7 +101,7 @@ class Main(commands.Cog):
                 language_message = self.servers[data["servers"].index(server)]["strings"]["language"]
                 break
         await context.reply(language_message.replace("%{language}", language))
-        await self.lock.release()
+        self.lock.release()
 
     @commands.command()
     async def help(self, context):
@@ -128,7 +128,7 @@ class Main(commands.Cog):
                                         "users": [],
                                         "role": None})
             yaml.safe_dump(data, write_file, indent=4)
-        await self.lock.release()
+        self.lock.release()
 
     # remove a Discord server that removed this bot from the YAML file
     @commands.Cog.listener()
@@ -140,7 +140,7 @@ class Main(commands.Cog):
             for server in data["servers"]: ids.append(server["id"])
             if guild.id in ids: data["servers"].remove(data["servers"][ids.index(guild.id)])
             yaml.safe_dump(data, write_file, indent=4)
-        await self.lock.release()
+        self.lock.release()
 
 intents = discord.Intents.default()
 intents.message_content = True
