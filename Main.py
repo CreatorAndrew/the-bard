@@ -125,9 +125,7 @@ class Main(commands.Cog):
                                         "language": "English",
                                         "repeat": False,
                                         "keep": False,
-                                        "playlists": [],
-                                        "users": [],
-                                        "role": None})
+                                        "playlists": []})
             yaml.safe_dump(data, write_file, indent=4)
         self.lock.release()
 
