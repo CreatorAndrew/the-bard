@@ -86,7 +86,7 @@ class Main(commands.Cog):
                 self.lock.release()
                 return
         else:
-            with open(f"{self.language_directory}/{current_language_file}", "r") as read_file: await context.reply(strings["invalid_command"])
+            await context.reply(strings["invalid_command"])
             self.lock.release()
             return
         with open(self.config, "r") as read_file: data = yaml.safe_load(read_file)
