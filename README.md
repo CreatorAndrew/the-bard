@@ -21,6 +21,9 @@ For macOS (using MacPorts):
 For Windows (using Chocolatey):
 `choco install ffmpeg mediainfo-cli`
 
+For Windows (using Scoop):
+`scoop install main/ffmpeg main/mediainfo`
+
 For Windows (Manual):
 Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` subfolder to your `PATH` environment variable.
 Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Download/Windows and add the folder to your `PATH` environment variable.
@@ -29,6 +32,6 @@ Also make sure to grab the following Python dependencies (see the command below)
 
 `pip3 install requests PyYAML discord.py[voice]`
 
-To run it, type the following in Command Prompt or Terminal at the project's directory:
+To run it, type the following in your operating system's CLI at the project's directory:
 
 `python3 Main.py`
