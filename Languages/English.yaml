@@ -37,8 +37,8 @@ strings:
     whatever_voice: "whatever voice channel it is in"
     not_in_voice: "%{user} is not in a voice channel."
     language: "The language was changed to %{language}."
-    invalid_language: "%{language} is not yet a language that %{bot} can translate to."
-    invalid_language_file: "The file \"%{language}\" does not have sufficient data for a full translation."
+    invalid_language: "%{language} is not yet a language that %{bot} can translate to. Here is a template for localization:"
+    invalid_language_file: "The file \"%{language}\" does not have sufficient data for a full translation. Here is a template for localization:"
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
     help: "`+language <attached YAML or language name>` to change the language of %{bot}
          \n`+playlist [add <name> | rename <index or name to rename from> <name to rename to>
