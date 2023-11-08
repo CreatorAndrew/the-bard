@@ -94,8 +94,8 @@ class Main(commands.Cog):
             if server["id"] == context.message.guild.id:
                 with open(f"{self.language_directory}/{language}.yaml", "r") as read_file: language_data = yaml.safe_load(read_file)
                 self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
-                server["language"] = language
                 self.servers[data["servers"].index(server)]["language"] = language
+                server["language"] = language
                 # modify the YAML file to reflect the change of language
                 with open(self.config, "w") as write_file: yaml.safe_dump(data, write_file, indent=4)
 
