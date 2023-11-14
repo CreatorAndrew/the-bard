@@ -42,10 +42,10 @@ strings:
     language_file_exists: "A language file of the name, \"%{language},\" already exists."
     help: "`+language <attached YAML or language name>` to change the language of %{bot}
          \n`+playlist [add <name> | rename <index or name to rename from> <name to rename to>
-         | remove <index or name> | load <index or name> | list | <index or name> [add <attached file or url> <name (optional)> <index (optional)>
+         | remove <index or name> | load <index or name> | list | <index or name> [add <attached file or URL> <name (optional)> <index (optional)>
          | move <index to move from> <index to move to> | rename <index> <name> | remove <index> | list]]` to interact with playlists
-         \n`+play <attached file or url> <name (optional)>` to play or add a track to the queue
-         \n`+insert <attached file or url> <name (optional)> <index>` to add a track to the queue at the specified index
+         \n`+play <attached file or URL> <name (optional)>` to play or add a track to the queue
+         \n`+insert <attached file or URL> <name (optional)> <index>` to add a track to the queue at the specified index
          \n`+move <index to move from> <index to move to>` to change a track's position within the queue
          \n`+rename <index> <name>` to rename a track in the queue
          \n`+remove <index>` to remove a track of the specified index within the queue
