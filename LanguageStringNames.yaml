@@ -1,5 +1,4 @@
 names:
--   invalid_command
 -   now_playing
 -   no_playlists
 -   playlists_header
@@ -23,8 +22,9 @@ names:
 -   queue_rename_song
 -   queue_remove_song
 -   song
+-   invalid_song
 -   invalid_song_number
--   not_media
+-   invalid_url
 -   volume
 -   volume_change
 -   repeat

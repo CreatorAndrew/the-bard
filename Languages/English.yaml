@@ -2,7 +2,6 @@
 # Also do not modify whatever's in %{}. Those are placeholders.
 
 strings:
-    invalid_command: "Invalid command usage. Type `+help` for assistance."
     now_playing: "Now playing: %{song} (%{index}/%{max})"
     no_playlists: "No playlists exist for this server."
     playlists_header: "Playlists for this server:"
@@ -26,8 +25,9 @@ strings:
     queue_rename_song: "%{song} (#%{index}) has been renamed to \"%{name}\" in the queue."
     queue_remove_song: "%{song} (#%{index}) has been removed from the queue."
     song: "#%{index}: %{song}"
+    invalid_song: "%{song} is not an audio or video file."
     invalid_song_number: "%{index} was not a track number in the queue."
-    not_media: "%{song} is not an audio or video file."
+    invalid_url: "URL \"%{url}\" could not be read. Check if the URL is valid and try again."
     volume: "The volume is currently at %{volume}."
     volume_change: "The volume is now set to %{volume}."
     repeat: "Playlists will %{now_or_no_longer} repeat."
@@ -62,4 +62,5 @@ strings:
          \n`+what` to show the current track
          \n`+volume <number (default: 100% or 1.0)>` to set the volume of the %{bot}
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
-         \n`+dismiss` to kick %{bot} from a voice channel"
+         \n`+recruit` to connect %{bot} to a voice channel
+         \n`+dismiss` to disconnect %{bot} from a voice channel"

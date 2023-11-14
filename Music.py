@@ -179,12 +179,19 @@ class Music(commands.Cog):
                                 elif len(args) == 4 and not context.message.attachments: song = add_song_index_or_name(args[3], server, playlist_index)
                                 elif len(args) == 4: song = {"name": args[2], "index": int(args[3])}
                                 elif len(args) == 5: song = {"name": args[3], "index": int(args[4])}
-                                if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
-                                song["duration"] = self.get_metadata(url)["duration"]
+                                try:
+                                    if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
+                                    song["duration"] = self.get_metadata(url)["duration"]
+                                except:
+                                    await context.reply(self.polished_message(message=server["strings"]["invalid_url"],
+                                                                              placeholders=["url"],
+                                                                              replacements={"url": url}))
+                                    self.lock.release()
+                                    return
                                 response = requests.get(url, stream = True)
                                 # verify that the URL file is a media container
                                 if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                                    await context.reply(self.polished_message(message=strings["not_media"],
+                                    await context.reply(self.polished_message(message=strings["invalid_song"],
                                                                               placeholders=["song"],
                                                                               replacements={"song": self.polished_song_name(url, song["name"])}))
                                     self.lock.release()
@@ -332,11 +339,17 @@ class Music(commands.Cog):
                 except: voice_channel = None
                 if voice_channel is not None:
                     if url is not None:
-                        if name is None: name = self.get_metadata(url)["name"]
+                        try:
+                            if name is None: name = self.get_metadata(url)["name"]
+                        except:
+                            await context.reply(self.polished_message(message=server["strings"]["invalid_url"],
+                                                                      placeholders=["url"],
+                                                                      replacements={"url": url}))
+                            return
                         response = requests.get(url, stream=True)
                         # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                            await context.reply(self.polished_message(message=server["strings"]["not_media"],
+                            await context.reply(self.polished_message(message=server["strings"]["invalid_song"],
                                                                       placeholders=["song"],
                                                                       replacements={"song": self.polished_song_name(url, name)}))
                             return
@@ -345,7 +358,12 @@ class Music(commands.Cog):
                                                                   replacements={"song": self.polished_song_name(url, name),
                                                                                 "index": len(server['queue']) + 1}))
                         # add the track to the queue
-                        server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
+                        try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
+                        except:
+                            await context.reply(self.polished_message(message=server["strings"]["invalid_url"],
+                                                placeholders=["url"],
+                                                replacements={"url": url}))
+                            return
                     else:
                         message = ""
                         for song in playlist:
@@ -426,12 +444,18 @@ class Music(commands.Cog):
             for server in self.servers:
                 if server["id"] == context.message.guild.id:
                     if int(index) > 0 and int(index) < len(server["queue"]) + 2:
-                        if name is None: name = self.get_metadata(url)["name"]
-                        if duration is None: duration = self.get_metadata(url)["duration"]
+                        try:
+                            if name is None: name = self.get_metadata(url)["name"]
+                            if duration is None: duration = self.get_metadata(url)["duration"]
+                        except:
+                            await context.reply(self.polished_message(message=server["strings"]["invalid_url"],
+                                                                      placeholders=["url"],
+                                                                      replacements={"url": url}))
+                            return
                         response = requests.get(url, stream=True)
                         # verify that the URL file is a media container
                         if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                            await context.reply(self.polished_message(message=server["strings"]["not_media"],
+                            await context.reply(self.polished_message(message=server["strings"]["invalid_song"],
                                                                       placeholders=["song"],
                                                                       replacements={"song": self.polished_song_name(url, name)}))
                             return
@@ -643,11 +667,10 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                queue_no_songs = server["strings"]["queue_no_songs"]
                 message = ""
                 if server["queue"]: message += server["strings"]["queue_songs_header"] + "\n"
                 else:
-                    await context.reply(queue_no_songs)
+                    await context.reply(server["strings"]["queue_no_songs"])
                     return
                 index = 0
                 while index < len(server["queue"]):
@@ -670,12 +693,13 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.message.guild.id:
-                await context.reply(self.polished_message(message=server["strings"]["now_playing"],
-                                                          placeholders=["song", "index", "max"],
-                                                          replacements={"song": self.polished_song_name(server["queue"][server["index"]]["file"],
-                                                                                                        server["queue"][server["index"]]["name"]),
-                                                                        "index": server["index"] + 1,
-                                                                        "max": len(server['queue'])}))
+                if server["queue"]: await context.reply(self.polished_message(message=server["strings"]["now_playing"],
+                                                                              placeholders=["song", "index", "max"],
+                                                                              replacements={"song": self.polished_song_name(server["queue"][server["index"]]["file"],
+                                                                                                                            server["queue"][server["index"]]["name"]),
+                                                                                            "index": server["index"] + 1,
+                                                                                            "max": len(server['queue'])}))
+                else: await context.reply(server["strings"]["queue_no_songs"])
 
     @commands.command()
     async def volume(self, context, volume=None):
@@ -725,6 +749,22 @@ class Music(commands.Cog):
                                                                 "voice": voice_channel,
                                                                 "now_or_no_longer": now_or_no_longer}))
         self.lock.release()
+
+    @commands.command()
+    async def recruit(self, context):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.message.guild.id:
+                try: voice_channel = context.message.author.voice.channel
+                except:
+                    await context.reply(self.polished_message(message=server["strings"]["not_in_voice"],
+                                                              placeholders=["user"],
+                                                              replacements={"user": context.message.author.mention}))
+                    return
+                if not server["connected"]:
+                    await voice_channel.connect()
+                    server["connected"] = True
+                    await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
 
     @commands.command()
     async def dismiss(self, context): await self.stop_music(context, True)
