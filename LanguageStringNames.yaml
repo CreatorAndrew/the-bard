@@ -38,3 +38,4 @@ names:
 -   invalid_language_file
 -   language_file_exists
 -   help
+-   invalid_command

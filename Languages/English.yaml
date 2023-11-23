@@ -64,3 +64,4 @@ strings:
          \n`+keep` to toggle whether %{bot} stays in a voice channel when no audio is playing
          \n`+recruit` to connect %{bot} to a voice channel
          \n`+dismiss` to disconnect %{bot} from a voice channel"
+    invalid_command: "Invalid command usage. Type `+help` for assistance."
