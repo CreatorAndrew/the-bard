@@ -489,8 +489,8 @@ class Music(commands.Cog):
                         server["queue"].insert(int(move_to_index) - 1, queue[int(index) - 1])
                         await context.reply(self.polished_message(message=server["strings"]["queue_move_song"],
                                                                   placeholders=["song", "index"],
-                                                                  replacements={"song": self.polished_song_name(queue[int(index) - 1]['file'],
-                                                                                                                queue[int(index) - 1]['name']),
+                                                                  replacements={"song": self.polished_song_name(queue[int(index) - 1]["file"],
+                                                                                                                queue[int(index) - 1]["name"]),
                                                                                 "index": move_to_index}))
                     if int(index) - 1 < server["index"] and int(move_to_index) - 1 >= server["index"]: server["index"] -= 1
                     elif int(index) - 1 > server["index"] and int(move_to_index) - 1 <= server["index"]: server["index"] += 1
