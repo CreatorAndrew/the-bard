@@ -348,7 +348,7 @@ class Music(commands.Cog):
                     except: voice_channel = None
                     if voice_channel is None: await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"],
                                                                                                         ["user"],
-                                                                                                        {"user": context.us.mention}))
+                                                                                                        {"user": context.user.mention}))
                     else:
                         if url is None:
                             message = ""
@@ -438,7 +438,7 @@ class Music(commands.Cog):
     async def insert_song(self, context: discord.Interaction, url, name, index, time="0", duration=None, silence=False):
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
-        if voice_channel is None: await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.us.mention}))
+        if voice_channel is None: await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
         else:
             for server in self.servers:
                 if server["id"] == context.guild.id:
