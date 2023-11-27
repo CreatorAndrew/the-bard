@@ -760,7 +760,7 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 try: voice_channel = context.user.voice.channel
                 except:
-                    await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.us.mention}))
+                    await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
                     return
                 if not server["connected"]:
                     await voice_channel.connect()
