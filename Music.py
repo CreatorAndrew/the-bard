@@ -356,12 +356,12 @@ class Music(commands.Cog):
                                 previous_message = "" + message
                                 message += self.polished_message(server["strings"]["queue_add_song"] + "\n",
                                                                  ["song", "index"],
-                                                                 {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server['queue']) + 1})
+                                                                 {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server["queue"]) + 1})
                                 if len(message) > 2000:
                                     await context.response.send_message(previous_message)
                                     message = self.polished_message(server["strings"]["queue_add_song"] + "\n",
                                                                     ["song", "index"],
-                                                                    {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server['queue']) + 1})
+                                                                    {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server["queue"]) + 1})
                                 # add the track to the queue
                                 server["queue"].append(song)
                             await context.response.send_message(message)
@@ -380,7 +380,7 @@ class Music(commands.Cog):
                                 return
                             await context.response.send_message(self.polished_message(server["strings"]["queue_add_song"],
                                                                                       ["song", "index"],
-                                                                                      {"song": self.polished_song_name(url, name), "index": len(server['queue']) + 1}))
+                                                                                      {"song": self.polished_song_name(url, name), "index": len(server["queue"]) + 1}))
                             # add the track to the queue
                             try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
                             except:
@@ -457,11 +457,7 @@ class Music(commands.Cog):
                                                                                       {"song": self.polished_song_name(url, name)}))
                             return
                         # add the track to the queue
-                        server["queue"].insert(int(index) - 1, {"file": url,
-                                                                "name": name,
-                                                                "time": time,
-                                                                "duration": duration,
-                                                                "silence": silence})
+                        server["queue"].insert(int(index) - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silence})
                         if int(index) - 1 <= server["index"]: server["index"] += 1
                         if not silence: await context.response.send_message(self.polished_message(server["strings"]["queue_insert_song"],
                                                                                                   ["song", "index"],
