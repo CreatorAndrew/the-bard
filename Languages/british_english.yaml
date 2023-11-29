@@ -119,3 +119,4 @@ strings:
     song_index_desc: "Specify an index for a track to insert into or move from within a playlist"
     new_name_desc: "Specify a new name for a track in a playlist"
     new_index_desc: "Specify a new index for a track to move to within a playlist"
+    cancel_option: "Cancel"

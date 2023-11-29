@@ -105,7 +105,7 @@ class Music(commands.Cog):
                 strings = server["strings"]
                 if action is not None and (action.value == "move" or action.value == "rename" or action.value == "remove") and select is not None and song_index is None:
                     try:
-                        song_options = [discord.SelectOption(label="Cancel")]
+                        song_options = [discord.SelectOption(label=strings["cancel_option"])]
                         for playlist in data["servers"][self.servers.index(server)]["playlists"]:
                             if select == str(data["servers"][self.servers.index(server)]["playlists"].index(playlist) + 1):
                                 for song in playlist["songs"]:
@@ -126,7 +126,7 @@ class Music(commands.Cog):
                         view.add_item(song_menu)
                         await context.followup.send("", view=view)
                         while not songs: await asyncio.sleep(.1)
-                        if songs[0] == "Cancel": return
+                        if songs[0] == strings["cancel_option"]: return
                         song_index = songs[0]
                     except: pass
                 break
@@ -360,13 +360,14 @@ class Music(commands.Cog):
         playlists = []
         for server in data["servers"]:
             if server["id"] == context.guild.id:
+                index = 1
                 for playlist in server["playlists"]:
-                    if current == "" or current.lower() in playlist["name"].lower():
+                    if (current == "" or current.lower() in playlist["name"].lower()) and len(playlists) < 25:
                         playlists.append(app_commands.Choice(name=self.polished_message(self.servers[data["servers"].index(server)]["strings"]["playlist"],
                                                                                         ["playlist", "playlist_index"],
-                                                                                        {"playlist": playlist["name"],
-                                                                                         "playlist_index": server["playlists"].index(playlist) + 1}),
-                                                             value=str(server["playlists"].index(playlist) + 1)))
+                                                                                        {"playlist": playlist["name"], "playlist_index": index}),
+                                                             value=str(index)))
+                    index += 1
                 break
         return playlists
 
@@ -570,12 +571,12 @@ class Music(commands.Cog):
         songs = []
         for server in self.servers:
             if server["id"] == context.guild.id:
+                index = 1
                 for song in server["queue"]:
-                    if current == "" or current.lower() in song["name"].lower():
-                        songs.append(app_commands.Choice(name=self.polished_message(server["strings"]["song"],
-                                                                                    ["song", "index"],
-                                                                                    {"song": song["name"], "index": server["queue"].index(song) + 1}),
-                                                         value=str(server["queue"].index(song) + 1)))
+                    if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
+                        songs.append(app_commands.Choice(name=self.polished_message(server["strings"]["song"], ["song", "index"], {"song": song["name"], "index": index}),
+                                                         value=str(index)))
+                    index += 1
                 break
         return songs
 
