@@ -23,15 +23,17 @@ class Main(commands.Cog):
         self.language_directory = language_directory
         if not os.path.exists(self.config): shutil.copyfile(self.config.replace(".yaml", "") + "Default.yaml", self.config)
 
-    # initialize any registered Discord servers that weren't previously initialized
     def initialize_servers(self):
         data = yaml.safe_load(open(self.config, "r"))
+        # add all servers with this bot to memory that weren't already
         if len(self.servers) < len(data["servers"]):
             ids = []
             for server in data["servers"]:
-                language = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))
                 for server_searched in self.servers: ids.append(server_searched["id"])
-                if server["id"] not in ids: self.servers.append({"id": server["id"], "language": server["language"], "strings": language["strings"]})
+                if server["id"] not in ids: self.servers.append({"id": server["id"],
+                                                                 "language": server["language"],
+                                                                 "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]})
+        # remove any servers from memory that had removed this bot
         elif len(self.servers) > len(data["servers"]):
             index = 0
             while index < len(self.servers):

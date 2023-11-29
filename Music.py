@@ -4,7 +4,6 @@ import asyncio
 import typing
 import discord
 from discord import app_commands
-from discord.ui import Select, View
 from discord.ext import commands
 from subprocess import check_output
 
@@ -36,9 +35,9 @@ class Music(commands.Cog):
             message = message.replace("%{" + placeholder + "}", str(replacement))
         return message
 
-    # initialize any registered Discord servers that weren't previously initialized
     def initialize_servers(self):
         data = yaml.safe_load(open(self.config, "r"))
+        # add all servers with this bot to memory that weren't already
         if len(self.servers) < len(data["servers"]):
             ids = []
             for server in data["servers"]:
@@ -52,6 +51,7 @@ class Music(commands.Cog):
                                                                  "time": .0,
                                                                  "volume": 1.0,
                                                                  "connected": False})
+        # remove any servers from memory that had removed this bot
         elif len(self.servers) > len(data["servers"]):
             index = 0
             while index < len(self.servers):
@@ -103,26 +103,28 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.guild.id:
                 strings = server["strings"]
+                # if a playlist-altering action was called in this command and no track index was specified, show a dropdown menu with the selected playlist's contents
                 if action is not None and (action.value == "move" or action.value == "rename" or action.value == "remove") and select is not None and song_index is None:
                     try:
                         song_options = [discord.SelectOption(label=strings["cancel_option"])]
                         for playlist in data["servers"][self.servers.index(server)]["playlists"]:
                             if select == str(data["servers"][self.servers.index(server)]["playlists"].index(playlist) + 1):
+                                index = 1
                                 for song in playlist["songs"]:
                                     song_options.append(discord.SelectOption(label=self.polished_message(server["strings"]["song"],
                                                                                                          ["song", "index"],
-                                                                                                         {"song": song["name"],
-                                                                                                          "index": playlist["songs"].index(song) + 1}),
-                                                                             value=str(playlist["songs"].index(song) + 1)))
+                                                                                                         {"song": song["name"], "index": index}),
+                                                                             value=str(index)))
+                                    index += 1
                                 break
-                        song_menu = Select(options=song_options)
+                        song_menu = discord.ui.Select(options=song_options)
                         songs = []
                         async def song_callback(context):
                             await context.response.send_message("...")
                             await context.delete_original_response()
                             songs.append(song_menu.values[0])
                         song_menu.callback = song_callback
-                        view = View()
+                        view = discord.ui.View()
                         view.add_item(song_menu)
                         await context.followup.send("", view=view)
                         while not songs: await asyncio.sleep(.1)
@@ -182,14 +184,13 @@ class Music(commands.Cog):
                     index = 0
                     while index < len(server["playlists"]):
                         previous_message = "" + message
-                        message += self.polished_message(strings["playlist"] + "\n",
-                                                         ["playlist", "playlist_index"],
-                                                         {"playlist": playlists[index], "playlist_index": index + 1})
-                        if len(message) > 2000:
-                            await context.followup.send(previous_message)
-                            message = self.polished_message(strings["playlist"] + "\n",
+                        new_message = self.polished_message(strings["playlist"] + "\n",
                                                             ["playlist", "playlist_index"],
                                                             {"playlist": playlists[index], "playlist_index": index + 1})
+                        message += new_message
+                        if len(message) > 2000:
+                            await context.followup.send(previous_message)
+                            message = new_message
                         index += 1
                     await context.followup.send(message)
                     self.lock.release()
@@ -315,18 +316,15 @@ class Music(commands.Cog):
                                 index = 0
                                 while index < len(server["playlists"][playlist_number]["songs"]):
                                     previous_message = "" + message
-                                    message += self.polished_message(strings["song"] + "\n",
-                                                                     ["song", "index"],
-                                                                     {"song": self.polished_song_name(server["playlists"][playlist_number]["songs"][index]["file"],
-                                                                                                      server["playlists"][playlist_number]["songs"][index]["name"]),
-                                                                      "index": index + 1})
-                                    if len(message) > 2000:
-                                        await context.followup.send(previous_message)
-                                        message = self.polished_message(strings["song"] + "\n",
+                                    new_message = self.polished_message(strings["song"] + "\n",
                                                                         ["song", "index"],
                                                                         {"song": self.polished_song_name(server["playlists"][playlist_number]["songs"][index]["file"],
                                                                                                          server["playlists"][playlist_number]["songs"][index]["name"]),
                                                                          "index": index + 1})
+                                    message += new_message
+                                    if len(message) > 2000:
+                                        await context.followup.send(previous_message)
+                                        message = new_message
                                     index += 1
                                 await context.followup.send(message)
                                 self.lock.release()
@@ -390,22 +388,20 @@ class Music(commands.Cog):
                 if server["id"] == context.guild.id:
                     try: voice_channel = context.user.voice.channel
                     except: voice_channel = None
-                    if voice_channel is None: await context.followup.send(self.polished_message(server["strings"]["not_in_voice"],
-                                                                                                ["user"],
-                                                                                                {"user": context.user.mention}))
+                    if voice_channel is None:
+                        await context.followup.send(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
                     else:
                         if url is None:
                             message = ""
                             for song in playlist:
                                 previous_message = "" + message
-                                message += self.polished_message(server["strings"]["queue_add_song"] + "\n",
-                                                                 ["song", "index"],
-                                                                 {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server["queue"]) + 1})
-                                if len(message) > 2000:
-                                    await context.followup.send(previous_message)
-                                    message = self.polished_message(server["strings"]["queue_add_song"] + "\n",
+                                new_message = self.polished_message(server["strings"]["queue_add_song"] + "\n",
                                                                     ["song", "index"],
                                                                     {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server["queue"]) + 1})
+                                message += new_message
+                                if len(message) > 2000:
+                                    await context.followup.send(previous_message)
+                                    message = new_message
                                 # add the track to the queue
                                 server["queue"].append(song)
                             await context.followup.send(message)
@@ -556,7 +552,9 @@ class Music(commands.Cog):
                                                                                    "index": index}))
                     # remove the track from the queue
                     server["queue"].remove(server["queue"][int(index) - 1])
+                    # decrement the index of the current song to match its new position in the queue, should the removed song have been before it
                     if int(index) - 1 < server["index"]: server["index"] -= 1
+                    # if the removed song is the current song, play the new song in its place in the queue
                     elif int(index) - 1 == server["index"]:
                         server["index"] -= 1
                         context.guild.voice_client.stop()
@@ -603,29 +601,30 @@ class Music(commands.Cog):
         await self.stop_music(context)
 
     async def stop_music(self, context: discord.Interaction, leave=False, guild=None):
-        if guild is None: id = context.guild.id
-        else: id = guild.id
-        # remove all the tracks from the queue of the calling Discord server
-        for server in self.servers:
-            if server["id"] == id:
-                while server["queue"]:
-                    # remove the track from the queue
-                    server["queue"].remove(server["queue"][0])
-                if context.guild.voice_client.is_playing():
-                    server["index"] = -1
-                    context.guild.voice_client.stop()
-                else: server["index"] = 0
-                if leave or not server["keep"]:
-                    await context.guild.voice_client.disconnect()
-                    server["connected"] = False
-                break
+        try:
+            if guild is None: id = context.guild.id
+            else: id = guild.id
+            for server in self.servers:
+                if server["id"] == id:
+                    server["queue"] = []
+                    if context.guild.voice_client.is_playing():
+                        server["index"] = -1
+                        context.guild.voice_client.stop()
+                    else: server["index"] = 0
+                    if leave or not server["keep"]:
+                        await context.guild.voice_client.disconnect()
+                        server["connected"] = False
+                    break
+        except: pass
 
     @app_commands.command(description="pause_command_desc")
     async def pause_command(self, context: discord.Interaction):
-        await context.response.send_message("...")
-        await context.delete_original_response()
-        if context.guild.voice_client.is_paused(): context.guild.voice_client.resume()
-        else: context.guild.voice_client.pause()
+        try:
+            await context.response.send_message("...")
+            await context.delete_original_response()
+            if context.guild.voice_client.is_paused(): context.guild.voice_client.resume()
+            else: context.guild.voice_client.pause()
+        except: pass
 
     @app_commands.command(description="jump_command_desc")
     async def jump_command(self, context: discord.Interaction, time: str):
@@ -711,7 +710,7 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
-                # modify the YAML file to reflect the change of whether playlist looping is enabled or disabled
+                # modify the YAML file to reflect the change of whether playlists repeat
                 yaml.safe_dump(data, open(self.config, "w"), indent=4)
 
                 if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
@@ -735,16 +734,14 @@ class Music(commands.Cog):
                 index = 0
                 while index < len(server["queue"]):
                     previous_message = "" + message
-                    message += self.polished_message(server["strings"]["song"] + "\n",
-                                                     ["song", "index"],
-                                                     {"song": self.polished_song_name(server["queue"][index]["file"], server["queue"][index]["name"]),
-                                                      "index": index + 1})
-                    if len(message) > 2000:
-                        await context.followup.send(previous_message)
-                        message = self.polished_message(server["strings"]["song"] + "\n",
+                    new_message = self.polished_message(server["strings"]["song"] + "\n",
                                                         ["song", "index"],
                                                         {"song": self.polished_song_name(server["queue"][index]["file"], server["queue"][index]["name"]),
                                                          "index": index + 1})
+                    message += new_message
+                    if len(message) > 2000:
+                        await context.followup.send(previous_message)
+                        message = new_message
                     index += 1
                 await context.followup.send(message)
 
