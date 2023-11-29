@@ -92,6 +92,7 @@ names:
 -   rename
 -   remove
 -   load
+-   list
 -   select
 -   song_url
 -   song_name
@@ -103,9 +104,11 @@ names:
 -   set
 -   action_desc
 -   add_desc
+-   move_desc
 -   rename_desc
 -   remove_desc
 -   load_desc
+-   list_desc
 -   select_desc
 -   file_desc
 -   song_url_desc
