@@ -110,9 +110,9 @@ class Music(commands.Cog):
                             if select == str(data["servers"][self.servers.index(server)]["playlists"].index(playlist) + 1):
                                 for song in playlist["songs"]:
                                     song_options.append(discord.SelectOption(label=self.polished_message(server["strings"]["song"],
-                                                                                                        ["song", "index"],
-                                                                                                        {"song": song["name"],
-                                                                                                         "index": playlist["songs"].index(song) + 1}),
+                                                                                                         ["song", "index"],
+                                                                                                         {"song": song["name"],
+                                                                                                          "index": playlist["songs"].index(song) + 1}),
                                                                              value=str(playlist["songs"].index(song) + 1)))
                                 break
                         song_menu = Select(options=song_options)
