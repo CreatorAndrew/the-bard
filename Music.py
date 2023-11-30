@@ -213,8 +213,8 @@ class Music(commands.Cog):
                                     await context.followup.send(strings["invalid_command"])
                                     self.lock.release()
                                     return
-                                if song_index is None: song = {"name": song_name, "index": len(server["playlists"][playlist_number]["songs"]) + 1}
-                                else: song = {"name": song_name, "index": song_index}
+                                if new_index is None: song = {"name": song_name, "index": len(server["playlists"][playlist_number]["songs"]) + 1}
+                                else: song = {"name": song_name, "index": int(new_index)}
                                 try:
                                     if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
                                     song["duration"] = self.get_metadata(url)["duration"]
@@ -488,14 +488,14 @@ class Music(commands.Cog):
         except: pass
 
     @app_commands.command(description="insert_command_desc")
-    async def insert_command(self, context: discord.Interaction, file: discord.Attachment=None, url: str=None, name: str=None, index: str=None):
+    async def insert_command(self, context: discord.Interaction, file: discord.Attachment=None, url: str=None, name: str=None, new_index: str=None):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
                 invalid_command = server["strings"]["invalid_command"]
                 break
-        if file is None and index is not None and url is not None: await self.insert_song(context, str(file), name, index)
-        elif file is not None and index is not None and url is None: await self.insert_song(context, url, name, index)
+        if file is None and new_index is not None and url is not None: await self.insert_song(context, str(file), name, new_index)
+        elif file is not None and new_index is not None and url is None: await self.insert_song(context, url, name, new_index)
         else: await context.response.send_message(invalid_command)
 
     async def insert_song(self, context: discord.Interaction, url, name, index, time="0", duration=None, silence=False):
