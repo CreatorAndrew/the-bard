@@ -113,18 +113,18 @@ class Music(commands.Cog):
                                     index += 1
                                 break
                         song_menu = discord.ui.Select(options=song_options)
-                        songs = []
+                        chosen = []
                         async def song_callback(context):
                             await context.response.send_message("...")
                             await context.delete_original_response()
-                            songs.append(song_menu.values[0])
+                            chosen.append(song_menu.values[0])
                         song_menu.callback = song_callback
                         view = discord.ui.View()
                         view.add_item(song_menu)
                         await context.followup.send("", view=view)
-                        while not songs: await asyncio.sleep(.1)
-                        if songs[0] == strings["cancel_option"]: return
-                        song_index = songs[0]
+                        while not chosen: await asyncio.sleep(.1)
+                        if chosen[0] == strings["cancel_option"]: return
+                        song_index = chosen[0]
                     except: pass
                 break
         await self.lock.acquire()
