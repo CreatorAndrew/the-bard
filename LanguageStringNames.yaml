@@ -85,7 +85,6 @@ names:
 -   language_command_desc
 -   file
 -   url
--   name
 -   add
 -   move
 -   rename
@@ -95,11 +94,9 @@ names:
 -   select
 -   action
 -   song_url
--   song_name
 -   song_index
 -   new_name
 -   new_index
--   index
 -   time
 -   set
 -   add_desc
@@ -112,7 +109,6 @@ names:
 -   action_desc
 -   file_desc
 -   song_url_desc
--   song_name_desc
 -   song_index_desc
 -   new_name_desc
 -   new_index_desc

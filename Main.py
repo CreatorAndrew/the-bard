@@ -45,7 +45,7 @@ class Main(commands.Cog):
                 index += 1
 
     @app_commands.command(description="language_command_desc")
-    async def language_command(self, context: discord.Interaction, file: discord.Attachment=None, name: str=None):
+    async def language_command(self, context: discord.Interaction, file: discord.Attachment=None, new_name: str=None):
         await self.lock.acquire()
         self.initialize_servers()
         for server in self.servers:
@@ -53,7 +53,7 @@ class Main(commands.Cog):
                 current_language_file = server["language"] + ".yaml"
                 strings = server["strings"]
                 break
-        if file is not None and name is None:
+        if file is not None and new_name is None:
             file_name = str(file)[str(file).rindex("/") + 1:str(file).index("?")]
             if file_name.endswith(".yaml"):
                 if not os.path.exists(f"{self.language_directory}/{file_name}"):
@@ -85,8 +85,8 @@ class Main(commands.Cog):
                 while not os.path.exists(f"{self.language_directory}/{file_name}"): await asyncio.sleep(.1)
 
                 language = file_name.replace(".yaml", "")
-        elif file is None and name is not None:
-            language = name
+        elif file is None and new_name is not None:
+            language = new_name
             if not os.path.exists(f"{self.language_directory}/{language}.yaml"):
                 await context.response.send_message(content=strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
                                                     file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"), filename=current_language_file))
