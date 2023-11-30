@@ -27,7 +27,7 @@ class Music(commands.Cog):
             except: duration = .0
             return {"name": name, "duration": duration}
 
-    def polished_song_name(self, file, name): return name + " (" + file + ")"
+    def polished_song_name(self, file, name): return f"[{name}](<{file}>)"
 
     def polished_message(self, message, placeholders, replacements):
         for placeholder in placeholders:
