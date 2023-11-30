@@ -63,12 +63,12 @@ class Music(commands.Cog):
                 index += 1
 
     @app_commands.command(description="playlist_command_desc")
-    @app_commands.describe(action="action_desc")
     @app_commands.describe(add="add_desc")
     @app_commands.describe(rename="rename_desc")
     @app_commands.describe(remove="remove_desc")
     @app_commands.describe(load="load_desc")
     @app_commands.describe(select="select_desc")
+    @app_commands.describe(action="action_desc")
     @app_commands.describe(file="file_desc")
     @app_commands.describe(song_url="song_url_desc")
     @app_commands.describe(song_index="song_index_desc")
