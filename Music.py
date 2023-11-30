@@ -415,12 +415,12 @@ class Music(commands.Cog):
                             # verify that the URL file is a media container
                             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                                 await context.followup.send(self.polished_message(server["strings"]["invalid_song"],
-                                                                                          ["song"],
-                                                                                          {"song": self.polished_song_name(url, name)}))
+                                                                                  ["song"],
+                                                                                  {"song": self.polished_song_name(url, name)}))
                                 return
                             await context.followup.send(self.polished_message(server["strings"]["queue_add_song"],
-                                                                                      ["song", "index"],
-                                                                                      {"song": self.polished_song_name(url, name), "index": len(server["queue"]) + 1}))
+                                                                              ["song", "index"],
+                                                                              {"song": self.polished_song_name(url, name), "index": len(server["queue"]) + 1}))
                             # add the track to the queue
                             try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
                             except:
