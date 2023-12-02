@@ -83,8 +83,6 @@ names:
 -   recruit_command_desc
 -   dismiss_command_desc
 -   language_command_desc
--   file
--   url
 -   add
 -   move
 -   rename
@@ -93,6 +91,7 @@ names:
 -   list
 -   select
 -   action
+-   file
 -   song_url
 -   song_index
 -   new_name

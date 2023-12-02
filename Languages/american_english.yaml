@@ -86,8 +86,6 @@ strings:
     recruit_command_desc: Connect me to a voice channel
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Change the language for this Discord server
-    file: file
-    url: url
     add: add
     move: move
     rename: rename
@@ -96,6 +94,7 @@ strings:
     list: list
     select: select
     action: action
+    file: file
     song_url: url
     song_index: track
     new_name: name

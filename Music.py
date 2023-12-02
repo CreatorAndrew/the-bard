@@ -389,13 +389,13 @@ class Music(commands.Cog):
         return songs
 
     @app_commands.command(description="play_command_desc")
-    async def play_command(self, context: discord.Interaction, file: discord.Attachment=None, url: str=None, new_name: str=None):
+    async def play_command(self, context: discord.Interaction, file: discord.Attachment=None, song_url: str=None, new_name: str=None):
         await context.response.defer()
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
-                if file is None and url is not None: await self.play_song(context, url, new_name)
-                elif file is not None and url is None: await self.play_song(context, str(file), new_name)
+                if file is None and song_url is not None: await self.play_song(context, song_url, new_name)
+                elif file is not None and song_url is None: await self.play_song(context, str(file), new_name)
                 else: await context.followup.send(server["strings"]["invalid_command"])
                 break
 
@@ -483,12 +483,12 @@ class Music(commands.Cog):
         except: pass
 
     @app_commands.command(description="insert_command_desc")
-    async def insert_command(self, context: discord.Interaction, file: discord.Attachment=None, url: str=None, new_name: str=None, new_index: str=None):
+    async def insert_command(self, context: discord.Interaction, file: discord.Attachment=None, song_url: str=None, new_name: str=None, new_index: str=None):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
-                if file is None and new_index is not None and url is not None: await self.insert_song(context, str(file), new_name, new_index)
-                elif file is not None and new_index is not None and url is None: await self.insert_song(context, url, new_name, new_index)
+                if file is None and new_index is not None and song_url is not None: await self.insert_song(context, str(file), new_name, new_index)
+                elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, song_url, new_name, new_index)
                 else: await context.response.send_message(server["strings"]["invalid_command"])
                 break
 
