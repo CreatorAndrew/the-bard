@@ -1,8 +1,6 @@
 # The-Bard
 A music Discord bot that plays from file attachments and custom download URLs instead of YouTube links.
 
-Type `+help` to see a list of commands.
-
 # Setup:
 Make sure that FFmpeg and MediaInfo are installed and in the path.
 
