@@ -60,6 +60,7 @@ class Music(commands.Cog):
                         index -= 1
                 except: self.servers.remove(self.servers[index])
                 index += 1
+
         for server in data["servers"]:
             self.servers[data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
 
