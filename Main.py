@@ -10,9 +10,11 @@ from Music import Music
 
 class CommandTranslator(app_commands.Translator):
     async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext) -> "str | None":
-        if os.path.exists(f"{language_directory}/{locale.name}.yaml") and str(string) != "…":
-            return yaml.safe_load(open(f"{language_directory}/{locale.name}.yaml", "r"))["strings"][str(string)]
-        return None
+        try:
+            if os.path.exists(f"{language_directory}/{locale.name}.yaml"):
+                return yaml.safe_load(open(f"{language_directory}/{locale.name}.yaml", "r"))["strings"][str(string)]
+            return None
+        except: return None
 
 class Main(commands.Cog):
     def __init__(self, bot, config, language_directory, lock):

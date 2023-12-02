@@ -396,13 +396,12 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
-                invalid_command = server["strings"]["invalid_command"]
+                if file is None and url is not None: await self.play_song(context, url, new_name)
+                elif file is not None and url is None: await self.play_song(context, str(file), new_name)
+                else: await context.followup.send(server["strings"]["invalid_command"])
                 break
-        if file is None and url is not None: await self.play_song(context, url, new_name)
-        elif file is not None and url is None: await self.play_song(context, str(file), new_name)
-        else: await context.followup.send(invalid_command)
 
-    async def play_song(self, context: discord.Interaction, url=None, name=None, playlist=[]):
+    async def play_song(self, context, url=None, name=None, playlist=[]):
         try:
             async def add_time(server, time): server["time"] += time
             for server in self.servers:
@@ -490,13 +489,12 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
-                invalid_command = server["strings"]["invalid_command"]
+                if file is None and new_index is not None and url is not None: await self.insert_song(context, str(file), new_name, new_index)
+                elif file is not None and new_index is not None and url is None: await self.insert_song(context, url, new_name, new_index)
+                else: await context.response.send_message(server["strings"]["invalid_command"])
                 break
-        if file is None and new_index is not None and url is not None: await self.insert_song(context, str(file), new_name, new_index)
-        elif file is not None and new_index is not None and url is None: await self.insert_song(context, url, new_name, new_index)
-        else: await context.response.send_message(invalid_command)
 
-    async def insert_song(self, context: discord.Interaction, url, name, index, time="0", duration=None, silence=False):
+    async def insert_song(self, context, url, name, index, time="0", duration=None, silence=False):
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
         if voice_channel is None: await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
@@ -561,7 +559,7 @@ class Music(commands.Cog):
     @app_commands.command(description="remove_command_desc")
     async def remove_command(self, context: discord.Interaction, song_index: str): await self.remove_song(context, song_index)
 
-    async def remove_song(self, context: discord.Interaction, index, silence=False):
+    async def remove_song(self, context, index, silence=False):
         for server in self.servers:
             if server["id"] == context.guild.id:
                 if int(index) > 0 and int(index) < len(server["queue"]) + 1:
@@ -621,7 +619,7 @@ class Music(commands.Cog):
         await context.delete_original_response()
         await self.stop_music(context)
 
-    async def stop_music(self, context: discord.Interaction, leave=False, guild=None):
+    async def stop_music(self, context, leave=False, guild=None):
         try:
             if guild is None: id = context.guild.id
             else: id = guild.id
@@ -653,7 +651,7 @@ class Music(commands.Cog):
         await context.delete_original_response()
         await self.jump_to(context, time)
 
-    async def jump_to(self, context: discord.Interaction, time):
+    async def jump_to(self, context, time):
         self.initialize_servers()
         segments = []
         if ":" in time: segments = time.split(":")
@@ -734,7 +732,7 @@ class Music(commands.Cog):
                 # modify the YAML file to reflect the change of whether playlists repeat
                 yaml.safe_dump(data, open(self.config, "w"), indent=4)
 
-                if self.servers: self.servers[data["servers"].index(server)]["repeat"] = repeat
+                self.servers[data["servers"].index(server)]["repeat"] = repeat
                 break
         if repeat: now_or_no_longer = strings["now"]
         else: now_or_no_longer = strings["no_longer"]
@@ -771,13 +769,12 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
-                if server["queue"]:
-                    await context.response.send_message(self.polished_message(server["strings"]["now_playing"],
-                                                                              ["song", "index", "max"],
-                                                                              {"song": self.polished_song_name(server["queue"][server["index"]]["file"],
-                                                                                                               server["queue"][server["index"]]["name"]),
-                                                                               "index": server["index"] + 1,
-                                                                               "max": len(server['queue'])}))
+                if server["queue"]: await context.response.send_message(self.polished_message(server["strings"]["now_playing"],
+                                                                                              ["song", "index", "max"],
+                                                                                              {"song": self.polished_song_name(server["queue"][server["index"]]["file"],
+                                                                                                                               server["queue"][server["index"]]["name"]),
+                                                                                               "index": server["index"] + 1,
+                                                                                               "max": len(server['queue'])}))
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
 
     @app_commands.command(description="volume_command_desc")
@@ -811,7 +808,7 @@ class Music(commands.Cog):
                 # modify the YAML file to reflect the change of whether to keep this bot in a voice call when no audio is playing
                 yaml.safe_dump(data, open(self.config, "w"), indent=4)
 
-                if self.servers: self.servers[data["servers"].index(server)]["keep"] = keep
+                self.servers[data["servers"].index(server)]["keep"] = keep
                 break
         try: voice_channel = context.user.voice.channel.jump_url
         except: voice_channel = strings["whatever_voice"]
