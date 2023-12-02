@@ -176,7 +176,7 @@ class Music(commands.Cog):
                         return
                     index = 0
                     while index < len(server["playlists"]):
-                        previous_message = "" + message
+                        previous_message = message
                         new_message = self.polished_message(strings["playlist"] + "\n",
                                                             ["playlist", "playlist_index"],
                                                             {"playlist": playlists[index], "playlist_index": index + 1})
@@ -308,7 +308,7 @@ class Music(commands.Cog):
                                     return
                                 index = 0
                                 while index < len(server["playlists"][playlist_number]["songs"]):
-                                    previous_message = "" + message
+                                    previous_message = message
                                     new_message = self.polished_message(strings["song"] + "\n",
                                                                         ["song", "index"],
                                                                         {"song": self.polished_song_name(server["playlists"][playlist_number]["songs"][index]["file"],
@@ -414,7 +414,7 @@ class Music(commands.Cog):
                         if url is None:
                             message = ""
                             for song in playlist:
-                                previous_message = "" + message
+                                previous_message = message
                                 new_message = self.polished_message(server["strings"]["queue_add_song"] + "\n",
                                                                     ["song", "index"],
                                                                     {"song": self.polished_song_name(song["file"], song["name"]), "index": len(server["queue"]) + 1})
@@ -752,7 +752,7 @@ class Music(commands.Cog):
                     return
                 index = 0
                 while index < len(server["queue"]):
-                    previous_message = "" + message
+                    previous_message = message
                     new_message = self.polished_message(server["strings"]["song"] + "\n",
                                                         ["song", "index"],
                                                         {"song": self.polished_song_name(server["queue"][index]["file"], server["queue"][index]["name"]),
