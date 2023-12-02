@@ -16,7 +16,7 @@ strings:
     playlist_remove_song: "%{song} (#%{index}) has been removed from playlist '%{playlist}' (#%{playlist_index})."
     playlist: '#%{playlist_index}: %{playlist}'
     invalid_playlist: Playlist '%{playlist}' does not exist.
-    invalid_playlist_number: Playlist '#%{playlist_index}' does not exist.
+    invalid_playlist_number: 'Playlist #%{playlist_index} does not exist.'
     queue_no_songs: There are no tracks in the queue.
     queue_songs_header: 'List of tracks in the queue:'
     queue_add_song: '%{song} has been added to the queue (#%{index}).'
