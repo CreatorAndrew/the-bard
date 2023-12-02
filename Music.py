@@ -195,16 +195,16 @@ class Music(commands.Cog):
                     try:
                         if select in playlists or int(select) > 0:
                             try:
-                                playlist_number = int(select) - 1
+                                playlist_index = int(select) - 1
                                 # an index is entered, but is out of range
-                                if playlist_number >= len(server["playlists"]) or playlist_number < 0:
-                                    await context.followup.send(self.polished_message(strings["invalid_playlist_number"],
+                                if playlist_index >= len(server["playlists"]) or playlist_index < 0:
+                                    await context.followup.send(self.polished_message(strings["invalid_playlist_index"],
                                                                                       ["playlist_index"],
-                                                                                      {"placeholders": playlist_number + 1}))
+                                                                                      {"placeholders": playlist_index + 1}))
                                     self.lock.release()
                                     return
                             # an existent playlist name is entered
-                            except ValueError: playlist_number = playlists.index(select)
+                            except ValueError: playlist_index = playlists.index(select)
                             # handle adding a track to the playlist
                             if action == "add":
                                 if file is None and song_url is not None: url = song_url
@@ -213,7 +213,7 @@ class Music(commands.Cog):
                                     await context.followup.send(strings["invalid_command"])
                                     self.lock.release()
                                     return
-                                if new_index is None: song = {"name": new_name, "index": len(server["playlists"][playlist_number]["songs"]) + 1}
+                                if new_index is None: song = {"name": new_name, "index": len(server["playlists"][playlist_index]["songs"]) + 1}
                                 else: song = {"name": new_name, "index": int(new_index)}
                                 try:
                                     if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
@@ -231,15 +231,11 @@ class Music(commands.Cog):
                                     self.lock.release()
                                     return
 
-                                server["playlists"][playlist_number]["songs"].insert(song["index"] - 1, {"file": url,
-                                                                                                         "name": song["name"],
-                                                                                                         "time": "0",
-                                                                                                         "duration": song["duration"],
-                                                                                                         "silence": False})
+                                server["playlists"][playlist_index]["songs"].insert(song["index"] - 1, {"file": url, "name": song["name"], "duration": song["duration"]})
                                 await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                                           ["playlist", "playlist_index", "song", "index"],
-                                                                                          {"playlist": playlists[playlist_number],
-                                                                                           "playlist_index": playlist_number + 1,
+                                                                                          {"playlist": playlists[playlist_index],
+                                                                                           "playlist_index": playlist_index + 1,
                                                                                            "song": self.polished_song_name(url, song["name"]),
                                                                                            "index": song["index"]}))
                             # handle moving the position of a track within the playlist
@@ -249,13 +245,13 @@ class Music(commands.Cog):
                                     self.lock.release()
                                     return
                                 else:
-                                    song = server["playlists"][playlist_number]["songs"][int(song_index) - 1]
-                                    server["playlists"][playlist_number]["songs"].remove(song)
-                                    server["playlists"][playlist_number]["songs"].insert(int(new_index) - 1, song)
+                                    song = server["playlists"][playlist_index]["songs"][int(song_index) - 1]
+                                    server["playlists"][playlist_index]["songs"].remove(song)
+                                    server["playlists"][playlist_index]["songs"].insert(int(new_index) - 1, song)
                                     await context.followup.send(self.polished_message(strings["playlist_move_song"],
                                                                                               ["playlist", "playlist_index", "song", "index"],
-                                                                                              {"playlist": playlists[playlist_number],
-                                                                                               "playlist_index": playlist_number + 1,
+                                                                                              {"playlist": playlists[playlist_index],
+                                                                                               "playlist_index": playlist_index + 1,
                                                                                                "song": self.polished_song_name(song["file"], song["name"]),
                                                                                                "index": new_index}))
 
@@ -266,11 +262,11 @@ class Music(commands.Cog):
                                     self.lock.release()
                                     return
                                 else:
-                                    song = server["playlists"][playlist_number]["songs"][int(song_index) - 1]
+                                    song = server["playlists"][playlist_index]["songs"][int(song_index) - 1]
                                     await context.followup.send(self.polished_message(strings["playlist_rename_song"],
                                                                                       ["playlist", "playlist_index", "song", "index", "name"],
-                                                                                      {"playlist": server["playlists"][playlist_number]["name"],
-                                                                                       "playlist_index": playlist_number + 1,
+                                                                                      {"playlist": server["playlists"][playlist_index]["name"],
+                                                                                       "playlist_index": playlist_index + 1,
                                                                                        "song": self.polished_song_name(song["file"], song["name"]),
                                                                                        "index": song_index,
                                                                                        "name": new_name}))
@@ -282,22 +278,22 @@ class Music(commands.Cog):
                                     self.lock.release()
                                     return
                                 else:
-                                    song = server["playlists"][playlist_number]["songs"][int(song_index) - 1]
-                                    server["playlists"][playlist_number]["songs"].remove(song)
+                                    song = server["playlists"][playlist_index]["songs"][int(song_index) - 1]
+                                    server["playlists"][playlist_index]["songs"].remove(song)
                                     await context.followup.send(self.polished_message(strings["playlist_remove_song"],
                                                                                       ["playlist", "playlist_index", "song", "index"],
-                                                                                      {"playlist": server["playlists"][playlist_number]["name"],
-                                                                                       "playlist_index": playlist_number + 1,
+                                                                                      {"playlist": server["playlists"][playlist_index]["name"],
+                                                                                       "playlist_index": playlist_index + 1,
                                                                                        "song": self.polished_song_name(song["file"], song["name"]),
                                                                                        "index": song_index}))
                             # return a list of tracks in the playlist
                             elif action == "list":
                                 message = ""
-                                if server["playlists"][playlist_number]["songs"]:
-                                    if server["playlists"][playlist_number]:
+                                if server["playlists"][playlist_index]["songs"]:
+                                    if server["playlists"][playlist_index]:
                                         message += self.polished_message(strings["playlist_songs_header"] + "\n",
                                                                          ["playlist", "playlist_index"],
-                                                                         {"playlist": playlists[playlist_number], "playlist_index": playlist_number + 1})
+                                                                         {"playlist": playlists[playlist_index], "playlist_index": playlist_index + 1})
                                     else:
                                         await context.followup.send(strings["no_playlists"])
                                         self.lock.release()
@@ -305,16 +301,16 @@ class Music(commands.Cog):
                                 else:
                                     await context.followup.send(self.polished_message(strings["playlist_no_songs"],
                                                                                       ["playlist", "playlist_index"],
-                                                                                      {"playlist": playlists[playlist_number], "playlist_index": playlist_number + 1}))
+                                                                                      {"playlist": playlists[playlist_index], "playlist_index": playlist_index + 1}))
                                     self.lock.release()
                                     return
                                 index = 0
-                                while index < len(server["playlists"][playlist_number]["songs"]):
+                                while index < len(server["playlists"][playlist_index]["songs"]):
                                     previous_message = message
                                     new_message = self.polished_message(strings["song"] + "\n",
                                                                         ["song", "index"],
-                                                                        {"song": self.polished_song_name(server["playlists"][playlist_number]["songs"][index]["file"],
-                                                                                                         server["playlists"][playlist_number]["songs"][index]["name"]),
+                                                                        {"song": self.polished_song_name(server["playlists"][playlist_index]["songs"][index]["file"],
+                                                                                                         server["playlists"][playlist_index]["songs"][index]["name"]),
                                                                          "index": index + 1})
                                     message += new_message
                                     if len(message) > 2000:
@@ -425,7 +421,7 @@ class Music(commands.Cog):
                                     await context.followup.send(previous_message)
                                     message = new_message
                                 # add the track to the queue
-                                server["queue"].append(song)
+                                server["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
                             await context.followup.send(message)
                         else:
                             try:
