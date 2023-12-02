@@ -43,7 +43,6 @@ class Music(commands.Cog):
             for server in data["servers"]:
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"],
-                                                                 "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"],
                                                                  "repeat": server["repeat"],
                                                                  "keep": server["keep"],
                                                                  "queue": [],
@@ -61,6 +60,8 @@ class Music(commands.Cog):
                         index -= 1
                 except: self.servers.remove(self.servers[index])
                 index += 1
+        for server in data["servers"]:
+            self.servers[data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
 
     @app_commands.command(description="playlist_command_desc")
     @app_commands.describe(add="add_desc")
