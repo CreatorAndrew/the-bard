@@ -33,3 +33,5 @@ Also make sure to grab the following Python dependencies (see the command below)
 To run it, type the following in your operating system's CLI at the project's directory:
 
 `python3 Main.py`
+
+Make sure to add the bot token and user ID of the host user `Variables.yaml`. Use `+sync` to update the slash commands.
