@@ -34,4 +34,4 @@ To run it, type the following in your operating system's CLI at the project's di
 
 `python3 Main.py`
 
-Make sure to add the bot token and user ID of the host user to `Variables.yaml`. Use `+sync` to update the slash commands.
+Make sure to add the bot token and ID of the host user to `Variables.yaml`. The host user then needs to type `+sync` to make the slash commands show up and update.
