@@ -35,7 +35,7 @@ class Music(commands.Cog):
             message = message.replace("%{" + placeholder + "}", str(replacement))
         return message
 
-    def initialize_servers(self):
+    def initialize_servers(self, set_languages=True):
         data = yaml.safe_load(open(self.config, "r"))
         # add all servers with this bot to memory that weren't already
         if len(self.servers) < len(data["servers"]):
@@ -43,6 +43,7 @@ class Music(commands.Cog):
             for server in data["servers"]:
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"],
+                                                                 "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"],
                                                                  "repeat": server["repeat"],
                                                                  "keep": server["keep"],
                                                                  "queue": [],
@@ -61,8 +62,9 @@ class Music(commands.Cog):
                 except: self.servers.remove(self.servers[index])
                 index += 1
 
-        for server in data["servers"]:
-            self.servers[data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
+        if set_languages:
+            for server in data["servers"]:
+                self.servers[data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
 
     @app_commands.command(description="playlist_command_desc")
     @app_commands.describe(add="add_desc")
@@ -344,7 +346,7 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("load")
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        self.initialize_servers()
+        self.initialize_servers(False)
         data = yaml.safe_load(open(self.config, "r"))
         playlists = []
         for server in data["servers"]:
@@ -582,7 +584,7 @@ class Music(commands.Cog):
     @rename_command.autocomplete("song_index")
     @remove_command.autocomplete("song_index")
     async def song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        self.initialize_servers()
+        self.initialize_servers(False)
         songs = []
         for server in self.servers:
             if server["id"] == context.guild.id:
