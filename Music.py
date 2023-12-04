@@ -106,7 +106,7 @@ class Music(commands.Cog):
                             if select == str(data["servers"][self.servers.index(server)]["playlists"].index(playlist) + 1):
                                 index = 1
                                 for song in playlist["songs"]:
-                                    song_options.append(discord.SelectOption(label=self.polished_message(server["strings"]["song"],
+                                    song_options.append(discord.SelectOption(label=self.polished_message(strings["song"],
                                                                                                          ["song", "index"],
                                                                                                          {"song": song["name"], "index": index}),
                                                                              value=str(index)))
@@ -219,7 +219,7 @@ class Music(commands.Cog):
                                     if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
                                     song["duration"] = self.get_metadata(url)["duration"]
                                 except:
-                                    await context.followup.send(self.polished_message(server["strings"]["invalid_url"], ["url"], {"url": url}))
+                                    await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": url}))
                                     self.lock.release()
                                     return
                                 response = requests.get(url, stream = True)

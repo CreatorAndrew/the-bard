@@ -3,6 +3,7 @@ import shutil
 import requests
 import yaml
 import asyncio
+import typing
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -23,6 +24,7 @@ class Main(commands.Cog):
         self.servers = []
         self.config = config
         self.language_directory = language_directory
+        self.set_language_options()
         if not os.path.exists(self.config): shutil.copyfile(self.config.replace(".yaml", "") + "Default.yaml", self.config)
 
     def initialize_servers(self):
@@ -45,6 +47,13 @@ class Main(commands.Cog):
                         index -= 1
                 except: self.servers.remove(self.servers[index])
                 index += 1
+
+    def set_language_options(self):
+        self.language_options = []
+        for language_file in sorted(os.listdir(self.language_directory)):
+            if language_file.endswith(".yaml"):
+                language = yaml.safe_load(open(f"{self.language_directory}/{language_file}", "r"))["strings"]["language"]
+                self.language_options.append(app_commands.Choice(name=language, value=language_file.replace(".yaml", "")))
 
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, file: discord.Attachment=None, new_name: str=None):
@@ -86,6 +95,7 @@ class Main(commands.Cog):
                 # ensure that the attached YAML file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file_name}"): await asyncio.sleep(.1)
 
+                self.set_language_options()
                 language = file_name.replace(".yaml", "")
         elif file is None and new_name is not None:
             language = new_name
@@ -111,6 +121,13 @@ class Main(commands.Cog):
                 await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
                 break
         self.lock.release()
+
+    @language_command.autocomplete("new_name")
+    async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        language_options = []
+        for language_option in self.language_options:
+            if (current == "" or current.lower() in language_option.name.lower()) and len(language_options) < 25: language_options.append(language_option)
+        return language_options
 
     # add a Discord server that added this bot to the YAML file
     @commands.Cog.listener()
@@ -139,10 +156,10 @@ class Main(commands.Cog):
         self.lock.release()
 
 intents = discord.Intents.default()
-intents.message_content = True
 intents.guilds = True
+intents.message_content = True
 
-bot = commands.Bot(command_prefix = "+", intents = intents)
+bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
 lock = asyncio.Lock()
