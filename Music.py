@@ -372,7 +372,7 @@ class Music(commands.Cog):
 
     @playlist_command.autocomplete("song_index")
     async def playlist_song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        self.initialize_servers()
+        self.initialize_servers(False)
         data = yaml.safe_load(open(self.config, "r"))
         songs = []
         for server in data["servers"]:
