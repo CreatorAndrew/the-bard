@@ -232,7 +232,6 @@ class Music(commands.Cog):
                                                                                    "playlist_index": select,
                                                                                    "song": self.polished_song_name(song["file"], song["name"]),
                                                                                    "index": new_index}))
-
                         # handle renaming a track in the playlist
                         elif action == "rename":
                             if song_index is None or new_name is None:
