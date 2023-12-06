@@ -28,6 +28,7 @@ strings:
     invalid_song: '%{song} is not an audio or video file.'
     invalid_song_number: '%{index} was not a track number in the queue.'
     invalid_url: URL "%{url}" could not be read. Check if the URL is valid and try again.
+    shuffled: The queue has been shuffled.
     volume: The volume is currently at %{volume}.
     volume_change: The volume is now set to %{volume}.
     repeat: Playlists will %{now_or_no_longer} repeat.
@@ -57,6 +58,7 @@ strings:
     rewind_command: rewind
     when_command: when
     loop_command: loop
+    shuffle_command: shuffle
     queue_command: queue
     what_command: what
     volume_command: volume
@@ -73,12 +75,13 @@ strings:
     skip_command_desc: Skip to the next track in the queue
     previous_command_desc: Go back to the previous track in the queue
     stop_command_desc: Stop all audio from playing and clear the queue
-    pause_command_desc: Pause the current track
+    pause_command_desc: Pause or unpause the current track
     jump_command_desc: Jump to a specific part of the current track
     forward_command_desc: Fast forward the track
     rewind_command_desc: Rewind the track
     when_command_desc: Show the time marker of the current track
     loop_command_desc: Toggle whether playlists will repeat
+    shuffle_command_desc: Randomize the order of the tracks in the queue
     queue_command_desc: Show the list of tracks in the queue
     what_command_desc: Show the name of the current track playing
     volume_command_desc: Show or set the volume
@@ -99,6 +102,8 @@ strings:
     song_index: track
     new_name: name
     new_index: index
+    by: by
+    to: to
     time: time
     set: set
     add_desc: Add a playlist

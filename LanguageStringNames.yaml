@@ -25,6 +25,7 @@ names:
 -   invalid_song
 -   invalid_song_number
 -   invalid_url
+-   shuffled
 -   volume
 -   volume_change
 -   repeat
@@ -54,6 +55,7 @@ names:
 -   rewind_command
 -   when_command
 -   loop_command
+-   shuffle_command
 -   queue_command
 -   what_command
 -   volume_command
@@ -76,6 +78,7 @@ names:
 -   rewind_command_desc
 -   when_command_desc
 -   loop_command_desc
+-   shuffle_command_desc
 -   queue_command_desc
 -   what_command_desc
 -   volume_command_desc
@@ -96,6 +99,8 @@ names:
 -   song_index
 -   new_name
 -   new_index
+-   by
+-   to
 -   time
 -   set
 -   add_desc
