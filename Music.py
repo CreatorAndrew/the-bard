@@ -130,8 +130,6 @@ class Music(commands.Cog):
         await self.lock.acquire()
         for server in data["servers"]:
             if server["id"] == context.guild.id:
-                playlists = []
-                for playlist_instance in server["playlists"]: playlists.append(playlist_instance["name"])
                 # add a playlist
                 if add is not None and select is None:
                     server["playlists"].append({"name": add, "songs": []})
@@ -147,14 +145,15 @@ class Music(commands.Cog):
                     else:
                         await context.followup.send(self.polished_message(strings["rename_playlist"],
                                                                           ["playlist", "playlist_index", "name"],
-                                                                          {"playlist": playlists[rename - 1], "playlist_index": rename, "name": new_name}))
+                                                                          {"playlist": server["playlists"][rename - 1]["name"],
+                                                                           "playlist_index": rename, "name": new_name}))
                         server["playlists"][rename - 1]["name"] = new_name
                 # remove a playlist
                 elif remove is not None and select is None:
                     server["playlists"].remove(server["playlists"][remove - 1])
                     await context.followup.send(self.polished_message(strings["remove_playlist"],
                                                                       ["playlist", "playlist_index"],
-                                                                      {"playlist": playlists[remove - 1], "playlist_index": remove}))
+                                                                      {"playlist": server["playlists"][remove - 1]["name"], "playlist_index": remove}))
                 # load a playlist
                 elif load is not None and select is None:
                     self.lock.release()
@@ -173,7 +172,7 @@ class Music(commands.Cog):
                         previous_message = message
                         new_message = self.polished_message(strings["playlist"] + "\n",
                                                             ["playlist", "playlist_index"],
-                                                            {"playlist": playlists[index], "playlist_index": index + 1})
+                                                            {"playlist": server["playlists"][index]["name"], "playlist_index": index + 1})
                         message += new_message
                         if len(message) > 2000:
                             await context.followup.send(previous_message)
@@ -183,7 +182,7 @@ class Music(commands.Cog):
                     self.lock.release()
                     return
                 elif select is not None:
-                    if select in playlists or int(select) > 0:
+                    if select > 0 and select <= len(server["playlists"]):
                         # handle adding a track to the playlist
                         if action == "add":
                             if file is None and song_url is not None: url = song_url
@@ -213,7 +212,7 @@ class Music(commands.Cog):
                             server["playlists"][select - 1]["songs"].insert(song["index"] - 1, {"file": url, "name": song["name"], "duration": song["duration"]})
                             await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                                      ["playlist", "playlist_index", "song", "index"],
-                                                                                     {"playlist": playlists[select - 1],
+                                                                                     {"playlist": server["playlists"][select - 1]["name"],
                                                                                       "playlist_index": select,
                                                                                       "song": self.polished_song_name(url, song["name"]),
                                                                                       "index": song["index"]}))
@@ -229,7 +228,7 @@ class Music(commands.Cog):
                                 server["playlists"][select - 1]["songs"].insert(new_index - 1, song)
                                 await context.followup.send(self.polished_message(strings["playlist_move_song"],
                                                                                   ["playlist", "playlist_index", "song", "index"],
-                                                                                  {"playlist": playlists[select - 1],
+                                                                                  {"playlist": server["playlists"][select - 1]["name"],
                                                                                    "playlist_index": select,
                                                                                    "song": self.polished_song_name(song["file"], song["name"]),
                                                                                    "index": new_index}))
@@ -272,7 +271,7 @@ class Music(commands.Cog):
                                 if server["playlists"][select - 1]:
                                     message += self.polished_message(strings["playlist_songs_header"] + "\n",
                                                                      ["playlist", "playlist_index"],
-                                                                     {"playlist": playlists[select - 1], "playlist_index": select})
+                                                                     {"playlist": server["playlists"][select - 1]["name"], "playlist_index": select})
                                 else:
                                     await context.followup.send(strings["no_playlists"])
                                     self.lock.release()
@@ -280,7 +279,7 @@ class Music(commands.Cog):
                             else:
                                 await context.followup.send(self.polished_message(strings["playlist_no_songs"],
                                                                                   ["playlist", "playlist_index"],
-                                                                                  {"playlist": playlists[select - 1], "playlist_index": select}))
+                                                                                  {"playlist": server["playlists"][select - 1]["name"], "playlist_index": select}))
                                 self.lock.release()
                                 return
                             index = 0
@@ -303,6 +302,10 @@ class Music(commands.Cog):
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
+                    else:
+                        context.followup.send(strings["invalid_playlist_number"])
+                        self.lock.release()
+                        return
                 else:
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()

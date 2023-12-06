@@ -12,7 +12,6 @@ names:
 -   playlist_rename_song
 -   playlist_remove_song
 -   playlist
--   invalid_playlist
 -   invalid_playlist_number
 -   queue_no_songs
 -   queue_songs_header
