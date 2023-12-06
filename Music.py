@@ -521,8 +521,8 @@ class Music(commands.Cog):
                         if not silence: await context.response.send_message(self.polished_message(server["strings"]["queue_insert_song"],
                                                                                                   ["song", "index"],
                                                                                                   {"song": self.polished_song_name(url, name), "index": index}))
-                        break
                     else: await context.response.send_message(self.polished_message(server["strings"]["invalid_song_number"], ["index"], {"index": index}))
+                    break
 
     @app_commands.command(description="move_command_desc")
     async def move_command(self, context: discord.Interaction, song_index: str, new_index: str):
@@ -543,6 +543,7 @@ class Music(commands.Cog):
                     elif int(song_index) - 1 == server["index"] and int(new_index) - 1 != server["index"]: server["index"] = int(new_index) - 1
                     else: await context.response.send_message(self.polished_message(server["strings"]["invalid_song_number"], ["index"], {"index": new_index}))
                 else: await context.response.send_message(self.polished_message(server["strings"]["invalid_song_number"], ["index"], {"index": song_index}))
+                break
 
     @app_commands.command(description="rename_command_desc")
     async def rename_command(self, context: discord.Interaction, song_index: str, new_name: str):
@@ -555,6 +556,7 @@ class Music(commands.Cog):
                                                                            "index": song_index,
                                                                            "name": new_name}))
                 server["queue"][int(song_index) - 1]["name"] = new_name
+                break
 
     @app_commands.command(description="remove_command_desc")
     async def remove_command(self, context: discord.Interaction, song_index: str): await self.remove_song(context, song_index)
@@ -577,8 +579,8 @@ class Music(commands.Cog):
                     elif int(index) - 1 == server["index"]:
                         server["index"] -= 1
                         context.guild.voice_client.stop()
-                    break
                 else: await context.response.send_message(self.polished_message(server["strings"]["invalid_song_number"], ["index"], {"index": index}))
+                break
 
     @move_command.autocomplete("song_index")
     @rename_command.autocomplete("song_index")
@@ -612,6 +614,7 @@ class Music(commands.Cog):
                 if server["index"] > 0: server["index"] -= 2
                 elif server["queue"]: server["index"] = len(server["queue"]) - 2
                 context.guild.voice_client.stop()
+                break
 
     @app_commands.command(description="stop_command_desc")
     async def stop_command(self, context: discord.Interaction):
@@ -678,14 +681,18 @@ class Music(commands.Cog):
         await context.response.send_message("...")
         await context.delete_original_response()
         for server in self.servers:
-            if server["id"] == context.guild.id: await self.jump_to(context, str(float(server["time"]) + float(time)))
+            if server["id"] == context.guild.id:
+                await self.jump_to(context, str(float(server["time"]) + float(time)))
+                break
 
     @app_commands.command(description="rewind_command_desc")
     async def rewind_command(self, context: discord.Interaction, time: str):
         await context.response.send_message("...")
         await context.delete_original_response()
         for server in self.servers:
-            if server["id"] == context.guild.id: await self.jump_to(context, str(float(server["time"]) - float(time)))
+            if server["id"] == context.guild.id:
+                await self.jump_to(context, str(float(server["time"]) - float(time)))
+                break
 
     @app_commands.command(description="when_command_desc")
     async def when_command(self, context: discord.Interaction):
@@ -715,6 +722,7 @@ class Music(commands.Cog):
                 if server["queue"]:
                     await context.response.send_message(convert_to_time(server["time"]) + " / " + convert_to_time(server["queue"][server["index"]]["duration"]))
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
+                break
 
     @app_commands.command(description="loop_command_desc")
     async def loop_command(self, context: discord.Interaction):
@@ -763,6 +771,7 @@ class Music(commands.Cog):
                         message = new_message
                     index += 1
                 await context.followup.send(message)
+                break
 
     @app_commands.command(description="what_command_desc")
     async def what_command(self, context: discord.Interaction):
@@ -776,6 +785,7 @@ class Music(commands.Cog):
                                                                                                "index": server["index"] + 1,
                                                                                                "max": len(server['queue'])}))
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
+                break
 
     @app_commands.command(description="volume_command_desc")
     async def volume_command(self, context: discord.Interaction, set: str=None):
@@ -834,6 +844,7 @@ class Music(commands.Cog):
                     await voice_channel.connect()
                     server["connected"] = True
                     await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
+                break
 
     @app_commands.command(description="dismiss_command_desc")
     async def dismiss_command(self, context: discord.Interaction):    
