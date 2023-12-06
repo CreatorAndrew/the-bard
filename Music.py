@@ -338,11 +338,15 @@ class Music(commands.Cog):
 
     @playlist_command.autocomplete("action")
     async def playlist_action_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        action_options = [app_commands.Choice(name="add", value="add"),
-                          app_commands.Choice(name="move", value="move"),
-                          app_commands.Choice(name="rename", value="rename"),
-                          app_commands.Choice(name="remove", value="remove"),
-                          app_commands.Choice(name="list", value="list")]
+        self.initialize_servers(False)
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                action_options = [app_commands.Choice(name=server["strings"]["add"], value="add"),
+                                  app_commands.Choice(name=server["strings"]["move"], value="move"),
+                                  app_commands.Choice(name=server["strings"]["rename"], value="rename"),
+                                  app_commands.Choice(name=server["strings"]["remove"], value="remove"),
+                                  app_commands.Choice(name=server["strings"]["list"], value="list")]
+                break
         actions = []
         for action in action_options:
             if current == "" or current.lower() in action.name.lower(): actions.append(action)
