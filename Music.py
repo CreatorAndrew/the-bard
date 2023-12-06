@@ -345,7 +345,7 @@ class Music(commands.Cog):
                           app_commands.Choice(name="list", value="list")]
         actions = []
         for action in action_options:
-            if current == "" or current.lower() in action.name: actions.append(action)
+            if current == "" or current.lower() in action.name.lower(): actions.append(action)
         return actions
 
     @playlist_command.autocomplete("song_index")
