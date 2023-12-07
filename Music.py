@@ -171,10 +171,10 @@ class Music(commands.Cog):
                         server["playlists"][rename - 1]["name"] = new_name
                 # remove a playlist
                 elif remove is not None and select is None:
-                    server["playlists"].remove(server["playlists"][remove - 1])
                     await context.followup.send(self.polished_message(strings["remove_playlist"],
                                                                       ["playlist", "playlist_index"],
                                                                       {"playlist": server["playlists"][remove - 1]["name"], "playlist_index": remove}))
+                    server["playlists"].remove(server["playlists"][remove - 1])
                 # load a playlist
                 elif load is not None and select is None:
                     self.lock.release()
