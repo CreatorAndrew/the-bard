@@ -46,6 +46,7 @@ strings:
     invalid_language_file: "The file '%{language_file}' does not have sufficient data for a full translation. Here is a template for localisation:"
     language_file_exists: A language file of the name, '%{language_file}', already exists.
     invalid_command: Invalid command usage
+    playlists_command: playlists
     playlist_command: playlist
     play_command: play
     insert_command: insert
@@ -69,6 +70,7 @@ strings:
     recruit_command: recruit
     dismiss_command: dismiss
     language_command: language
+    playlists_command_desc: Show the list of playlists for this server
     playlist_command_desc: Interact with playlists
     play_command_desc: Play or add a track to the queue
     insert_command_desc: Insert a track into the queue at the specified index
@@ -91,7 +93,7 @@ strings:
     keep_command_desc: Toggle immediate dismissal from a voice channel after all audio stops playing
     recruit_command_desc: Connect me to a voice channel
     dismiss_command_desc: Disconnect me from a voice channel
-    language_command_desc: Change the language for this Discord server
+    language_command_desc: Change the language for this server
     add: add
     move: move
     rename: rename

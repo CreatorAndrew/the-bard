@@ -43,6 +43,7 @@ names:
 -   invalid_language_file
 -   language_file_exists
 -   invalid_command
+-   playlists_command
 -   playlist_command
 -   play_command
 -   insert_command
@@ -66,6 +67,7 @@ names:
 -   recruit_command
 -   dismiss_command
 -   language_command
+-   playlists_command_desc
 -   playlist_command_desc
 -   play_command_desc
 -   insert_command_desc

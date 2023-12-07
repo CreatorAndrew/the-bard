@@ -29,7 +29,7 @@ class Main(commands.Cog):
 
     def initialize_servers(self):
         data = yaml.safe_load(open(self.config, "r"))
-        # add all servers with this bot to memory that weren't already
+        # add all servers with this bot to memory that were not already
         if len(self.servers) < len(data["servers"]):
             ids = []
             for server in data["servers"]:
@@ -92,7 +92,7 @@ class Main(commands.Cog):
                     await context.response.send_message(strings["language_file_exists"].replace("%{language_file}", file_name))
                     self.lock.release()
                     return
-                # ensure that the attached YAML file is fully transferred before the language is changed to it
+                # ensure that the attached language file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file_name}"): await asyncio.sleep(.1)
 
                 self.set_language_options()
@@ -115,7 +115,7 @@ class Main(commands.Cog):
                 self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
                 self.servers[data["servers"].index(server)]["language"] = language
                 server["language"] = language
-                # modify the YAML file to reflect the change of language
+                # modify the flat file for servers to reflect the change of language
                 yaml.safe_dump(data, open(self.config, "w"), indent=4)
 
                 await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
@@ -129,7 +129,7 @@ class Main(commands.Cog):
             if (current == "" or current.lower() in language_option.name.lower()) and len(language_options) < 25: language_options.append(language_option)
         return language_options
 
-    # add a Discord server that added this bot to the YAML file
+    # add a Discord server that added this bot to the flat file for servers
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         await self.lock.acquire()
@@ -144,7 +144,7 @@ class Main(commands.Cog):
         yaml.safe_dump(data, open(self.config, "w"), indent=4)
         self.lock.release()
 
-    # remove a Discord server that removed this bot from the YAML file
+    # remove a Discord server that removed this bot from the flat file for servers
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         await self.lock.acquire()
