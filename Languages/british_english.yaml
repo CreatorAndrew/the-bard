@@ -27,11 +27,15 @@ strings:
     invalid_song: '%{song} is not an audio or video file.'
     invalid_song_number: '%{index} was not a track number in the queue.'
     invalid_url: URL '%{url}' could not be read. Check if the URL is valid and try again.
-    shuffled: The queue has been shuffled.
+    stop: The queue has been cleared.
+    pause: Playback is %{now_or_no_longer} paused.
+    jump: Jumped to %{time} in %{song} (%{index}/%{max})
+    shuffle: The queue has been shuffled.
     volume: The volume is currently at %{volume}.
     volume_change: The volume is now set to %{volume}.
     repeat: Playlists will %{now_or_no_longer} repeat.
     keep: '%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing.'
+    recruit_or_dismiss: '%{bot} is %{now_or_no_longer} in %{voice}.'
     now: now
     no_longer: no longer
     whatever_voice: whatever voice channel it is in

@@ -36,6 +36,27 @@ class Music(commands.Cog):
             message = message.replace("%{" + placeholder + "}", str(replacement))
         return message
 
+    def convert_to_time(self, number):
+        segments = []
+        temp_number = number
+        if temp_number >= 3600:
+            segments.append(str(int(temp_number / 3600)))
+            temp_number %= 3600
+        else: segments.append("00")
+        if temp_number >= 60:
+            segments.append(str(int(temp_number / 60)))
+            temp_number %= 60
+        else: segments.append("00")
+        segments.append(str(int(temp_number)))
+        marker = ""
+        index = 0
+        for segment in segments:
+            if len(segment) == 1: segment = "0" + segment
+            marker += segment
+            if index < len(segments) - 1: marker += ":"
+            index += 1
+        return marker
+
     def initialize_servers(self, set_languages=True):
         data = yaml.safe_load(open(self.config, "r"))
         # add all servers with this bot to memory that weren't already
@@ -597,13 +618,18 @@ class Music(commands.Cog):
                         else:
                             await context.response.send_message(server["strings"]["invalid_command"])
                             return
+                    await context.response.send_message(self.polished_message(server["strings"]["now_playing"],
+                                                                              ["song", "index", "max"],
+                                                                              {"song": self.polished_song_name(server["queue"][server["index"] + 1]["file"],
+                                                                                                               server["queue"][server["index"] + 1]["name"]),
+                                                                               "index": server["index"] + 2,
+                                                                               "max": len(server["queue"])}))
+                    server["queue"][server["index"] + 1]["silence"] = True
                     context.guild.voice_client.stop()
                 else:
                     await context.response.send_message(server["strings"]["queue_no_songs"])
                     return
                 break
-        await context.response.send_message("...")
-        await context.delete_original_response()
 
     @app_commands.command(description="previous_command_desc")
     async def previous_command(self, context: discord.Interaction, by: int=1):
@@ -615,18 +641,30 @@ class Music(commands.Cog):
                     else:
                         await context.response.send_message(server["strings"]["invalid_command"])
                         return
+                    await context.response.send_message(self.polished_message(server["strings"]["now_playing"],
+                                                                              ["song", "index", "max"],
+                                                                              {"song": self.polished_song_name(server["queue"][server["index"] + 1]["file"],
+                                                                                                               server["queue"][server["index"] + 1]["name"]),
+                                                                               "index": server["index"] + 2,
+                                                                               "max": len(server["queue"])}))
+                    server["queue"][server["index"] + 1]["silence"] = True
                     context.guild.voice_client.stop()
                 else:
                     await context.response.send_message(server["strings"]["queue_no_songs"])
                     return
                 break
-        await context.response.send_message("...")
-        await context.delete_original_response()
 
     @app_commands.command(description="stop_command_desc")
     async def stop_command(self, context: discord.Interaction):
-        await context.response.send_message("...")
-        await context.delete_original_response()
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                await context.response.send_message(server["strings"]["stop"])
+                break
+        try:
+            await context.response.send_message("...")
+            await context.delete_original_response()
+        except: pass
         await self.stop_music(context)
 
     async def stop_music(self, context, leave=False, guild=None):
@@ -648,18 +686,24 @@ class Music(commands.Cog):
 
     @app_commands.command(description="pause_command_desc")
     async def pause_command(self, context: discord.Interaction):
-        try:
-            await context.response.send_message("...")
-            await context.delete_original_response()
-            if context.guild.voice_client.is_paused(): context.guild.voice_client.resume()
-            else: context.guild.voice_client.pause()
-        except: pass
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                if server["queue"]:
+                    if context.guild.voice_client.is_paused():
+                        context.guild.voice_client.resume()
+                        now_or_no_longer = server["strings"]["no_longer"]
+                    else:
+                        context.guild.voice_client.pause()
+                        now_or_no_longer = server["strings"]["now"]
+                    await context.response.send_message(self.polished_message(server["strings"]["pause"], ["now_or_no_longer"], {"now_or_no_longer": now_or_no_longer}))
+                else:
+                    await context.response.send_message(server["strings"]["queue_no_songs"])
+                    return
+                break
 
     @app_commands.command(description="jump_command_desc")
-    async def jump_command(self, context: discord.Interaction, time: str):
-        await context.response.send_message("...")
-        await context.delete_original_response()
-        await self.jump_to(context, time)
+    async def jump_command(self, context: discord.Interaction, time: str): await self.jump_to(context, time)
 
     async def jump_to(self, context, time):
         self.initialize_servers()
@@ -671,6 +715,13 @@ class Music(commands.Cog):
         for server in self.servers:
             if server["id"] == context.guild.id:
                 if server["queue"]:
+                    await context.response.send_message(self.polished_message(server["strings"]["jump"],
+                                                                              ["time", "song", "index", "max"],
+                                                                              {"time": self.convert_to_time(seconds),
+                                                                               "song": self.polished_song_name(server["queue"][server["index"]]["file"],
+                                                                                                               server["queue"][server["index"]]["name"]),
+                                                                               "index": server["index"] + 1,
+                                                                               "max": len(server["queue"])}))
                     server["time"] = seconds
                     await self.insert_song(context,
                                            server["queue"][server["index"]]["file"],
@@ -685,8 +736,6 @@ class Music(commands.Cog):
 
     @app_commands.command(description="forward_command_desc")
     async def forward_command(self, context: discord.Interaction, time: str):
-        await context.response.send_message("...")
-        await context.delete_original_response()
         for server in self.servers:
             if server["id"] == context.guild.id:
                 await self.jump_to(context, str(float(server["time"]) + float(time)))
@@ -694,8 +743,6 @@ class Music(commands.Cog):
 
     @app_commands.command(description="rewind_command_desc")
     async def rewind_command(self, context: discord.Interaction, time: str):
-        await context.response.send_message("...")
-        await context.delete_original_response()
         for server in self.servers:
             if server["id"] == context.guild.id:
                 await self.jump_to(context, str(float(server["time"]) - float(time)))
@@ -703,31 +750,11 @@ class Music(commands.Cog):
 
     @app_commands.command(description="when_command_desc")
     async def when_command(self, context: discord.Interaction):
-        def convert_to_time(number):
-            segments = []
-            temp_number = number
-            if temp_number >= 3600:
-                segments.append(str(int(temp_number / 3600)))
-                temp_number %= 3600
-            else: segments.append("00")
-            if temp_number >= 60:
-                segments.append(str(int(temp_number / 60)))
-                temp_number %= 60
-            else: segments.append("00")
-            segments.append(str(int(temp_number)))
-            marker = ""
-            index = 0
-            for segment in segments:
-                if len(segment) == 1: segment = "0" + segment
-                marker += segment
-                if index < len(segments) - 1: marker += ":"
-                index += 1
-            return marker
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
                 if server["queue"]:
-                    await context.response.send_message(convert_to_time(server["time"]) + " / " + convert_to_time(server["queue"][server["index"]]["duration"]))
+                    await context.response.send_message(self.convert_to_time(server["time"]) + " / " + self.convert_to_time(server["queue"][server["index"]]["duration"]))
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
                 break
 
@@ -768,7 +795,7 @@ class Music(commands.Cog):
                         server["queue"][temp_index] = temp_song
                         if index == server["index"]: server["index"] = temp_index
                         index += 1
-                    await context.response.send_message(server["strings"]["shuffled"])
+                    await context.response.send_message(server["strings"]["shuffle"])
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
                 break
 
@@ -856,8 +883,6 @@ class Music(commands.Cog):
 
     @app_commands.command(description="recruit_command_desc")
     async def recruit_command(self, context: discord.Interaction):
-        await context.response.send_message("...")
-        await context.delete_original_response()
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
@@ -865,17 +890,40 @@ class Music(commands.Cog):
                 except:
                     await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
                     return
-                if not server["connected"]:
+                if server["connected"]:
+                    await context.response.send_message("...")
+                    await context.delete_original_response()
+                else:
+                    await context.response.send_message(self.polished_message(server["strings"]["recruit_or_dismiss"],
+                                                                              ["bot", "voice", "now_or_no_longer"],
+                                                                              {"bot": self.bot.user.mention,
+                                                                               "voice": voice_channel.jump_url,
+                                                                               "now_or_no_longer": server["strings"]["now"]}))
                     await voice_channel.connect()
                     server["connected"] = True
                     await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
                 break
 
     @app_commands.command(description="dismiss_command_desc")
-    async def dismiss_command(self, context: discord.Interaction):    
-        await context.response.send_message("...")
-        await context.delete_original_response()
-        await self.stop_music(context, True)
+    async def dismiss_command(self, context: discord.Interaction):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                try: voice_channel = context.user.voice.channel
+                except:
+                    await context.response.send_message(self.polished_message(server["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
+                    return
+                if server["connected"]:
+                    await context.response.send_message(self.polished_message(server["strings"]["recruit_or_dismiss"],
+                                                                              ["bot", "voice", "now_or_no_longer"],
+                                                                              {"bot": self.bot.user.mention,
+                                                                               "voice": voice_channel.jump_url,
+                                                                               "now_or_no_longer": server["strings"]["no_longer"]}))
+                    await self.stop_music(context, True)
+                else:
+                    await context.response.send_message("...")
+                    await context.delete_original_response()
+                break
 
     # ensure that this bot disconnects from any empty voice channel it's in
     @commands.Cog.listener()
