@@ -117,6 +117,9 @@ class Music(commands.Cog):
 
     @app_commands.command(description="playlist_command_desc")
     @app_commands.describe(add="add_desc")
+    @app_commands.describe(clone="clone_desc")
+    @app_commands.describe(into="into_desc")
+    @app_commands.describe(move="move_desc")
     @app_commands.describe(rename="rename_desc")
     @app_commands.describe(remove="remove_desc")
     @app_commands.describe(load="load_desc")
@@ -130,6 +133,9 @@ class Music(commands.Cog):
     async def playlist_command(self,
                                context: discord.Interaction,
                                add: str=None,
+                               clone: int=None,
+                               into: int=None,
+                               move: int=None,
                                rename: int=None,
                                remove: int=None,
                                load: int=None,
@@ -140,7 +146,7 @@ class Music(commands.Cog):
                                song_index: int=None,
                                new_name: str=None,
                                new_index: int=None):
-        await context.response.defer()    
+        await context.response.defer()
         self.initialize_servers()
         data = yaml.safe_load(open(self.config, "r"))
         for server in self.servers:
@@ -184,6 +190,39 @@ class Music(commands.Cog):
                     await context.followup.send(self.polished_message(strings["add_playlist"],
                                                                       ["playlist", "playlist_index"],
                                                                       {"playlist": add, "playlist_index": len(server["playlists"])}))
+                # clone a playlist or copy its tracks into another playlist
+                if clone is not None and select is None:
+                    # clone a playlist
+                    if into is None:
+                        if new_name is None: new_name = server["playlists"][clone - 1]["name"]
+                        server["playlists"].append({"name": new_name, "songs":  server["playlists"][clone - 1]["songs"]})
+                        await context.followup.send(self.polished_message(strings["clone_playlist"],
+                                                                          ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
+                                                                          {"playlist": server["playlists"][clone - 1]["name"],
+                                                                           "playlist_index": clone,
+                                                                           "into_playlist": new_name,
+                                                                           "into_playlist_index": len(server["playlists"])}))
+                    # copy a playlist's tracks into another playlist
+                    else:
+                        server["playlists"][into - 1]["songs"] += server["playlists"][clone - 1]["songs"]
+                        await context.followup.send(self.polished_message(strings["clone_playlist"],
+                                                                          ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
+                                                                          {"playlist": server["playlists"][clone - 1]["name"],
+                                                                           "playlist_index": clone,
+                                                                           "into_playlist": server["playlists"][into - 1]["name"],
+                                                                           "into_playlist_index": into}))
+                # change a playlist's position in the order of playlists
+                elif move is not None and select is None:
+                    if new_index is None or new_index > len(server["playlists"]) or new_index < 1:
+                        await context.followup.send(strings["invalid_command"])
+                        self.lock.release()
+                        return
+                    playlists = server["playlists"].copy()
+                    server["playlists"].remove(playlists[move - 1])
+                    server["playlists"].insert(new_index - 1, playlists[move - 1])
+                    await context.followup.send(self.polished_message(strings["move_playlist"],
+                                                                      ["playlist", "playlist_index"],
+                                                                      {"playlist": playlists[move - 1]["name"], "playlist_index": new_index}))
                 # rename a playlist
                 elif rename is not None and select is None:
                     if new_name is None:
@@ -208,7 +247,7 @@ class Music(commands.Cog):
                     await self.play_song(context, playlist=server["playlists"][load - 1]["songs"])
                     return
                 # select a playlist to modify or show the contents of
-                elif select is not None and add is None and rename is None and remove is None and load is None:
+                elif select is not None and add is None and clone is None and move is None and rename is None and remove is None and load is None:
                     if select > 0 and select <= len(server["playlists"]):
                         # add a track to the playlist
                         if action == "add":
@@ -342,6 +381,9 @@ class Music(commands.Cog):
                 break
         self.lock.release()
 
+    @playlist_command.autocomplete("clone")
+    @playlist_command.autocomplete("into")
+    @playlist_command.autocomplete("move")
     @playlist_command.autocomplete("rename")
     @playlist_command.autocomplete("remove")
     @playlist_command.autocomplete("load")

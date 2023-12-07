@@ -3,6 +3,8 @@ names:
 -   no_playlists
 -   playlists_header
 -   add_playlist
+-   clone_playlist
+-   move_playlist
 -   rename_playlist
 -   remove_playlist
 -   playlist_no_songs
@@ -92,6 +94,8 @@ names:
 -   dismiss_command_desc
 -   language_command_desc
 -   add
+-   clone
+-   into
 -   move
 -   rename
 -   remove
@@ -109,11 +113,12 @@ names:
 -   time
 -   set
 -   add_desc
+-   clone_desc
+-   into_desc
 -   move_desc
 -   rename_desc
 -   remove_desc
 -   load_desc
--   list_desc
 -   select_desc
 -   action_desc
 -   file_desc

@@ -6,6 +6,8 @@ strings:
     no_playlists: No playlists exist for this server.
     playlists_header: 'Playlists for this server:'
     add_playlist: Playlist '%{playlist}' has been created (#%{playlist_index}).
+    clone_playlist: The tracks belonging to playlist '%{playlist}' (#%{playlist_index}) have been copied into playlist '%{into_playlist}' (#%{into_playlist_index}).
+    move_playlist: "Playlist '%{playlist}' is now #%{playlist_index} in the list of playlists."
     rename_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been renamed to '%{name}'.
     remove_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been deleted.
     playlist_no_songs: Playlist '%{playlist}' (#%{playlist_index}) has no tracks.
@@ -95,6 +97,8 @@ strings:
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Change the language for this server
     add: add
+    clone: clone
+    into: into
     move: move
     rename: rename
     remove: remove
@@ -112,16 +116,17 @@ strings:
     time: time
     set: set
     add_desc: Add a playlist
-    move_desc: Change a track's position within a playlist
+    clone_desc: Clone a playlist or copy its tracks into another playlist (use together with `into`)
+    into_desc: Specify a playlist to clone another playlist's tracks into (use together with `clone`)
+    move_desc: Change a playlist's position in the order of playlists for this server
     rename_desc: Rename a playlist
     remove_desc: Remove a playlist
     load_desc: Load a playlist
-    list_desc: Show the list of tracks in a playlist
-    select_desc: Select a playlist; use together with `action`
-    action_desc: Choose an action for the selected playlist
+    select_desc: Select a playlist (use together with `action`)
+    action_desc: Specify an action for the selected playlist (use together with `select`)
     file_desc: Specify a file for a track to add to a playlist
     song_url_desc: Specify a URL for a track to add to a playlist
     song_index_desc: Specify an index for a track to rename or move within a playlist
     new_name_desc: Specify a name for a playlist or track
-    new_index_desc: Specify an index to move or insert a track at within a playlist
+    new_index_desc: Specify an index to move a playlist at or move or insert a track at within a playlist
     cancel_option: Cancel
