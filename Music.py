@@ -91,21 +91,22 @@ class Music(commands.Cog):
     # return a list of playlists for the calling Discord server
     @app_commands.command(description="playlists_command_desc")
     async def playlists_command(self, context: discord.Interaction):
-        context.response.defer()
+        await context.response.defer()
         self.initialize_servers()
+        data = yaml.safe_load(open(self.config, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 message = ""
-                if server["playlists"]: message += server["strings"]["playlists_header"] + "\n"
+                if data["servers"][self.servers.index(server)]["playlists"]: message += server["strings"]["playlists_header"] + "\n"
                 else:
                     await context.followup.send(server["strings"]["no_playlists"])
                     return
                 index = 0
-                while index < len(server["playlists"]):
+                while index < len(data["servers"][self.servers.index(server)]["playlists"]):
                     previous_message = message
                     new_message = self.polished_message(server["strings"]["playlist"] + "\n",
                                                         ["playlist", "playlist_index"],
-                                                        {"playlist": server["playlists"][index]["name"], "playlist_index": index + 1})
+                                                        {"playlist": data["servers"][self.servers.index(server)]["playlists"][index]["name"], "playlist_index": index + 1})
                     message += new_message
                     if len(message) > 2000:
                         await context.followup.send(previous_message)
