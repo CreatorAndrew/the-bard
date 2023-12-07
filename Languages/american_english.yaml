@@ -37,7 +37,7 @@ strings:
     volume_change: The volume is now set to %{volume}.
     repeat: Playlists will %{now_or_no_longer} repeat.
     keep: '%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing.'
-    recruit_or_dismiss: '%{bot} is %{now_or_no_longer} in %{voice}.'
+    recruit_or_dismiss: '%{bot} is %{now_or_no_longer} in %{voice}'
     now: now
     no_longer: no longer
     whatever_voice: whatever voice channel it is in
