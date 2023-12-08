@@ -163,7 +163,7 @@ bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
 lock = asyncio.Lock()
-servers_data = "Servers.yaml"
+data = "Servers.yaml"
 language_directory = "Languages"
 
 @bot.event
@@ -180,8 +180,8 @@ async def sync(context):
 
 async def main():
     async with bot:
-        await bot.add_cog(Main(bot, servers_data, language_directory, lock))
-        await bot.add_cog(Music(bot, servers_data, language_directory, lock))
+        await bot.add_cog(Main(bot, data, language_directory, lock))
+        await bot.add_cog(Music(bot, data, language_directory, lock))
         await bot.start(yaml.safe_load(open("Variables.yaml", "r"))["token"])
 
 asyncio.run(main())
