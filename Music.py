@@ -191,11 +191,11 @@ class Music(commands.Cog):
                                                                       ["playlist", "playlist_index"],
                                                                       {"playlist": add, "playlist_index": len(server["playlists"])}))
                 # clone a playlist or copy its tracks into another playlist
-                if clone is not None and select is None:
+                elif clone is not None and select is None:
                     # clone a playlist
                     if into is None:
                         if new_name is None: new_name = server["playlists"][clone - 1]["name"]
-                        server["playlists"].append({"name": new_name, "songs":  server["playlists"][clone - 1]["songs"]})
+                        server["playlists"].append({"name": new_name, "songs": server["playlists"][clone - 1]["songs"].copy()})
                         await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                           ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
                                                                           {"playlist": server["playlists"][clone - 1]["name"],
@@ -266,7 +266,7 @@ class Music(commands.Cog):
                                 await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": url}))
                                 self.lock.release()
                                 return
-                            response = requests.get(url, stream = True)
+                            response = requests.get(url, stream=True)
                             # verify that the URL file is a media container
                             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                                 await context.followup.send(self.polished_message(strings["invalid_song"],
