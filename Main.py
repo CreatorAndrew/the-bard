@@ -18,17 +18,17 @@ class CommandTranslator(app_commands.Translator):
         except: return None
 
 class Main(commands.Cog):
-    def __init__(self, bot, config, language_directory, lock):
-        self.lock = lock
+    def __init__(self, bot, data, language_directory, lock):
         self.bot = bot
-        self.servers = []
-        self.config = config
+        self.data = data
         self.language_directory = language_directory
+        self.lock = lock
+        self.servers = []
         self.set_language_options()
-        if not os.path.exists(self.config): shutil.copyfile(self.config.replace(".yaml", "") + "Default.yaml", self.config)
+        if not os.path.exists(self.data): shutil.copyfile(self.data.replace(".yaml", "") + "Default.yaml", self.data)
 
     def initialize_servers(self):
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         # add all servers with this bot to memory that were not already
         if len(self.servers) < len(data["servers"]):
             ids = []
@@ -108,7 +108,7 @@ class Main(commands.Cog):
             await context.response.send_message(strings["invalid_command"])
             self.lock.release()
             return
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         for server in data["servers"]:
             if server["id"] == context.guild.id:
                 language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
@@ -116,7 +116,7 @@ class Main(commands.Cog):
                 self.servers[data["servers"].index(server)]["language"] = language
                 server["language"] = language
                 # modify the flat file for servers to reflect the change of language
-                yaml.safe_dump(data, open(self.config, "w"), indent=4)
+                yaml.safe_dump(data, open(self.data, "w"), indent=4)
 
                 await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
                 break
@@ -133,7 +133,7 @@ class Main(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         ids = []
         for server in data["servers"]: ids.append(server["id"])
         if guild.id not in ids: data["servers"].append({"id": guild.id,
@@ -141,29 +141,30 @@ class Main(commands.Cog):
                                                         "repeat": False,
                                                         "keep": False,
                                                         "playlists": []})
-        yaml.safe_dump(data, open(self.config, "w"), indent=4)
+        yaml.safe_dump(data, open(self.data, "w"), indent=4)
         self.lock.release()
 
     # remove a Discord server that removed this bot from the flat file for servers
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         ids = []
         for server in data["servers"]: ids.append(server["id"])
         if guild.id in ids: data["servers"].remove(data["servers"][ids.index(guild.id)])
-        yaml.safe_dump(data, open(self.config, "w"), indent=4)
+        yaml.safe_dump(data, open(self.data, "w"), indent=4)
         self.lock.release()
 
 intents = discord.Intents.default()
 intents.guilds = True
+intents.members = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
 lock = asyncio.Lock()
-config = "Servers.yaml"
+servers_data = "Servers.yaml"
 language_directory = "Languages"
 
 @bot.event
@@ -180,8 +181,8 @@ async def sync(context):
 
 async def main():
     async with bot:
-        await bot.add_cog(Main(bot, config, language_directory, lock))
-        await bot.add_cog(Music(bot, config, language_directory, lock))
+        await bot.add_cog(Main(bot, servers_data, language_directory, lock))
+        await bot.add_cog(Music(bot, servers_data, language_directory, lock))
         await bot.start(yaml.safe_load(open("Variables.yaml", "r"))["token"])
 
 asyncio.run(main())

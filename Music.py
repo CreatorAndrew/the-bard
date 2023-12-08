@@ -9,12 +9,12 @@ from discord.ext import commands
 from subprocess import check_output
 
 class Music(commands.Cog):
-    def __init__(self, bot, config, language_directory, lock):
-        self.lock = lock
+    def __init__(self, bot, data, language_directory, lock):
         self.bot = bot
-        self.servers = []
-        self.config = config
+        self.data = data
         self.language_directory = language_directory
+        self.lock = lock
+        self.servers = []
 
     def get_metadata(self, file):
         for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
@@ -58,7 +58,7 @@ class Music(commands.Cog):
         return marker
 
     def initialize_servers(self, set_languages=True):
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         # add all servers with this bot to memory that were not already
         if len(self.servers) < len(data["servers"]):
             ids = []
@@ -93,7 +93,7 @@ class Music(commands.Cog):
     async def playlists_command(self, context: discord.Interaction):
         await context.response.defer()
         self.initialize_servers()
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 message = ""
@@ -148,7 +148,7 @@ class Music(commands.Cog):
                                new_index: int=None):
         await context.response.defer()
         self.initialize_servers()
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 strings = server["strings"]
@@ -376,7 +376,7 @@ class Music(commands.Cog):
                     self.lock.release()
                     return
                 # modify the flat file for servers to reflect changes regarding playlists
-                yaml.safe_dump(data, open(self.config, "w"), indent=4)
+                yaml.safe_dump(data, open(self.data, "w"), indent=4)
 
                 break
         self.lock.release()
@@ -390,7 +390,7 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
         self.initialize_servers(False)
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         playlists = []
         for server in data["servers"]:
             if server["id"] == context.guild.id:
@@ -424,7 +424,7 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("song_index")
     async def playlist_song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
         self.initialize_servers(False)
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         songs = []
         for server in data["servers"]:
             if server["id"] == context.guild.id:
@@ -814,13 +814,13 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 strings = server["strings"]
                 break
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         for server in data["servers"]:
             if server["id"] == context.guild.id:
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
                 # modify the flat file for servers to reflect the change of whether playlists repeat
-                yaml.safe_dump(data, open(self.config, "w"), indent=4)
+                yaml.safe_dump(data, open(self.data, "w"), indent=4)
 
                 self.servers[data["servers"].index(server)]["repeat"] = repeat
                 break
@@ -910,13 +910,13 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 strings = server["strings"]
                 break
-        data = yaml.safe_load(open(self.config, "r"))
+        data = yaml.safe_load(open(self.data, "r"))
         for server in data["servers"]:
             if server["id"] == context.guild.id:
                 keep = not server["keep"]
                 server["keep"] = keep
                 # modify the flat file for servers to reflect the change of whether to keep this bot in a voice call when no audio is playing
-                yaml.safe_dump(data, open(self.config, "w"), indent=4)
+                yaml.safe_dump(data, open(self.data, "w"), indent=4)
 
                 self.servers[data["servers"].index(server)]["keep"] = keep
                 break
