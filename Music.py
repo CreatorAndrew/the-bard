@@ -728,8 +728,8 @@ class Music(commands.Cog):
                         context.guild.voice_client.stop()
                     else: server["index"] = 0
                     if leave or not server["keep"]:
-                        await context.guild.voice_client.disconnect()
                         server["connected"] = False
+                        await context.guild.voice_client.disconnect()
                     break
         except: pass
 
@@ -982,5 +982,14 @@ class Music(commands.Cog):
                 for voice_channel in member.guild.voice_channels:
                     if voice_channel.voice_states and list(voice_channel.voice_states)[0] == self.bot.user.id and len(list(voice_channel.voice_states)) == 1:
                         await self.stop_music(member, True, member.guild)
+                        break
+            elif member.bot:
+                for server in self.servers:
+                    if server["id"] == member.guild.id:
+                        if server["connected"]:
+                            server["index"] = 0
+                            server["queue"] = []
+                            server["connected"] = False
+                            member.guild.voice_client.cleanup()
                         break
         except: pass
