@@ -180,6 +180,7 @@ class Music(commands.Cog):
                         if chosen[0] == strings["cancel_option"]: return
                         song_index = int(chosen[0])
                     except: pass
+
                 break
         await self.lock.acquire()
         for server in data["servers"]:
