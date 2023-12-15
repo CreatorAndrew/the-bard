@@ -245,7 +245,10 @@ class Music(commands.Cog):
                 # load a playlist
                 elif load is not None and select is None:
                     self.lock.release()
-                    await self.play_song(context, playlist=server["playlists"][load - 1]["songs"])
+                    if server["playlists"][load - 1]["songs"]: await self.play_song(context, playlist=server["playlists"][load - 1]["songs"])
+                    else: await context.followup.send(self.polished_message(strings["playlist_no_songs"],
+                                                                            ["playlist", "playlist_index"],
+                                                                            {"playlist": server["playlists"][load - 1]["name"], "playlist_index": load}))
                     return
                 # select a playlist to modify or show the contents of
                 elif select is not None and add is None and clone is None and move is None and rename is None and remove is None and load is None:
