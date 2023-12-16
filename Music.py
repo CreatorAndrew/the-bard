@@ -28,7 +28,13 @@ class Music(commands.Cog):
             except: duration = .0
             return {"name": name, "duration": duration}
 
-    def polished_song_name(self, file, name): return f"[{name}](<{file}>)"
+    def polished_song_name(self, file, name):
+        index = 0
+        while index < 9:
+            if f"{index}. " in name:
+                return f"[{name[:name.index(f'{index}. ') + len(f'{index}. ')]}](<{file}>)" + f"[{name[name.index(f'{index}. ') + len(f'{index}. '):]}](<{file}>)"
+            index += 1
+        return f"[{name}](<{file}>)"
 
     def polished_message(self, message, placeholders, replacements):
         for placeholder in placeholders:
@@ -444,6 +450,53 @@ class Music(commands.Cog):
                 except: pass
                 break
         return songs
+
+    @commands.command(name="playlist-add-files")
+    async def playlist_add_files(self, context, index):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                strings = server["strings"]
+                break
+        await self.lock.acquire()
+        data = yaml.safe_load(open(self.data, "r"))
+        for server in data["servers"]:
+            if server["id"] == context.guild.id:
+                message = ""
+                for url in context.message.attachments:
+                    song = {"name": None, "index": len(server["playlists"][int(index) - 1]["songs"]) + 1}
+                    try:
+                        song["name"] = self.get_metadata(str(url))["name"]
+                        song["duration"] = self.get_metadata(str(url))["duration"]
+                    except:
+                        await context.reply(self.polished_message(strings["invalid_url"], ["url"], {"url": str(url)}))
+                        self.lock.release()
+                        return
+                    response = requests.get(str(url), stream=True)
+                    # verify that the URL file is a media container
+                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                        await context.reply(self.polished_message(strings["invalid_song"],
+                                                                  ["song"],
+                                                                  {"song": self.polished_song_name(str(url), song["name"])}))
+                        self.lock.release()
+                        return
+
+                    server["playlists"][int(index) - 1]["songs"].insert(song["index"] - 1, {"file": str(url), "name": song["name"], "duration": song["duration"]})
+                    previous_message = message
+                    new_message = self.polished_message(strings["playlist_add_song"] + "\n",
+                                                        ["playlist", "playlist_index", "song", "index"],
+                                                        {"playlist": server["playlists"][int(index) - 1]["name"],
+                                                         "playlist_index": index,
+                                                         "song": self.polished_song_name(str(url), song["name"]),
+                                                         "index": song["index"]})
+                    message += new_message
+                    if len(message) > 2000:
+                        await context.reply(previous_message)
+                        message = new_message
+                await context.reply(message)
+                break
+        yaml.safe_dump(data, open(self.data, "w"), indent=4)
+        self.lock.release()
 
     @app_commands.command(description="play_command_desc")
     async def play_command(self, context: discord.Interaction, file: discord.Attachment=None, song_url: str=None, new_name: str=None):
