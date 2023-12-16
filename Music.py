@@ -30,7 +30,7 @@ class Music(commands.Cog):
 
     def polished_song_name(self, file, name):
         index = 0
-        while index < 9:
+        while index <= 9:
             if f"{index}. " in name:
                 return f"[{name[:name.index(f'{index}. ') + len(f'{index}. ')]}](<{file}>)" + f"[{name[name.index(f'{index}. ') + len(f'{index}. '):]}](<{file}>)"
             index += 1
