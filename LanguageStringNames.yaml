@@ -45,6 +45,7 @@ names:
 -   invalid_language_file
 -   language_file_exists
 -   invalid_command
+-   playlist_add_files_context_menu
 -   playlists_command
 -   playlist_command
 -   play_command

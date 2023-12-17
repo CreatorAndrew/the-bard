@@ -48,6 +48,7 @@ strings:
     invalid_language_file: "The file '%{language_file}' does not have sufficient data for a full translation. Here is a template for localisation:"
     language_file_exists: A language file of the name, '%{language_file}', already exists.
     invalid_command: Invalid command usage
+    playlist_add_files_context_menu: Add files to a playlist
     playlists_command: playlists
     playlist_command: playlist
     play_command: play

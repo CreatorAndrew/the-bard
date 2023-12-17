@@ -15,6 +15,8 @@ class Music(commands.Cog):
         self.language_directory = language_directory
         self.lock = lock
         self.servers = []
+        self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
+        self.bot.tree.add_command(self.playlist_add_files_context_menu)
 
     def get_metadata(self, file):
         for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
@@ -154,61 +156,50 @@ class Music(commands.Cog):
                                new_index: int=None):
         await context.response.defer()
         self.initialize_servers()
-        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 strings = server["strings"]
-                # if a playlist-altering action was called in this command and no track index was specified, show a dropdown menu with the selected playlist's contents
-                if (action == "move" or action == "rename" or action == "remove") and select is not None and song_index is None:
-                    try:
-                        song_options = [discord.SelectOption(label=strings["cancel_option"])]
-                        for playlist in data["servers"][self.servers.index(server)]["playlists"]:
-                            if select == str(data["servers"][self.servers.index(server)]["playlists"].index(playlist) + 1):
-                                index = 1
-                                for song in playlist["songs"]:
-                                    song_options.append(discord.SelectOption(label=self.polished_message(strings["song"],
-                                                                                                         ["song", "index"],
-                                                                                                         {"song": song["name"], "index": index}),
-                                                                             value=str(index)))
-                                    index += 1
-                                break
-                        song_menu = discord.ui.Select(options=song_options)
-                        chosen = []
-                        async def song_callback(context):
-                            await context.response.send_message("...")
-                            await context.delete_original_response()
-                            chosen.append(song_menu.values[0])
-                        song_menu.callback = song_callback
-                        view = discord.ui.View()
-                        view.add_item(song_menu)
-                        await context.followup.send("", view=view)
-                        while not chosen: await asyncio.sleep(.1)
-                        if chosen[0] == strings["cancel_option"]: return
-                        song_index = int(chosen[0])
-                    except: pass
-
                 break
+        if select is not None and action == "add":
+            if file is None and song_url is not None: url = song_url
+            elif file is not None and song_url is None: url = str(file)
+            else:
+                await context.followup.send(strings["invalid_command"])
+                return
+            try: metadata = self.get_metadata(url)
+            except:
+                await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": url}))
+                self.lock.release()
+                return
+            response = requests.get(url, stream=True)
+            # verify that the URL file is a media container
+            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                await context.followup.send(self.polished_message(strings["invalid_song"], ["song"], {"song": self.polished_song_name(url, song["name"])}))
+                return
         await self.lock.acquire()
+        data = yaml.safe_load(open(self.data, "r"))
         for server in data["servers"]:
             if server["id"] == context.guild.id:
                 # add a playlist
                 if add is not None and select is None:
-                    server["playlists"].append({"name": add, "songs": []})
+                    if new_index is None: new_index = len(server["playlists"]) + 1
+                    server["playlists"].insert(new_index - 1, {"name": add, "songs": []})
                     await context.followup.send(self.polished_message(strings["add_playlist"],
                                                                       ["playlist", "playlist_index"],
-                                                                      {"playlist": add, "playlist_index": len(server["playlists"])}))
+                                                                      {"playlist": add, "playlist_index": new_index}))
                 # clone a playlist or copy its tracks into another playlist
                 elif clone is not None and select is None:
                     # clone a playlist
                     if into is None:
                         if new_name is None: new_name = server["playlists"][clone - 1]["name"]
-                        server["playlists"].append({"name": new_name, "songs": server["playlists"][clone - 1]["songs"].copy()})
+                        if new_index is None: new_index = len(server["playlists"]) + 1
+                        server["playlists"].insert(new_index - 1, {"name": new_name, "songs": server["playlists"][clone - 1]["songs"].copy()})
                         await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                           ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
                                                                           {"playlist": server["playlists"][clone - 1]["name"],
                                                                            "playlist_index": clone,
                                                                            "into_playlist": new_name,
-                                                                           "into_playlist_index": len(server["playlists"])}))
+                                                                           "into_playlist_index": new_index}))
                     # copy a playlist's tracks into another playlist
                     else:
                         server["playlists"][into - 1]["songs"] += server["playlists"][clone - 1]["songs"]
@@ -261,30 +252,9 @@ class Music(commands.Cog):
                     if select > 0 and select <= len(server["playlists"]):
                         # add a track to the playlist
                         if action == "add":
-                            if file is None and song_url is not None: url = song_url
-                            elif file is not None and song_url is None: url = str(file)
-                            else:
-                                await context.followup.send(strings["invalid_command"])
-                                self.lock.release()
-                                return
-                            if new_index is None: song = {"name": new_name, "index": len(server["playlists"][select - 1]["songs"]) + 1}
-                            else: song = {"name": new_name, "index": new_index}
-                            try:
-                                if song["name"] is None: song["name"] = self.get_metadata(url)["name"]
-                                song["duration"] = self.get_metadata(url)["duration"]
-                            except:
-                                await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": url}))
-                                self.lock.release()
-                                return
-                            response = requests.get(url, stream=True)
-                            # verify that the URL file is a media container
-                            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                                await context.followup.send(self.polished_message(strings["invalid_song"],
-                                                                                  ["song"],
-                                                                                  {"song": self.polished_song_name(url, song["name"])}))
-                                self.lock.release()
-                                return
-
+                            if new_name is None: new_name = metadata["name"]
+                            if new_index is None: new_index = len(server["playlists"][select - 1]["songs"]) + 1
+                            song = {"name": new_name, "index": new_index, "duration": metadata["duration"]}
                             server["playlists"][select - 1]["songs"].insert(song["index"] - 1, {"file": url, "name": song["name"], "duration": song["duration"]})
                             await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                                      ["playlist", "playlist_index", "song", "index"],
@@ -451,49 +421,69 @@ class Music(commands.Cog):
                 break
         return songs
 
-    @commands.command(name="playlist-add-files")
-    async def playlist_add_files(self, context, index):
+    async def playlist_add_files(self, context: discord.Interaction, message_regarded: discord.Message):
+        await context.response.defer()
         self.initialize_servers()
+        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 strings = server["strings"]
+                # show a dropdown menu of all the playlists for the calling Discord server
+                playlist_options = [discord.SelectOption(label=strings["cancel_option"])]
+                index = 1
+                for playlist in data["servers"][self.servers.index(server)]["playlists"]:
+                    playlist_options.append(discord.SelectOption(label=self.polished_message(server["strings"]["playlist"],
+                                                                                             ["playlist", "playlist_index"],
+                                                                                             {"playlist": playlist["name"], "playlist_index": index}),
+                                                                 value=str(index)))
+                    index += 1
+                playlist_menu = discord.ui.Select(options=playlist_options)
+                chosen = []
+                async def playlist_callback(context):
+                    await context.response.send_message("...")
+                    await context.delete_original_response()
+                    chosen.append(playlist_menu.values[0])
+                playlist_menu.callback = playlist_callback
+                view = discord.ui.View()
+                view.add_item(playlist_menu)
+                await context.followup.send("", view=view)
+                while not chosen: await asyncio.sleep(.1)
+                if chosen[0] == strings["cancel_option"]: return
+                index = int(chosen[0])
+
                 break
+        playlist = []
+        for url in message_regarded.attachments:
+            try: song = self.get_metadata(str(url))
+            except:
+                await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": str(url)}))
+                return
+            response = requests.get(str(url), stream=True)
+            # verify that the URL file is a media container
+            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                await context.followup.send(self.polished_message(strings["invalid_song"], ["song"], {"song": self.polished_song_name(str(url), song["name"])}))
+                return
+
+            playlist.append({"file": str(url), "name": song["name"], "duration": song["duration"]})
         await self.lock.acquire()
         data = yaml.safe_load(open(self.data, "r"))
         for server in data["servers"]:
             if server["id"] == context.guild.id:
                 message = ""
-                for url in context.message.attachments:
-                    song = {"name": None, "index": len(server["playlists"][int(index) - 1]["songs"]) + 1}
-                    try:
-                        song["name"] = self.get_metadata(str(url))["name"]
-                        song["duration"] = self.get_metadata(str(url))["duration"]
-                    except:
-                        await context.reply(self.polished_message(strings["invalid_url"], ["url"], {"url": str(url)}))
-                        self.lock.release()
-                        return
-                    response = requests.get(str(url), stream=True)
-                    # verify that the URL file is a media container
-                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                        await context.reply(self.polished_message(strings["invalid_song"],
-                                                                  ["song"],
-                                                                  {"song": self.polished_song_name(str(url), song["name"])}))
-                        self.lock.release()
-                        return
-
-                    server["playlists"][int(index) - 1]["songs"].insert(song["index"] - 1, {"file": str(url), "name": song["name"], "duration": song["duration"]})
+                for song in playlist:
+                    server["playlists"][index - 1]["songs"].append({"file": song["file"], "name": song["name"], "duration": song["duration"]})
                     previous_message = message
                     new_message = self.polished_message(strings["playlist_add_song"] + "\n",
                                                         ["playlist", "playlist_index", "song", "index"],
-                                                        {"playlist": server["playlists"][int(index) - 1]["name"],
+                                                        {"playlist": server["playlists"][index - 1]["name"],
                                                          "playlist_index": index,
-                                                         "song": self.polished_song_name(str(url), song["name"]),
-                                                         "index": song["index"]})
+                                                         "song": self.polished_song_name(song["file"], song["name"]),
+                                                         "index": len(server["playlists"][index - 1]["songs"])})
                     message += new_message
                     if len(message) > 2000:
-                        await context.reply(previous_message)
+                        await context.followup.send(previous_message)
                         message = new_message
-                await context.reply(message)
+                await context.followup.send(message)
                 break
         yaml.safe_dump(data, open(self.data, "w"), indent=4)
         self.lock.release()
@@ -534,11 +524,11 @@ class Music(commands.Cog):
                                 server["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
                             await context.followup.send(message)
                         else:
-                            try:
-                                if name is None: name = self.get_metadata(url)["name"]
+                            try: metadata = self.get_metadata(url)
                             except:
                                 await context.followup.send(self.polished_message(server["strings"]["invalid_url"], ["url"], {"url": url}))
                                 return
+                            if name is None: name = metadata["name"]
                             response = requests.get(url, stream=True)
                             # verify that the URL file is a media container
                             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
@@ -550,7 +540,7 @@ class Music(commands.Cog):
                                                                               ["song", "index"],
                                                                               {"song": self.polished_song_name(url, name), "index": len(server["queue"]) + 1}))
                             # add the track to the queue
-                            try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": self.get_metadata(url)["duration"], "silence": False})
+                            try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
                             except:
                                 await context.followup.send(self.polished_message(server["strings"]["invalid_url"], ["url"], {"url": url}))
                                 return
@@ -1030,16 +1020,17 @@ class Music(commands.Cog):
                     await context.delete_original_response()
                 break
 
-    # ensure that this bot disconnects from any empty voice channel it is in
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         try:
+            # ensure that this bot disconnects from any empty voice channel it is in
             if member.guild.voice_client.is_connected():
                 for voice_channel in member.guild.voice_channels:
                     if voice_channel.voice_states and list(voice_channel.voice_states)[0] == self.bot.user.id and len(list(voice_channel.voice_states)) == 1:
                         await self.stop_music(member, True, member.guild)
                         break
-            elif member.bot:
+            # ensure that this bot's connected status and the queue are reset if it is not properly disconnected
+            elif member.id == self.bot.user.id:
                 for server in self.servers:
                     if server["id"] == member.guild.id:
                         if server["connected"]:
