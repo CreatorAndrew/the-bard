@@ -73,6 +73,7 @@ strings:
     recruit_command: recruit
     dismiss_command: dismiss
     language_command: language
+    playlist_select_menu_placeholder: Select a playlist
     playlists_command_desc: Show the list of playlists for this server
     playlist_command_desc: Interact with playlists
     play_command_desc: Play or add a track to the queue
@@ -131,3 +132,41 @@ strings:
     new_name_desc: Specify a name for a playlist or track
     new_index_desc: Specify an index to move a playlist at or move or insert a track at within a playlist
     cancel_option: Cancel
+    unauthorized: '%{user} is not authorised to use this command.'
+    paying_role_change: The paying role for a user catching a drink is now %{role}.
+    drink_caught_odds_change: The odds of each user catching a drink are now %{max} to 1.
+    drink_rolls_reset: All users have been reset.
+    drink_roll_reset: '%{user} has been reset.'
+    drink_roll_faked: '%{user} is now unable to attempt to catch a drink in the month of %{month}.'
+    already_rolled: '%{user} has already tried to catch a drink in the month of %{month}.'
+    months:
+    -   January
+    -   February
+    -   March
+    -   April
+    -   May
+    -   June
+    -   July
+    -   August
+    -   September
+    -   October
+    -   November
+    -   December
+    win: Alright, pay up, %{role}.
+    loss:
+    -   Better luck next time!
+    -   Oi, maybe try catching the damn thing, eh?
+    -   _sigh_ Alright asshole, you're cleaning that up!
+    change_paying_role_command: change-paying-role
+    change_drink_caught_odds_command: change-drink-caught-odds
+    reset_drink_rolls_command: reset-drink-catching-attempts
+    fake_drink_roll_command: fake-drink-catching-attempt
+    give_me_a_drink_command: give-me-a-drink
+    change_paying_role_command_desc: Change the role that pays out to a user who catches a drink
+    change_drink_caught_odds_command_desc: Change the odds of a user catching a drink
+    reset_drink_rolls_command_desc: Reset the attempts of all users to catch a drink
+    fake_drink_roll_command_desc: Ensure that a user cannot attempt to catch a drink for the current month
+    give_me_a_drink_command_desc: Give me a drink, bartender!
+    role: role
+    out_of: of
+    user_id: user

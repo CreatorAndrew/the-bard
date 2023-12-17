@@ -432,12 +432,12 @@ class Music(commands.Cog):
                 playlist_options = [discord.SelectOption(label=strings["cancel_option"])]
                 index = 1
                 for playlist in data["servers"][self.servers.index(server)]["playlists"]:
-                    playlist_options.append(discord.SelectOption(label=self.polished_message(server["strings"]["playlist"],
+                    playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
                                                                                              ["playlist", "playlist_index"],
                                                                                              {"playlist": playlist["name"], "playlist_index": index}),
                                                                  value=str(index)))
                     index += 1
-                playlist_menu = discord.ui.Select(options=playlist_options)
+                playlist_menu = discord.ui.Select(placeholder=strings["playlist_select_menu_placeholder"], options=playlist_options)
                 chosen = []
                 async def playlist_callback(context):
                     await context.response.send_message("...")
