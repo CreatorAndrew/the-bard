@@ -376,6 +376,7 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 index = 1
                 for playlist in server["playlists"]:
+                    playlist["name"] = playlist["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + playlist["name"]) > 100 else playlist["name"]
                     if (current == "" or current.lower() in playlist["name"].lower()) and len(playlists) < 25:
                         playlists.append(app_commands.Choice(name=self.polished_message(self.servers[data["servers"].index(server)]["strings"]["playlist"],
                                                                                         ["playlist", "playlist_index"],
@@ -411,6 +412,7 @@ class Music(commands.Cog):
                 try:
                     index = 1
                     for song in server["playlists"][context.namespace.select - 1]["songs"]:
+                        song["name"] = song["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + song["name"]) > 100 else song["name"]
                         if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
                             songs.append(app_commands.Choice(name=self.polished_message(self.servers[data["servers"].index(server)]["strings"]["song"],
                                                                                         ["song", "index"],
@@ -690,6 +692,7 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 index = 1
                 for song in server["queue"]:
+                    song["name"] = song["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + song["name"]) > 100 else song["name"]
                     if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
                         songs.append(app_commands.Choice(name=self.polished_message(server["strings"]["song"], ["song", "index"], {"song": song["name"], "index": index}),
                                                          value=index))
