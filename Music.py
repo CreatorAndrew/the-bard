@@ -64,7 +64,7 @@ class Music(commands.Cog):
             if index < len(segments) - 1: marker += ":"
             index += 1
         return marker
-    
+
     def convert_to_seconds(self, time):
         segments = []
         if ":" in time: segments = time.split(":")
