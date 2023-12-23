@@ -64,6 +64,14 @@ class Music(commands.Cog):
             if index < len(segments) - 1: marker += ":"
             index += 1
         return marker
+    
+    def convert_to_seconds(self, time):
+        segments = []
+        if ":" in time: segments = time.split(":")
+        if len(segments) == 2: seconds = float(segments[0]) * 60 + float(segments[1])
+        elif len(segments) == 3: seconds = float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
+        else: seconds = float(time)
+        return seconds
 
     def initialize_servers(self, set_languages=True):
         data = yaml.safe_load(open(self.data, "r"))
@@ -805,11 +813,7 @@ class Music(commands.Cog):
 
     async def jump_to(self, context, time):
         self.initialize_servers()
-        segments = []
-        if ":" in time: segments = time.split(":")
-        if len(segments) == 2: seconds = float(segments[0]) * 60 + float(segments[1])
-        elif len(segments) == 3: seconds = float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
-        else: seconds = float(time)
+        seconds = self.convert_to_seconds(time)
         for server in self.servers:
             if server["id"] == context.guild.id:
                 if server["queue"]:
@@ -836,14 +840,14 @@ class Music(commands.Cog):
     async def forward_command(self, context: discord.Interaction, time: str):
         for server in self.servers:
             if server["id"] == context.guild.id:
-                await self.jump_to(context, str(float(server["time"]) + float(time)))
+                await self.jump_to(context, str(float(server["time"]) + self.convert_to_seconds(time)))
                 break
 
     @app_commands.command(description="rewind_command_desc")
     async def rewind_command(self, context: discord.Interaction, time: str):
         for server in self.servers:
             if server["id"] == context.guild.id:
-                await self.jump_to(context, str(float(server["time"]) - float(time)))
+                await self.jump_to(context, str(float(server["time"]) - self.convert_to_seconds(time)))
                 break
 
     @app_commands.command(description="when_command_desc")
