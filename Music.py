@@ -880,7 +880,7 @@ class Music(commands.Cog):
         self.lock.release()
 
     @app_commands.command(description="shuffle_command_desc")
-    async def shuffle_command(self, context: discord.Interaction):
+    async def shuffle_command(self, context: discord.Interaction, restart: bool=True):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
@@ -894,6 +894,9 @@ class Music(commands.Cog):
                         if index == server["index"]: server["index"] = temp_index
                         index += 1
                     await context.response.send_message(server["strings"]["shuffle"])
+                    if restart:
+                        server["index"] = -1
+                        context.guild.voice_client.stop()
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
                 break
 

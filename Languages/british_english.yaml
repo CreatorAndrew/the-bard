@@ -116,6 +116,7 @@ strings:
     by: by
     to: to
     time: time
+    restart: restart
     set: set
     add_desc: Add a playlist
     clone_desc: Clone a playlist or copy its tracks into another playlist (use together with `into`)
