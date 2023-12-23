@@ -550,10 +550,7 @@ class Music(commands.Cog):
                                                                               ["song", "index"],
                                                                               {"song": self.polished_song_name(url, name), "index": len(server["queue"]) + 1}))
                             # add the track to the queue
-                            try: server["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
-                            except:
-                                await context.followup.send(self.polished_message(server["strings"]["invalid_url"], ["url"], {"url": url}))
-                                return
+                            server["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
                         if server["connected"]: voice = context.guild.voice_client
                         else:
                             voice = await voice_channel.connect()
@@ -611,8 +608,10 @@ class Music(commands.Cog):
                 if server["id"] == context.guild.id:
                     if index > 0 and index < len(server["queue"]) + 2:
                         try:
-                            if name is None: name = self.get_metadata(url)["name"]
-                            if duration is None: duration = self.get_metadata(url)["duration"]
+                            if name is None or duration is None:
+                                metadata = self.get_metadata(url)
+                                if name is None: name = metadata["name"]
+                                if duration is None: duration = metadata["duration"]
                         except:
                             await context.response.send_message(self.polished_message(server["strings"]["invalid_url"], ["url"], {"url": url}))
                             return
