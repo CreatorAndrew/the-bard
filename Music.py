@@ -939,7 +939,7 @@ class Music(commands.Cog):
                                                                                               {"song": self.polished_song_name(server["queue"][server["index"]]["file"],
                                                                                                                                server["queue"][server["index"]]["name"]),
                                                                                                "index": server["index"] + 1,
-                                                                                               "max": len(server['queue'])}))
+                                                                                               "max": len(server["queue"])}))
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
                 break
 
