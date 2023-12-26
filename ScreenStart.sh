@@ -1,1 +1,1 @@
-screen -dmS the-bard-bar-discord ./Bard.sh
+screen -dmS the-bard ./Bard.sh
