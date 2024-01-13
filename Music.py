@@ -1,3 +1,4 @@
+import os
 import requests
 import yaml
 import asyncio
@@ -5,18 +6,25 @@ import typing
 import random
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from subprocess import check_output
+from datetime import datetime
 
 class Music(commands.Cog):
-    def __init__(self, bot, data, language_directory, lock):
+    def __init__(self, bot, flat_file, data, language_directory, lock):
         self.bot = bot
+        self.flat_file = flat_file
         self.data = data
         self.language_directory = language_directory
+        self.music_directory = "Media"
         self.lock = lock
         self.servers = []
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
         self.bot.tree.add_command(self.playlist_add_files_context_menu)
+
+    def get_file_name(self, file):
+        try: return file[file.rindex("/") + 1:file.rindex("?")]
+        except: return file[file.rindex("/") + 1:]
 
     def get_metadata(self, file):
         for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
@@ -24,8 +32,9 @@ class Music(commands.Cog):
             except:
                 try: name = track["Track"]
                 except:
-                    try: name = file[file.rindex("/") + 1:file.rindex(".")].replace("_", " ")
-                    except: name = file[file.rindex("/") + 1:].replace("_", " ")
+                    name = self.get_file_name(file)
+                    try: name = name[:name.rindex(".")].replace("_", " ")
+                    except: name = name.replace("_", " ")
             try: duration = float(track["Duration"])
             except: duration = .0
             return {"name": name, "duration": duration}
@@ -73,12 +82,13 @@ class Music(commands.Cog):
         else: seconds = float(time)
         return seconds
 
+    def new_expiration_time(self): return int(datetime.fromtimestamp(float(int(datetime.timestamp(datetime.now())) + 1209600)).strftime("%Y%m%d%H%M%S"))
+
     def initialize_servers(self, set_languages=True):
-        data = yaml.safe_load(open(self.data, "r"))
         # add all servers with this bot to memory that were not already
-        if len(self.servers) < len(data["servers"]):
+        if len(self.servers) < len(self.data["servers"]):
             ids = []
-            for server in data["servers"]:
+            for server in self.data["servers"]:
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"],
                                                                  "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"],
@@ -90,39 +100,38 @@ class Music(commands.Cog):
                                                                  "volume": 1.0,
                                                                  "connected": False})
         # remove any servers from memory that had removed this bot
-        elif len(self.servers) > len(data["servers"]):
+        elif len(self.servers) > len(self.data["servers"]):
             index = 0
             while index < len(self.servers):
                 try:
-                    if self.servers[index]["id"] != data["servers"][index]["id"]:
+                    if self.servers[index]["id"] != self.data["servers"][index]["id"]:
                         self.servers.remove(self.servers[index])
                         index -= 1
                 except: self.servers.remove(self.servers[index])
                 index += 1
 
         if set_languages:
-            for server in data["servers"]:
-                self.servers[data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
+            for server in self.data["servers"]:
+                self.servers[self.data["servers"].index(server)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]
 
     # return a list of playlists for the calling Discord server
     @app_commands.command(description="playlists_command_desc")
     async def playlists_command(self, context: discord.Interaction):
         await context.response.defer()
         self.initialize_servers()
-        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 message = ""
-                if data["servers"][self.servers.index(server)]["playlists"]: message += server["strings"]["playlists_header"] + "\n"
+                if self.data["servers"][self.servers.index(server)]["playlists"]: message += server["strings"]["playlists_header"] + "\n"
                 else:
                     await context.followup.send(server["strings"]["no_playlists"])
                     return
                 index = 0
-                while index < len(data["servers"][self.servers.index(server)]["playlists"]):
+                while index < len(self.data["servers"][self.servers.index(server)]["playlists"]):
                     previous_message = message
                     new_message = self.polished_message(server["strings"]["playlist"] + "\n",
                                                         ["playlist", "playlist_index"],
-                                                        {"playlist": data["servers"][self.servers.index(server)]["playlists"][index]["name"], "playlist_index": index + 1})
+                                                        {"playlist": self.data["servers"][self.servers.index(server)]["playlists"][index]["name"], "playlist_index": index + 1})
                     message += new_message
                     if len(message) > 2000:
                         await context.followup.send(previous_message)
@@ -185,13 +194,12 @@ class Music(commands.Cog):
                 await context.followup.send(self.polished_message(strings["invalid_song"], ["song"], {"song": self.polished_song_name(url, song["name"])}))
                 return
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.data, "r"))
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 # add a playlist
                 if add is not None and select is None:
                     if new_index is None: new_index = len(server["playlists"]) + 1
-                    server["playlists"].insert(new_index - 1, {"name": add, "songs": []})
+                    server["playlists"].insert(new_index - 1, {"expiration_time": self.new_expiration_time(), "name": add, "songs": []})
                     await context.followup.send(self.polished_message(strings["add_playlist"],
                                                                       ["playlist", "playlist_index"],
                                                                       {"playlist": add, "playlist_index": new_index}))
@@ -201,7 +209,9 @@ class Music(commands.Cog):
                     if into is None:
                         if new_name is None: new_name = server["playlists"][clone - 1]["name"]
                         if new_index is None: new_index = len(server["playlists"]) + 1
-                        server["playlists"].insert(new_index - 1, {"name": new_name, "songs": server["playlists"][clone - 1]["songs"].copy()})
+                        server["playlists"].insert(new_index - 1, {"expiration_time": self.new_expiration_time(),
+                                                                   "name": new_name,
+                                                                   "songs": server["playlists"][clone - 1]["songs"].copy()})
                         await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                           ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
                                                                           {"playlist": server["playlists"][clone - 1]["name"],
@@ -265,11 +275,11 @@ class Music(commands.Cog):
                             song = {"name": new_name, "index": new_index, "duration": metadata["duration"]}
                             server["playlists"][select - 1]["songs"].insert(song["index"] - 1, {"file": url, "name": song["name"], "duration": song["duration"]})
                             await context.followup.send(self.polished_message(strings["playlist_add_song"],
-                                                                                     ["playlist", "playlist_index", "song", "index"],
-                                                                                     {"playlist": server["playlists"][select - 1]["name"],
-                                                                                      "playlist_index": select,
-                                                                                      "song": self.polished_song_name(url, song["name"]),
-                                                                                      "index": song["index"]}))
+                                                                              ["playlist", "playlist_index", "song", "index"],
+                                                                              {"playlist": server["playlists"][select - 1]["name"],
+                                                                               "playlist_index": select,
+                                                                               "song": self.polished_song_name(url, song["name"]),
+                                                                               "index": song["index"]}))
                         # change the position of a track within the playlist
                         elif action == "move":
                             if song_index is None or new_index is None:
@@ -364,7 +374,7 @@ class Music(commands.Cog):
                     self.lock.release()
                     return
                 # modify the flat file for servers to reflect changes regarding playlists
-                yaml.safe_dump(data, open(self.data, "w"), indent=4)
+                yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
                 break
         self.lock.release()
@@ -378,15 +388,14 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
         self.initialize_servers(False)
-        data = yaml.safe_load(open(self.data, "r"))
         playlists = []
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 index = 1
                 for playlist in server["playlists"]:
                     playlist["name"] = playlist["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + playlist["name"]) > 100 else playlist["name"]
                     if (current == "" or current.lower() in playlist["name"].lower()) and len(playlists) < 25:
-                        playlists.append(app_commands.Choice(name=self.polished_message(self.servers[data["servers"].index(server)]["strings"]["playlist"],
+                        playlists.append(app_commands.Choice(name=self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["playlist"],
                                                                                         ["playlist", "playlist_index"],
                                                                                         {"playlist": playlist["name"], "playlist_index": index}),
                                                              value=index))
@@ -413,16 +422,15 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("song_index")
     async def playlist_song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
         self.initialize_servers(False)
-        data = yaml.safe_load(open(self.data, "r"))
         songs = []
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 try:
                     index = 1
                     for song in server["playlists"][context.namespace.select - 1]["songs"]:
                         song["name"] = song["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + song["name"]) > 100 else song["name"]
                         if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
-                            songs.append(app_commands.Choice(name=self.polished_message(self.servers[data["servers"].index(server)]["strings"]["song"],
+                            songs.append(app_commands.Choice(name=self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["song"],
                                                                                         ["song", "index"],
                                                                                         {"song": song["name"], "index": index}),
                                                              value=index))
@@ -434,14 +442,13 @@ class Music(commands.Cog):
     async def playlist_add_files(self, context: discord.Interaction, message_regarded: discord.Message):
         await context.response.defer()
         self.initialize_servers()
-        data = yaml.safe_load(open(self.data, "r"))
         for server in self.servers:
             if server["id"] == context.guild.id:
                 strings = server["strings"]
                 # show a dropdown menu of all the playlists for the calling Discord server
                 playlist_options = [discord.SelectOption(label=strings["cancel_option"])]
                 index = 1
-                for playlist in data["servers"][self.servers.index(server)]["playlists"]:
+                for playlist in self.data["servers"][self.servers.index(server)]["playlists"]:
                     playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
                                                                                              ["playlist", "playlist_index"],
                                                                                              {"playlist": playlist["name"], "playlist_index": index}),
@@ -476,8 +483,7 @@ class Music(commands.Cog):
 
             playlist.append({"file": str(url), "name": song["name"], "duration": song["duration"]})
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.data, "r"))
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 message = ""
                 for song in playlist:
@@ -495,7 +501,7 @@ class Music(commands.Cog):
                         message = new_message
                 await context.followup.send(message)
                 break
-        yaml.safe_dump(data, open(self.data, "w"), indent=4)
+        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
 
     @app_commands.command(description="play_command_desc")
@@ -867,15 +873,14 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 strings = server["strings"]
                 break
-        data = yaml.safe_load(open(self.data, "r"))
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 repeat = not server["repeat"]
                 server["repeat"] = repeat
                 # modify the flat file for servers to reflect the change of whether playlists repeat
-                yaml.safe_dump(data, open(self.data, "w"), indent=4)
+                yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
-                self.servers[data["servers"].index(server)]["repeat"] = repeat
+                self.servers[self.data["servers"].index(server)]["repeat"] = repeat
                 break
         if repeat: now_or_no_longer = strings["now"]
         else: now_or_no_longer = strings["no_longer"]
@@ -966,15 +971,14 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 strings = server["strings"]
                 break
-        data = yaml.safe_load(open(self.data, "r"))
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 keep = not server["keep"]
                 server["keep"] = keep
                 # modify the flat file for servers to reflect the change of whether to keep this bot in a voice call when no audio is playing
-                yaml.safe_dump(data, open(self.data, "w"), indent=4)
+                yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
-                self.servers[data["servers"].index(server)]["keep"] = keep
+                self.servers[self.data["servers"].index(server)]["keep"] = keep
                 break
         try: voice_channel = context.user.voice.channel.jump_url
         except: voice_channel = strings["whatever_voice"]
@@ -1048,4 +1052,94 @@ class Music(commands.Cog):
                             server["connected"] = False
                             member.guild.voice_client.cleanup()
                         break
+        except: pass
+
+    @app_commands.command(description="working_channel_command_desc")
+    async def working_channel_command(self, context: discord.Interaction, channel_name: str):
+        self.initialize_servers()
+        for server in self.servers:
+            if server["id"] == context.guild.id:
+                strings = server["strings"]
+                break
+        await self.lock.acquire()
+        for server in self.data["servers"]:
+            if server["id"] == context.guild.id:
+                for channel in context.guild.text_channels:
+                    if channel_name == channel.name:
+                        server["working_channel_id"] = channel.id
+                        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+                        await context.response.send_message(self.polished_message(strings["working_channel_set"],
+                                                                                  ["bot", "channel"],
+                                                                                  {"bot": self.bot.user.mention, "channel": channel.jump_url}))
+                        break
+                break
+        self.lock.release()
+
+    @working_channel_command.autocomplete("channel_name")
+    async def working_channel_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        channels = []
+        for channel in context.guild.text_channels:
+            if (current == "" or current.lower() in channel.name.lower()) and len(channels) < 25:
+                channels.append(app_commands.Choice(name=channel.name, value=channel.name))
+        return channels
+
+    @commands.Cog.listener()
+    async def on_ready(self): self.check_if_playlist_near_expiration.start()
+
+    @tasks.loop(hours=1)
+    async def check_if_playlist_near_expiration(self):
+        for server in self.data["servers"]:
+            try:
+                if server["working_channel_id"] is not None:
+                    playlist_index = 0
+                    for playlist in server["playlists"]:
+                        try:
+                            if (int(datetime.timestamp(datetime.strptime(str(playlist["expiration_time"]), "%Y%m%d%H%M%S")))
+                             <= int(datetime.timestamp(datetime.now())) + 3600): await self.renew_attachments(server["id"], playlist_index)
+                        except: await self.renew_attachments(server["id"], playlist_index)
+                        playlist_index += 1
+            except: pass
+
+    async def renew_attachments(self, server_id, playlist_index):
+        self.initialize_servers()
+        for server in self.data["servers"]:
+            if server["id"] == server_id:
+                working_channel = self.bot.get_channel(server["working_channel_id"])
+                files = []
+                begin = 0
+                for song in server["playlists"][playlist_index]["songs"]:
+                    response = requests.get(str(song["file"]))
+                    file = f"{self.music_directory}/{self.get_file_name(song['file'])}"
+                    if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
+                    open(file, "wb").write(response.content)
+                    while not os.path.exists(file): await asyncio.sleep(.1)
+                    files.append(discord.File(file))
+                    if len(files) == 10:
+                        await working_channel.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
+                        begin += len(files)
+                        files = []
+                if files: await working_channel.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
+                break
+
+    @commands.Cog.listener("on_message")
+    async def renew_attachments_from_message(self, message: discord.Message):
+        try:
+            if message.author.id != self.bot.user.id: return
+            message_data = yaml.safe_load(message.content)
+            for server in self.data["servers"]:
+                if server["id"] == message.guild.id:
+                    if message.attachments:
+                        index = message_data["begin"]
+                        for file in message.attachments:
+                            await self.lock.acquire()
+                            if self.get_file_name(server["playlists"][message_data["index"]]["songs"][index]["file"]) == file.filename:
+                                server["playlists"][message_data["index"]]["songs"][index]["file"] = str(file)
+                            try: os.remove(f"{self.music_directory}/{file.filename}")
+                            except: pass
+                            yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+                            index += 1
+                            self.lock.release()
+                        server["playlists"][message_data["index"]]["expiration_time"] = self.new_expiration_time()
+                    break
+            yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         except: pass

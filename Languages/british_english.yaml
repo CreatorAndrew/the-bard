@@ -47,7 +47,9 @@ strings:
     invalid_language: '%{language} is not yet a language that %{bot} can translate to. Here is a template for localisation:'
     invalid_language_file: "The file '%{language_file}' does not have sufficient data for a full translation. Here is a template for localisation:"
     language_file_exists: A language file of the name, '%{language_file}', already exists.
+    working_channel_set: '%{bot} will now renew attachments at %{channel}'
     invalid_command: Invalid command usage
+    remove_message_context_menu: Delete message
     playlist_add_files_context_menu: Add files to a playlist
     playlists_command: playlists
     playlist_command: playlist
@@ -73,6 +75,7 @@ strings:
     recruit_command: recruit
     dismiss_command: dismiss
     language_command: language
+    working_channel_command: working-channel
     playlist_select_menu_placeholder: Select a playlist
     playlists_command_desc: Show the list of playlists for this server
     playlist_command_desc: Interact with playlists
@@ -98,6 +101,7 @@ strings:
     recruit_command_desc: Connect me to a voice channel
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Change the language for this server
+    working_channel_command_desc: Set the channel to dump file attachments to
     add: add
     clone: clone
     into: into
@@ -118,6 +122,7 @@ strings:
     time: time
     restart: restart
     set: set
+    channel_name: channel
     add_desc: Add a playlist
     clone_desc: Clone a playlist or copy its tracks into another playlist (use together with `into`)
     into_desc: Specify a playlist to clone another playlist's tracks into (use together with `clone`)

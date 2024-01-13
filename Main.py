@@ -18,31 +18,30 @@ class CommandTranslator(app_commands.Translator):
         except: return None
 
 class Main(commands.Cog):
-    def __init__(self, bot, data, language_directory, lock):
+    def __init__(self, bot, flat_file, data, language_directory, lock):
         self.bot = bot
+        self.flat_file = flat_file
         self.data = data
         self.language_directory = language_directory
         self.lock = lock
         self.servers = []
         self.set_language_options()
-        if not os.path.exists(self.data): shutil.copyfile(self.data.replace(".yaml", "") + "Default.yaml", self.data)
 
     def initialize_servers(self):
-        data = yaml.safe_load(open(self.data, "r"))
         # add all servers with this bot to memory that were not already
-        if len(self.servers) < len(data["servers"]):
+        if len(self.servers) < len(self.data["servers"]):
             ids = []
-            for server in data["servers"]:
+            for server in self.data["servers"]:
                 for server_searched in self.servers: ids.append(server_searched["id"])
                 if server["id"] not in ids: self.servers.append({"id": server["id"],
                                                                  "language": server["language"],
                                                                  "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]})
         # remove any servers from memory that had removed this bot
-        elif len(self.servers) > len(data["servers"]):
+        elif len(self.servers) > len(self.data["servers"]):
             index = 0
             while index < len(self.servers):
                 try:
-                    if self.servers[index]["id"] != data["servers"][index]["id"]:
+                    if self.servers[index]["id"] != self.data["servers"][index]["id"]:
                         self.servers.remove(self.servers[index])
                         index -= 1
                 except: self.servers.remove(self.servers[index])
@@ -108,15 +107,14 @@ class Main(commands.Cog):
             await context.response.send_message(strings["invalid_command"])
             self.lock.release()
             return
-        data = yaml.safe_load(open(self.data, "r"))
-        for server in data["servers"]:
+        for server in self.data["servers"]:
             if server["id"] == context.guild.id:
                 language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-                self.servers[data["servers"].index(server)]["strings"] = language_data["strings"]
-                self.servers[data["servers"].index(server)]["language"] = language
+                self.servers[self.data["servers"].index(server)]["strings"] = language_data["strings"]
+                self.servers[self.data["servers"].index(server)]["language"] = language
                 server["language"] = language
                 # modify the flat file for servers to reflect the change of language
-                yaml.safe_dump(data, open(self.data, "w"), indent=4)
+                yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
                 await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
                 break
@@ -133,26 +131,24 @@ class Main(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.data, "r"))
         ids = []
-        for server in data["servers"]: ids.append(server["id"])
-        if guild.id not in ids: data["servers"].append({"id": guild.id,
-                                                        "language": "american_english",
-                                                        "repeat": False,
-                                                        "keep": False,
-                                                        "playlists": []})
-        yaml.safe_dump(data, open(self.data, "w"), indent=4)
+        for server in self.data["servers"]: ids.append(server["id"])
+        if guild.id not in ids: self.data["servers"].append({"id": guild.id,
+                                                             "language": "american_english",
+                                                             "repeat": False,
+                                                             "keep": False,
+                                                             "playlists": []})
+        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
 
     # remove a Discord server that removed this bot from the flat file for servers
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         await self.lock.acquire()
-        data = yaml.safe_load(open(self.data, "r"))
         ids = []
-        for server in data["servers"]: ids.append(server["id"])
-        if guild.id in ids: data["servers"].remove(data["servers"][ids.index(guild.id)])
-        yaml.safe_dump(data, open(self.data, "w"), indent=4)
+        for server in self.data["servers"]: ids.append(server["id"])
+        if guild.id in ids: self.data["servers"].remove(self.data["servers"][ids.index(guild.id)])
+        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
 
 intents = discord.Intents.default()
@@ -162,9 +158,11 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
-lock = asyncio.Lock()
-data = "Servers.yaml"
+flat_file = "Servers.yaml"
+if not os.path.exists(flat_file): shutil.copyfile(flat_file.replace(".yaml", "") + "Default.yaml", flat_file)
+data = yaml.safe_load(open("Servers.yaml", "r"))
 language_directory = "Languages"
+lock = asyncio.Lock()
 
 @bot.event
 async def on_ready(): print(f"Logged in as {bot.user}")
@@ -180,8 +178,8 @@ async def sync(context):
 
 async def main():
     async with bot:
-        await bot.add_cog(Main(bot, data, language_directory, lock))
-        await bot.add_cog(Music(bot, data, language_directory, lock))
+        await bot.add_cog(Main(bot, flat_file, data, language_directory, lock))
+        await bot.add_cog(Music(bot, flat_file, data, language_directory, lock))
         await bot.start(yaml.safe_load(open("Variables.yaml", "r"))["token"])
 
 asyncio.run(main())

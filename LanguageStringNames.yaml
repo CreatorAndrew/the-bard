@@ -44,7 +44,9 @@ names:
 -   invalid_language
 -   invalid_language_file
 -   language_file_exists
+-   working_channel_set
 -   invalid_command
+-   remove_message_context_menu
 -   playlist_add_files_context_menu
 -   playlists_command
 -   playlist_command
@@ -70,6 +72,7 @@ names:
 -   recruit_command
 -   dismiss_command
 -   language_command
+-   working channel_command
 -   playlist_select_menu_placeholder
 -   playlists_command_desc
 -   playlist_command_desc
@@ -95,6 +98,7 @@ names:
 -   recruit_command_desc
 -   dismiss_command_desc
 -   language_command_desc
+-   working_channel_command_desc
 -   add
 -   clone
 -   into
@@ -115,6 +119,7 @@ names:
 -   time
 -   restart
 -   set
+-   channel_name
 -   add_desc
 -   clone_desc
 -   into_desc
