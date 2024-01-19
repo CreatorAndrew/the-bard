@@ -1054,8 +1054,8 @@ class Music(commands.Cog):
                         break
         except: pass
 
-    @app_commands.command(description="working_channel_command_desc")
-    async def working_channel_command(self, context: discord.Interaction, channel_name: str):
+    @app_commands.command(description="working_thread_command_desc")
+    async def working_thread_command(self, context: discord.Interaction, thread_name: str):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
@@ -1064,24 +1064,23 @@ class Music(commands.Cog):
         await self.lock.acquire()
         for server in self.data["servers"]:
             if server["id"] == context.guild.id:
-                for channel in context.guild.text_channels:
-                    if channel_name == channel.name:
-                        server["working_channel_id"] = channel.id
+                for thread in context.guild.threads:
+                    if thread_name == thread.name:
+                        server["working_thread_id"] = thread.id
                         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                        await context.response.send_message(self.polished_message(strings["working_channel_set"],
-                                                                                  ["bot", "channel"],
-                                                                                  {"bot": self.bot.user.mention, "channel": channel.jump_url}))
+                        await context.response.send_message(self.polished_message(strings["working_thread_set"],
+                                                                                  ["bot", "thread"],
+                                                                                  {"bot": self.bot.user.mention, "thread": thread.jump_url}))
                         break
                 break
         self.lock.release()
 
-    @working_channel_command.autocomplete("channel_name")
-    async def working_channel_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        channels = []
-        for channel in context.guild.text_channels:
-            if (current == "" or current.lower() in channel.name.lower()) and len(channels) < 25:
-                channels.append(app_commands.Choice(name=channel.name, value=channel.name))
-        return channels
+    @working_thread_command.autocomplete("thread_name")
+    async def working_thread_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
+        threads = []
+        for thread in context.guild.threads:
+            if (current == "" or current.lower() in thread.name.lower()) and len(threads) < 25: threads.append(app_commands.Choice(name=thread.name, value=thread.name))
+        return threads
 
     @commands.Cog.listener()
     async def on_ready(self): self.check_if_playlist_near_expiration.start()
@@ -1090,7 +1089,7 @@ class Music(commands.Cog):
     async def check_if_playlist_near_expiration(self):
         for server in self.data["servers"]:
             try:
-                if server["working_channel_id"] is not None:
+                if server["working_thread_id"] is not None:
                     playlist_index = 0
                     for playlist in server["playlists"]:
                         try:
@@ -1104,7 +1103,7 @@ class Music(commands.Cog):
         self.initialize_servers()
         for server in self.data["servers"]:
             if server["id"] == server_id:
-                working_channel = self.bot.get_channel(server["working_channel_id"])
+                working_thread = self.bot.get_guild(server_id).get_thread(server["working_thread_id"])
                 files = []
                 begin = 0
                 for song in server["playlists"][playlist_index]["songs"]:
@@ -1115,10 +1114,10 @@ class Music(commands.Cog):
                     while not os.path.exists(file): await asyncio.sleep(.1)
                     files.append(discord.File(file))
                     if len(files) == 10:
-                        await working_channel.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
+                        await working_thread.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
                         begin += len(files)
                         files = []
-                if files: await working_channel.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
+                if files: await working_thread.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
                 break
 
     @commands.Cog.listener("on_message")
