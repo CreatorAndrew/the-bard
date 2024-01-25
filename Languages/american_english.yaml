@@ -49,7 +49,6 @@ strings:
     language_file_exists: A language file of the name, "%{language_file}," already exists.
     working_thread_set: '%{bot} will now renew attachments at %{thread}'
     invalid_command: Invalid command usage
-    remove_message_context_menu: Delete message
     playlist_add_files_context_menu: Add files to a playlist
     playlists_command: playlists
     playlist_command: playlist

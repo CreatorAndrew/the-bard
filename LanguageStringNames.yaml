@@ -46,7 +46,6 @@ names:
 -   language_file_exists
 -   working_thread_set
 -   invalid_command
--   remove_message_context_menu
 -   playlist_add_files_context_menu
 -   playlists_command
 -   playlist_command
