@@ -123,8 +123,8 @@ strings:
     set: set
     thread_name: thread
     add_desc: Add a playlist
-    clone_desc: Clone a playlist or copy its tracks into another playlist (use together with `into`)
-    into_desc: Specify a playlist to clone another playlist's tracks into (use together with `clone`)
+    clone_desc: Clone a playlist or copy its tracks into another playlist (for the latter, use together with `into`)
+    into_desc: Specify a playlist to copy another playlist's tracks into (use together with `clone`)
     move_desc: Change a playlist's position in the order of playlists for this server
     rename_desc: Rename a playlist
     remove_desc: Remove a playlist

@@ -6,9 +6,8 @@ import typing
 import random
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 from subprocess import check_output
-from datetime import datetime
 
 class Music(commands.Cog):
     def __init__(self, bot, flat_file, data, language_directory, lock):
@@ -81,8 +80,6 @@ class Music(commands.Cog):
         elif len(segments) == 3: seconds = float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
         else: seconds = float(time)
         return seconds
-
-    def new_expiration_time(self): return int(datetime.fromtimestamp(float(int(datetime.timestamp(datetime.now())) + 1209600)).strftime("%Y%m%d%H%M%S"))
 
     def initialize_servers(self, set_languages=True):
         # add all servers with this bot to memory that were not already
@@ -199,7 +196,7 @@ class Music(commands.Cog):
                 # add a playlist
                 if add is not None and select is None:
                     if new_index is None: new_index = len(server["playlists"]) + 1
-                    server["playlists"].insert(new_index - 1, {"expiration_time": self.new_expiration_time(), "name": add, "songs": []})
+                    server["playlists"].insert(new_index - 1, {"name": add, "songs": []})
                     await context.followup.send(self.polished_message(strings["add_playlist"],
                                                                       ["playlist", "playlist_index"],
                                                                       {"playlist": add, "playlist_index": new_index}))
@@ -209,8 +206,7 @@ class Music(commands.Cog):
                     if into is None:
                         if new_name is None: new_name = server["playlists"][clone - 1]["name"]
                         if new_index is None: new_index = len(server["playlists"]) + 1
-                        server["playlists"].insert(new_index - 1, {"expiration_time": self.new_expiration_time(),
-                                                                   "name": new_name,
+                        server["playlists"].insert(new_index - 1, {"name": new_name,
                                                                    "songs": server["playlists"][clone - 1]["songs"].copy()})
                         await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                           ["playlist", "playlist_index", "into_playlist", "into_playlist_index"],
@@ -280,6 +276,7 @@ class Music(commands.Cog):
                                                                                "playlist_index": select,
                                                                                "song": self.polished_song_name(url, song["name"]),
                                                                                "index": song["index"]}))
+                            if file is not None: await self.renew_attachment(server["id"], select - 1, song["index"] - 1)
                         # change the position of a track within the playlist
                         elif action == "move":
                             if song_index is None or new_index is None:
@@ -393,12 +390,12 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 index = 1
                 for playlist in server["playlists"]:
-                    playlist["name"] = playlist["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + playlist["name"]) > 100 else playlist["name"]
-                    if (current == "" or current.lower() in playlist["name"].lower()) and len(playlists) < 25:
-                        playlists.append(app_commands.Choice(name=self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["playlist"],
-                                                                                        ["playlist", "playlist_index"],
-                                                                                        {"playlist": playlist["name"], "playlist_index": index}),
-                                                             value=index))
+                    polished_playlist_name = self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["playlist"],
+                                                                   ["playlist", "playlist_index"],
+                                                                   {"playlist": playlist["name"], "playlist_index": index})
+                    playlist["name"] = playlist["name"][:97 - len(polished_playlist_name) + playlist["name"]] + "..." if len(polished_playlist_name) > 100 else playlist["name"]
+                    if (current == "" or current.lower() in polished_playlist_name.lower()) and len(playlists) < 25:
+                        playlists.append(app_commands.Choice(name=polished_playlist_name, value=index))
                     index += 1
                 break
         return playlists
@@ -428,12 +425,12 @@ class Music(commands.Cog):
                 try:
                     index = 1
                     for song in server["playlists"][context.namespace.select - 1]["songs"]:
-                        song["name"] = song["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + song["name"]) > 100 else song["name"]
-                        if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
-                            songs.append(app_commands.Choice(name=self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["song"],
-                                                                                        ["song", "index"],
-                                                                                        {"song": song["name"], "index": index}),
-                                                             value=index))
+                        polished_song_name = self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["song"],
+                                                                   ["song", "index"],
+                                                                   {"song": song["name"], "index": index})
+                        song["name"] = song["name"][:97 - len(polished_song_name) + len(song("name"))] + "..." if len(polished_song_name) > 100 else song["name"]
+                        if (current == "" or current.lower() in polished_song_name.lower()) and len(songs) < 25:
+                            songs.append(app_commands.Choice(name=polished_song_name, value=index))
                         index += 1
                 except: pass
                 break
@@ -705,10 +702,10 @@ class Music(commands.Cog):
             if server["id"] == context.guild.id:
                 index = 1
                 for song in server["queue"]:
-                    song["name"] = song["name"][:97 - len(f"#{index}: ")] + "..." if len(f"#{index}: " + song["name"]) > 100 else song["name"]
-                    if (current == "" or current.lower() in song["name"].lower()) and len(songs) < 25:
-                        songs.append(app_commands.Choice(name=self.polished_message(server["strings"]["song"], ["song", "index"], {"song": song["name"], "index": index}),
-                                                         value=index))
+                    polished_song_name = self.polished_message(server["strings"]["song"], ["song", "index"], {"song": song["name"], "index": index})
+                    song["name"] = song["name"][:97 - len(polished_song_name) + len(song["name"])] + "..." if len(polished_song_name) > 100 else song["name"]
+                    if (current == "" or current.lower() in polished_song_name.lower()) and len(songs) < 25:
+                        songs.append(app_commands.Choice(name=polished_song_name, value=index))
                     index += 1
                 break
         return songs
@@ -888,7 +885,7 @@ class Music(commands.Cog):
         self.lock.release()
 
     @app_commands.command(description="shuffle_command_desc")
-    async def shuffle_command(self, context: discord.Interaction, restart: bool=True):
+    async def shuffle_command(self, context: discord.Interaction, restart: typing.Literal[0, 1]=1):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
@@ -902,7 +899,7 @@ class Music(commands.Cog):
                         if index == server["index"]: server["index"] = temp_index
                         index += 1
                     await context.response.send_message(server["strings"]["shuffle"])
-                    if restart:
+                    if bool(restart):
                         server["index"] = -1
                         context.guild.voice_client.stop()
                 else: await context.response.send_message(server["strings"]["queue_no_songs"])
@@ -1082,63 +1079,30 @@ class Music(commands.Cog):
             if (current == "" or current.lower() in thread.name.lower()) and len(threads) < 25: threads.append(app_commands.Choice(name=thread.name, value=thread.name))
         return threads
 
-    @commands.Cog.listener()
-    async def on_ready(self): self.check_if_playlist_near_expiration.start()
-
-    @tasks.loop(hours=1)
-    async def check_if_playlist_near_expiration(self):
-        for server in self.data["servers"]:
-            try:
-                if server["working_thread_id"] is not None:
-                    playlist_index = 0
-                    for playlist in server["playlists"]:
-                        try:
-                            if (int(datetime.timestamp(datetime.strptime(str(playlist["expiration_time"]), "%Y%m%d%H%M%S")))
-                             <= int(datetime.timestamp(datetime.now())) + 3600): await self.renew_attachments(server["id"], playlist_index)
-                        except: await self.renew_attachments(server["id"], playlist_index)
-                        playlist_index += 1
-            except: pass
-
-    async def renew_attachments(self, server_id, playlist_index):
-        self.initialize_servers()
+    async def renew_attachment(self, server_id, playlist_index, song_index):
         for server in self.data["servers"]:
             if server["id"] == server_id:
-                working_thread = self.bot.get_guild(server_id).get_thread(server["working_thread_id"])
-                files = []
-                begin = 0
-                for song in server["playlists"][playlist_index]["songs"]:
-                    response = requests.get(str(song["file"]))
-                    file = f"{self.music_directory}/{self.get_file_name(song['file'])}"
-                    if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
-                    open(file, "wb").write(response.content)
-                    while not os.path.exists(file): await asyncio.sleep(.1)
-                    files.append(discord.File(file))
-                    if len(files) == 10:
-                        await working_thread.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
-                        begin += len(files)
-                        files = []
-                if files: await working_thread.send(yaml.safe_dump({"begin": begin, "index": playlist_index}), files=files)
+                file = f"{self.music_directory}/{self.get_file_name(server['playlists'][playlist_index]['songs'][song_index]['file'])}"
+                if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
+                open(file, "wb").write(requests.get(str(server["playlists"][playlist_index]["songs"][song_index]["file"])).content)
+                while not os.path.exists(file): await asyncio.sleep(.1)
+                try: await self.bot.get_guild(server_id).get_thread(server["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
+                                                                                                                      "song_index": song_index}),
+                                                                                                      files=[discord.File(file)])
+                except: pass
                 break
 
     @commands.Cog.listener("on_message")
-    async def renew_attachments_from_message(self, message: discord.Message):
+    async def renew_attachment_from_message(self, message: discord.Message):
         try:
             if message.author.id != self.bot.user.id: return
             message_data = yaml.safe_load(message.content)
             for server in self.data["servers"]:
-                if server["id"] == message.guild.id:
-                    if message.attachments:
-                        index = message_data["begin"]
-                        for file in message.attachments:
-                            await self.lock.acquire()
-                            if self.get_file_name(server["playlists"][message_data["index"]]["songs"][index]["file"]) == file.filename:
-                                server["playlists"][message_data["index"]]["songs"][index]["file"] = str(file)
-                            try: os.remove(f"{self.music_directory}/{file.filename}")
-                            except: pass
-                            yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                            index += 1
-                            self.lock.release()
-                        server["playlists"][message_data["index"]]["expiration_time"] = self.new_expiration_time()
+                if server["id"] == message.guild.id:                    
+                    if self.get_file_name(server["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"]) == message.attachments[0].filename:
+                        server["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"] = str(message.attachments[0])
+                    try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
+                    except: pass
                     break
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         except: pass
