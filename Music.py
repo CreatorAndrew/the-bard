@@ -393,7 +393,7 @@ class Music(commands.Cog):
                     polished_playlist_name = self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["playlist"],
                                                                    ["playlist", "playlist_index"],
                                                                    {"playlist": playlist["name"], "playlist_index": index})
-                    playlist["name"] = playlist["name"][:97 - len(polished_playlist_name) + playlist["name"]] + "..." if len(polished_playlist_name) > 100 else playlist["name"]
+                    playlist["name"] = playlist["name"][:97 - len(polished_playlist_name) + len(playlist["name"])] + "..." if len(polished_playlist_name) > 100 else playlist["name"]
                     if (current == "" or current.lower() in polished_playlist_name.lower()) and len(playlists) < 25:
                         playlists.append(app_commands.Choice(name=polished_playlist_name, value=index))
                     index += 1
@@ -428,7 +428,7 @@ class Music(commands.Cog):
                         polished_song_name = self.polished_message(self.servers[self.data["servers"].index(server)]["strings"]["song"],
                                                                    ["song", "index"],
                                                                    {"song": song["name"], "index": index})
-                        song["name"] = song["name"][:97 - len(polished_song_name) + len(song("name"))] + "..." if len(polished_song_name) > 100 else song["name"]
+                        song["name"] = song["name"][:97 - len(polished_song_name) + len(song["name"])] + "..." if len(polished_song_name) > 100 else song["name"]
                         if (current == "" or current.lower() in polished_song_name.lower()) and len(songs) < 25:
                             songs.append(app_commands.Choice(name=polished_song_name, value=index))
                         index += 1
