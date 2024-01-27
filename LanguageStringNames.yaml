@@ -7,6 +7,7 @@ names:
 -   move_playlist
 -   rename_playlist
 -   remove_playlist
+-   load_playlist
 -   playlist_no_songs
 -   playlist_songs_header
 -   playlist_add_song

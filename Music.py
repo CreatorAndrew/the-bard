@@ -524,14 +524,6 @@ class Music(commands.Cog):
                         if url is None:
                             message = ""
                             for song in playlist:
-                                previous_message = message
-                                new_message = self.polished_message(guild["strings"]["queue_add_song"] + "\n",
-                                                                    ["song", "index"],
-                                                                    {"song": self.polished_song_name(song["file"], song["name"]), "index": len(guild["queue"]) + 1})
-                                message += new_message
-                                if len(message) > 2000:
-                                    await context.followup.send(previous_message)
-                                    message = new_message
                                 # add the track to the queue
                                 guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
                             await context.followup.send(message)
