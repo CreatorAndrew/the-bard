@@ -255,7 +255,11 @@ class Music(commands.Cog):
                 # load a playlist
                 elif load is not None and select is None:
                     self.lock.release()
-                    if guild["playlists"][load - 1]["songs"]: await self.play_song(context, playlist=guild["playlists"][load - 1]["songs"])
+                    if guild["playlists"][load - 1]["songs"]:
+                        await context.followup.send(self.polished_message(strings["load_playlist"],
+                                                                          ["playlist", "playlist_index"],
+                                                                          {"playlist": guild["playlists"][load - 1]["name"], "playlist_index": load}))
+                        await self.play_song(context, playlist=guild["playlists"][load - 1]["songs"])
                     else: await context.followup.send(self.polished_message(strings["playlist_no_songs"],
                                                                             ["playlist", "playlist_index"],
                                                                             {"playlist": guild["playlists"][load - 1]["name"], "playlist_index": load}))
@@ -522,11 +526,9 @@ class Music(commands.Cog):
                         await context.followup.send(self.polished_message(guild["strings"]["not_in_voice"], ["user"], {"user": context.user.mention}))
                     else:
                         if url is None:
-                            message = ""
                             for song in playlist:
                                 # add the track to the queue
                                 guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
-                            await context.followup.send(message)
                         else:
                             try: metadata = self.get_metadata(url)
                             except:
