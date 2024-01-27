@@ -1052,7 +1052,7 @@ class Music(commands.Cog):
         except: pass
 
     @app_commands.command(description="working_thread_command_desc")
-    async def working_thread_command(self, context: discord.Interaction, thread_name: str):
+    async def working_thread_command(self, context: discord.Interaction, set: str=None):
         self.initialize_servers()
         for server in self.servers:
             if server["id"] == context.guild.id:
@@ -1061,18 +1061,28 @@ class Music(commands.Cog):
         await self.lock.acquire()
         for server in self.data["servers"]:
             if server["id"] == context.guild.id:
+                if set is None:
+                    try: thread = self.bot.get_guild(server["id"]).get_thread(server["working_thread_id"]).jump_url
+                    except: thread = strings["not_assigned"]
+                    await context.response.send_message(self.polished_message(strings["working_thread"],
+                                                                              ["bot", "thread"],
+                                                                              {"bot": self.bot.user.mention, "thread": thread}))
+                    break
+                thread_nonexistent = True
                 for thread in context.guild.threads:
-                    if thread_name == thread.name:
+                    if set == thread.name:
                         server["working_thread_id"] = thread.id
                         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                        await context.response.send_message(self.polished_message(strings["working_thread_set"],
+                        await context.response.send_message(self.polished_message(strings["working_thread_change"],
                                                                                   ["bot", "thread"],
                                                                                   {"bot": self.bot.user.mention, "thread": thread.jump_url}))
+                        thread_nonexistent = False
                         break
+                if thread_nonexistent: await context.response.send_message(strings["invalid_command"])
                 break
         self.lock.release()
 
-    @working_thread_command.autocomplete("thread_name")
+    @working_thread_command.autocomplete("set")
     async def working_thread_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         threads = []
         for thread in context.guild.threads:
