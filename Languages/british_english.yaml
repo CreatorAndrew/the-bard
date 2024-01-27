@@ -33,8 +33,8 @@ strings:
     pause: Playback is %{now_or_no_longer} paused.
     jump: Jumped to %{time} in %{song} (%{index}/%{max})
     shuffle: The queue has been shuffled.
-    volume: The volume is currently at %{volume}.
-    volume_change: The volume is now set to %{volume}.
+    volume: The current volume is %{volume}.
+    volume_change: The volume has been changed to %{volume}.
     repeat: Playlists will %{now_or_no_longer} repeat.
     keep: '%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing.'
     recruit_or_dismiss: '%{bot} is %{now_or_no_longer} in %{voice}'
@@ -43,11 +43,13 @@ strings:
     whatever_voice: whatever voice channel it is in
     not_in_voice: '%{user} is not in a voice channel.'
     language: British English
-    language_change: The language was changed to %{language}.
+    language_change: The language has been changed to %{language}.
     invalid_language: '%{language} is not yet a language that %{bot} can translate to. Here is a template for localisation:'
     invalid_language_file: "The file '%{language_file}' does not have sufficient data for a full translation. Here is a template for localisation:"
     language_file_exists: A language file of the name, '%{language_file}', already exists.
-    working_thread_set: '%{bot} will now renew attachments at %{thread}'
+    working_thread: '%{bot} currently renews attachments at %{thread}'
+    working_thread_change: '%{bot} will now renew attachments at %{thread}'
+    not_assigned: not assigned
     invalid_command: Invalid command usage
     playlist_add_files_context_menu: Add files to a playlist
     playlists_command: playlists
@@ -100,7 +102,7 @@ strings:
     recruit_command_desc: Connect me to a voice channel
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Change the language for this server
-    working_thread_command_desc: Set the thread to dump file attachments to
+    working_thread_command_desc: Show or set the thread to dump file attachments to
     add: add
     clone: clone
     into: into
@@ -121,7 +123,6 @@ strings:
     time: time
     restart: restart
     set: set
-    thread_name: thread
     add_desc: Add a playlist
     clone_desc: Clone a playlist or copy its tracks into another playlist (for the latter, use together with `into`)
     into_desc: Specify a playlist to copy another playlist's tracks into (use together with `clone`)

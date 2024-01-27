@@ -24,27 +24,27 @@ class Main(commands.Cog):
         self.data = data
         self.language_directory = language_directory
         self.lock = lock
-        self.servers = []
+        self.guilds = []
         self.set_language_options()
 
-    def initialize_servers(self):
-        # add all servers with this bot to memory that were not already
-        if len(self.servers) < len(self.data["servers"]):
+    def init_guilds(self):
+        # add all guilds with this bot to memory that were not already
+        if len(self.guilds) < len(self.data["guilds"]):
             ids = []
-            for server in self.data["servers"]:
-                for server_searched in self.servers: ids.append(server_searched["id"])
-                if server["id"] not in ids: self.servers.append({"id": server["id"],
-                                                                 "language": server["language"],
-                                                                 "strings": yaml.safe_load(open(f"{self.language_directory}/{server['language']}.yaml", "r"))["strings"]})
-        # remove any servers from memory that had removed this bot
-        elif len(self.servers) > len(self.data["servers"]):
+            for guild in self.data["guilds"]:
+                for guild_searched in self.guilds: ids.append(guild_searched["id"])
+                if guild["id"] not in ids: self.guilds.append({"id": guild["id"],
+                                                               "language": guild["language"],
+                                                               "strings": yaml.safe_load(open(f"{self.language_directory}/{guild['language']}.yaml", "r"))["strings"]})
+        # remove any guilds from memory that had removed this bot
+        elif len(self.guilds) > len(self.data["guilds"]):
             index = 0
-            while index < len(self.servers):
+            while index < len(self.guilds):
                 try:
-                    if self.servers[index]["id"] != self.data["servers"][index]["id"]:
-                        self.servers.remove(self.servers[index])
+                    if self.guilds[index]["id"] != self.data["guilds"][index]["id"]:
+                        self.guilds.remove(self.guilds[index])
                         index -= 1
-                except: self.servers.remove(self.servers[index])
+                except: self.guilds.remove(self.guilds[index])
                 index += 1
 
     def set_language_options(self):
@@ -57,11 +57,11 @@ class Main(commands.Cog):
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, file: discord.Attachment=None, new_name: str=None):
         await self.lock.acquire()
-        self.initialize_servers()
-        for server in self.servers:
-            if server["id"] == context.guild.id:
-                current_language_file = server["language"] + ".yaml"
-                strings = server["strings"]
+        self.init_guilds()
+        for guild in self.guilds:
+            if guild["id"] == context.guild.id:
+                current_language_file = guild["language"] + ".yaml"
+                strings = guild["strings"]
                 break
         if file is not None and new_name is None:
             file_name = str(file)[str(file).rindex("/") + 1:str(file).index("?")]
@@ -107,13 +107,13 @@ class Main(commands.Cog):
             await context.response.send_message(strings["invalid_command"])
             self.lock.release()
             return
-        for server in self.data["servers"]:
-            if server["id"] == context.guild.id:
+        for guild in self.data["guilds"]:
+            if guild["id"] == context.guild.id:
                 language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-                self.servers[self.data["servers"].index(server)]["strings"] = language_data["strings"]
-                self.servers[self.data["servers"].index(server)]["language"] = language
-                server["language"] = language
-                # modify the flat file for servers to reflect the change of language
+                self.guilds[self.data["guilds"].index(guild)]["strings"] = language_data["strings"]
+                self.guilds[self.data["guilds"].index(guild)]["language"] = language
+                guild["language"] = language
+                # modify the flat file for guilds to reflect the change of language
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
                 await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
@@ -127,27 +127,27 @@ class Main(commands.Cog):
             if (current == "" or current.lower() in language_option.name.lower()) and len(language_options) < 25: language_options.append(language_option)
         return language_options
 
-    # add a Discord server that added this bot to the flat file for servers
+    # add a guild that added this bot to the flat file for guilds
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         await self.lock.acquire()
         ids = []
-        for server in self.data["servers"]: ids.append(server["id"])
-        if guild.id not in ids: self.data["servers"].append({"id": guild.id,
-                                                             "language": "american_english",
-                                                             "repeat": False,
-                                                             "keep": False,
-                                                             "playlists": []})
+        for guild in self.data["guilds"]: ids.append(guild["id"])
+        if guild.id not in ids: self.data["guilds"].append({"id": guild.id,
+                                                            "language": "american_english",
+                                                            "repeat": False,
+                                                            "keep": False,
+                                                            "playlists": []})
         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
 
-    # remove a Discord server that removed this bot from the flat file for servers
+    # remove a guild that removed this bot from the flat file for guilds
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         await self.lock.acquire()
         ids = []
-        for server in self.data["servers"]: ids.append(server["id"])
-        if guild.id in ids: self.data["servers"].remove(self.data["servers"][ids.index(guild.id)])
+        for guild in self.data["guilds"]: ids.append(guild["id"])
+        if guild.id in ids: self.data["guilds"].remove(self.data["guilds"][ids.index(guild.id)])
         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
 
@@ -158,9 +158,9 @@ intents.message_content = True
 bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
-flat_file = "Servers.yaml"
+flat_file = "Guilds.yaml"
 if not os.path.exists(flat_file): shutil.copyfile(flat_file.replace(".yaml", "") + "Default.yaml", flat_file)
-data = yaml.safe_load(open("Servers.yaml", "r"))
+data = yaml.safe_load(open(flat_file, "r"))
 language_directory = "Languages"
 lock = asyncio.Lock()
 
