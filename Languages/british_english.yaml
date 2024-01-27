@@ -10,7 +10,7 @@ strings:
     move_playlist: "Playlist '%{playlist}' is now #%{playlist_index} in the list of playlists."
     rename_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been renamed to '%{name}'.
     remove_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been deleted.
-    load playlist: The tracks belonging to playlist '%{playlist}' (#%{playlist_index}) have been loaded into the queue.
+    load_playlist: The tracks belonging to playlist '%{playlist}' (#%{playlist_index}) have been loaded into the queue.
     playlist_no_songs: Playlist '%{playlist}' (#%{playlist_index}) has no tracks.
     playlist_songs_header: "List of tracks in playlist '%{playlist}' (#%{playlist_index}):"
     playlist_add_song: "%{song} has been added to playlist '%{playlist}' (#%{playlist_index}) (#%{index})."
