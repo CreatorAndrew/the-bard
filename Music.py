@@ -1055,11 +1055,11 @@ class Music(commands.Cog):
         for guild in self.data["guilds"]:
             if guild["id"] == context.guild.id:
                 if set is None:
-                    try: thread = self.bot.get_guild(guild["id"]).get_thread(guild["working_thread_id"]).jump_url
-                    except: thread = strings["not_assigned"]
-                    await context.response.send_message(self.polished_message(strings["working_thread"],
-                                                                              ["bot", "thread"],
-                                                                              {"bot": self.bot.user.mention, "thread": thread}))
+                    try: await context.response.send_message(self.polished_message(strings["working_thread"],
+                                                                                   ["bot", "thread"],
+                                                                                   {"bot": self.bot.user.mention,
+                                                                                    "thread": self.bot.get_guild(guild["id"]).get_thread(guild["working_thread_id"]).jump_url}))
+                    except: await context.response.send_message(self.polished_message(strings["working_thread_not_assigned"], ["bot"], {"bot": self.bot.user.mention}))
                     break
                 thread_nonexistent = True
                 for thread in context.guild.threads:

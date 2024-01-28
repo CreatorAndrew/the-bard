@@ -47,7 +47,7 @@ names:
 -   language_file_exists
 -   working_thread
 -   working_thread_change
--   not_assigned
+-   working_thread_not_assigned
 -   invalid_command
 -   playlist_add_files_context_menu
 -   playlists_command
