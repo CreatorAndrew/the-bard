@@ -347,15 +347,10 @@ class Music(commands.Cog):
                         # return a list of tracks in the playlist
                         elif action == "list":
                             message = ""
-                            if guild["playlists"][select - 1]["songs"]:
-                                if guild["playlists"][select - 1]:
-                                    message += self.polished_message(strings["playlist_songs_header"] + "\n",
-                                                                     ["playlist", "playlist_index"],
-                                                                     {"playlist": guild["playlists"][select - 1]["name"], "playlist_index": select})
-                                else:
-                                    await context.followup.send(strings["no_playlists"])
-                                    self.lock.release()
-                                    return
+                            if guild["playlists"][select - 1]["songs"]: message += self.polished_message(strings["playlist_songs_header"] + "\n",
+                                                                                                         ["playlist", "playlist_index"],
+                                                                                                         {"playlist": guild["playlists"][select - 1]["name"],
+                                                                                                          "playlist_index": select})
                             else:
                                 await context.followup.send(self.polished_message(strings["playlist_no_songs"],
                                                                                   ["playlist", "playlist_index"],
