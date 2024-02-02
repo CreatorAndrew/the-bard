@@ -287,7 +287,7 @@ class Music(commands.Cog):
                                 self.lock.release()
                                 return
                             else:
-                                song = guild["playlists"][select - 1]["songs"][int(song_index) - 1]
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 guild["playlists"][select - 1]["songs"].remove(song)
                                 guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
                                 await context.followup.send(self.polished_message(strings["playlist_move_song"],
@@ -303,7 +303,7 @@ class Music(commands.Cog):
                                 self.lock.release()
                                 return
                             else:
-                                song = guild["playlists"][select - 1]["songs"][int(song_index) - 1]
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 await context.followup.send(self.polished_message(strings["playlist_rename_song"],
                                                                                   ["playlist", "playlist_index", "song", "index", "name"],
                                                                                   {"playlist": guild["playlists"][select - 1]["name"],
@@ -319,7 +319,7 @@ class Music(commands.Cog):
                                 self.lock.release()
                                 return
                             else:
-                                song = guild["playlists"][select - 1]["songs"][int(song_index) - 1]
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 guild["playlists"][select - 1]["songs"].remove(song)
                                 await context.followup.send(self.polished_message(strings["playlist_remove_song"],
                                                                                   ["playlist", "playlist_index", "song", "index"],
