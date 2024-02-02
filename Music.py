@@ -243,7 +243,8 @@ class Music(commands.Cog):
                         await context.followup.send(self.polished_message(strings["rename_playlist"],
                                                                           ["playlist", "playlist_index", "name"],
                                                                           {"playlist": guild["playlists"][rename - 1]["name"],
-                                                                           "playlist_index": rename, "name": new_name}))
+                                                                           "playlist_index": rename,
+                                                                           "name": new_name}))
                         guild["playlists"][rename - 1]["name"] = new_name
                 # remove a playlist
                 elif remove is not None and select is None:
