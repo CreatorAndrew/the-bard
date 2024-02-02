@@ -183,7 +183,6 @@ class Music(commands.Cog):
             try: metadata = self.get_metadata(url)
             except:
                 await context.followup.send(self.polished_message(strings["invalid_url"], ["url"], {"url": url}))
-                self.lock.release()
                 return
             response = requests.get(url, stream=True)
             # verify that the URL file is a media container
