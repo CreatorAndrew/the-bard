@@ -738,6 +738,7 @@ class Music(commands.Cog):
                                                                                "index": guild["index"] + 2,
                                                                                "max": len(guild["queue"])}))
                     guild["queue"][guild["index"] + 1]["silence"] = True
+                    guild["time"] = .0
                     context.guild.voice_client.stop()
                 else:
                     await context.response.send_message(guild["strings"]["queue_no_songs"])
@@ -761,6 +762,7 @@ class Music(commands.Cog):
                                                                                "index": guild["index"] + 2,
                                                                                "max": len(guild["queue"])}))
                     guild["queue"][guild["index"] + 1]["silence"] = True
+                    guild["time"] = .0
                     context.guild.voice_client.stop()
                 else:
                     await context.response.send_message(guild["strings"]["queue_no_songs"])
