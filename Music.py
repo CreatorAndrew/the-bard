@@ -632,11 +632,11 @@ class Music(commands.Cog):
             # select a playlist to modify or show the contents of
             elif select is not None and add is None and clone is None and move is None and rename is None and remove is None and load is None:
                 if select > 0 and select <= playlist_count:
-                    global_playlist_id, song_count = (self.cursor.execute("""select songs.pl_id, count(song_id) from songs
-                                                                             left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                             where playlists.guild_id = ? and playlists.guild_pl_id = ?""",
-                                                                          (context.guild.id, select - 1))
-                                                                 .fetchone())
+                    global_playlist_id, song_count, playlist = (self.cursor.execute("""select songs.pl_id, count(song_id), playlists.pl_name from songs
+                                                                                       left outer join playlists on playlists.pl_id = songs.pl_id
+                                                                                       where playlists.guild_id = ? and playlists.guild_pl_id = ?""",
+                                                                                    (context.guild.id, select - 1))
+                                                                           .fetchone())
                     # add a track to the playlist
                     if action == "add":
                         if new_name is None: new_name = metadata["name"]
@@ -660,9 +660,7 @@ class Music(commands.Cog):
                             self.cursor.execute("update songs set pl_song_id = ? where song_id = (select count(song_id) from songs) - 1", (new_index - 1,))
                         await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                           ["playlist", "playlist_index", "song", "index"],
-                                                                          {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                           (context.guild.id, select - 1))
-                                                                                                  .fetchone()[0],
+                                                                          {"playlist": playlist,
                                                                            "playlist_index": select,
                                                                            "song": self.polished_song_name(url, new_name),
                                                                            "index": new_index}))
@@ -689,9 +687,7 @@ class Music(commands.Cog):
                         self.cursor.execute("update songs set pl_song_id = ? where song_id = ?", (new_index - 1, song_copies[song_index - 1][0]))
                         await context.followup.send(self.polished_message(strings["playlist_move_song"],
                                                                           ["playlist", "playlist_index", "song", "index"],
-                                                                          {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                           (context.guild.id, select - 1))
-                                                                                                  .fetchone()[0],
+                                                                          {"playlist": playlist,
                                                                            "playlist_index": select,
                                                                            "song": self.polished_song_name(song_copies[song_index - 1][1], song_copies[song_index - 1][2]),
                                                                            "index": new_index}))
@@ -709,9 +705,7 @@ class Music(commands.Cog):
                                                                         .fetchone())
                             await context.followup.send(self.polished_message(strings["playlist_rename_song"],
                                                                               ["playlist", "playlist_index", "song", "index", "name"],
-                                                                              {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                               (context.guild.id, select - 1))
-                                                                                                      .fetchone()[0],
+                                                                              {"playlist": playlist,
                                                                                "playlist_index": select,
                                                                                "song": self.polished_song_name(song_file, song_name),
                                                                                "index": song_index,
@@ -733,9 +727,7 @@ class Music(commands.Cog):
                             self.cursor.execute("update songs set pl_song_id = pl_song_id - 1 where pl_song_id >= ? and pl_id = ?", (song_index - 1, global_playlist_id))
                             await context.followup.send(self.polished_message(strings["playlist_remove_song"],
                                                                               ["playlist", "playlist_index", "song", "index"],
-                                                                              {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                               (context.guild.id, select - 1))
-                                                                                                      .fetchone()[0],
+                                                                              {"playlist": playlist,
                                                                                "playlist_index": select,
                                                                                "song": self.polished_song_name(song_file, song_name),
                                                                                "index": song_index}))
@@ -750,17 +742,11 @@ class Music(commands.Cog):
                                             .fetchall())
                         if songs: message += self.polished_message(strings["playlist_songs_header"] + "\n",
                                                                    ["playlist", "playlist_index"],
-                                                                   {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                    (context.guild.id, select - 1))
-                                                                                           .fetchone()[0],
-                                                                    "playlist_index": select})
+                                                                   {"playlist": playlist, "playlist_index": select})
                         else:
                             await context.followup.send(self.polished_message(strings["playlist_no_songs"],
                                                                               ["playlist", "playlist_index"],
-                                                                              {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                               (context.guild.id, select - 1))
-                                                                                                      .fetchone()[0],
-                                                                               "playlist_index": select}))
+                                                                              {"playlist": playlist, "playlist_index": select}))
                             self.lock.release()
                             return
                         index = 0
