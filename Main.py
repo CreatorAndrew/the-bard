@@ -183,6 +183,11 @@ class Main(commands.Cog):
             self.lock.release()
         else:
             self.cursor.execute("delete from guild_users where guild_id = ?", (guild.id,))
+            async for user in guild.fetch_members(limit=guild.member_count):
+                if not (cursor.execute("select guild_id from guild_users left outer join users on users.user_id = guild_users.user_id where users.user_id = ?",
+                                       (user.id,))
+                              .fetchall()):
+                    self.cursor.execute("delete from users where user_id = ?", (user.id,))
             self.cursor.execute("delete from songs where pl_id in (select pl_id from playlists where guild_id = ?)", (guild.id,))
             self.cursor.execute("delete from playlists where guild_id = ?", (guild.id,))
             self.cursor.execute("delete from guilds where guild_id = ?", (guild.id,))
@@ -220,6 +225,10 @@ class Main(commands.Cog):
             self.lock.release()
         else:
             self.cursor.execute("delete from guild_users where user_id = ? and guild_id = ?", (member.guild.id, member.id))
+            if not (cursor.execute("select guild_id from guild_users left outer join users on users.user_id = guild_users.user_id where users.user_id = ?",
+                                   (member.id,))
+                          .fetchall()):
+                self.cursor.execute("delete from users where user_id = ?", (member.id,))
             self.connection.commit()
 
 intents = discord.Intents.default()
