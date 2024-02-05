@@ -44,8 +44,8 @@ class Main(commands.Cog):
             for guild in guilds:
                 for guild_searched in self.guilds: ids.append(guild_searched["id"])
                 if guild[id] not in ids: self.guilds.append({"id": guild[id],
-                                                                "language": guild[language],
-                                                                "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]})
+                                                              "language": guild[language],
+                                                              "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]})
         # remove any guilds from memory that had removed this bot
         elif len(self.guilds) > len(guilds):
             index = 0
