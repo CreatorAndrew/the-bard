@@ -102,14 +102,14 @@ class Music(commands.Cog):
             for guild in guilds:
                 for guild_searched in self.guilds: ids.append(guild_searched["id"])
                 if guild[id] not in ids: self.guilds.append({"id": guild[id],
-                                                               "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"],
-                                                               "repeat": guild[repeat],
-                                                               "keep": guild[keep],
-                                                               "queue": [],
-                                                               "index": 0,
-                                                               "time": .0,
-                                                               "volume": 1.0,
-                                                               "connected": False})
+                                                              "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"],
+                                                              "repeat": guild[repeat],
+                                                              "keep": guild[keep],
+                                                              "queue": [],
+                                                              "index": 0,
+                                                              "time": .0,
+                                                              "volume": 1.0,
+                                                              "connected": False})
         # remove any guilds from memory that had removed this bot
         elif len(self.guilds) > len(guilds):
             index = 0
