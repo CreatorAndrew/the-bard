@@ -182,7 +182,7 @@ class Main(commands.Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     try: self.cursor.execute("insert into users values (?)", (user.id,))
                     except: pass
-                    self.cursor.execute("insert into guild_users values (?, ?, null)", (guild.id, user.id))
+                    self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
                 self.connection.commit()
             except: pass
 
