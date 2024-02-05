@@ -319,7 +319,7 @@ async def sync_users(context):
                     else:
                         try: cursor.execute("insert into users values (?)", (user.id,))
                         except: pass
-                        try: cursor.execute("insert into guild_users values (?, ?, null)", (guild.id, user.id))
+                        try: cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
                         except: pass
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
         else: connection.commit()
