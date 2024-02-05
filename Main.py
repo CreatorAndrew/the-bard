@@ -132,14 +132,12 @@ class Main(commands.Cog):
                     break
             self.lock.release()
         else:
-            try:
-                language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-                self.guilds[guild_index]["strings"] = language_data["strings"]
-                self.guilds[guild_index]["language"] = language
-                self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
-                self.connection.commit()
-                await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
-            except Exception as e: print(e)
+            language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
+            self.guilds[guild_index]["strings"] = language_data["strings"]
+            self.guilds[guild_index]["language"] = language
+            self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
+            self.connection.commit()
+            await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
 
     @language_command.autocomplete("new_name")
     async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
