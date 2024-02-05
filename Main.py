@@ -211,7 +211,7 @@ class Main(commands.Cog):
                 if guild["id"] == member.guild.id:
                     ids = []
                     for user in guild["users"]: ids.append(user["id"])
-                    if member.id not in ids: guild["users"].append({"id": member.id, "last_drink_roll_time": None})
+                    if member.id not in ids: guild["users"].append({"id": member.id})
                     break
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             self.lock.release()
@@ -314,7 +314,7 @@ async def sync_users(context):
                             if guild_searched["id"] == guild.id:
                                 ids = []
                                 for user_searched in guild_searched["users"]: ids.append(user_searched["id"])
-                                if user.id not in ids: guild_searched["users"].append({"id": user.id, "last_drink_roll_time": None})
+                                if user.id not in ids: guild_searched["users"].append({"id": user.id})
                                 break
                     else:
                         try: cursor.execute("insert into users values (?)", (user.id,))
