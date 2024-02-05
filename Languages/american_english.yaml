@@ -104,6 +104,8 @@ strings:
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Change the language for this server
     working_thread_command_desc: Show or set the thread to dump file attachments to
+    from_guild: from
+    transfer: import
     add: add
     clone: clone
     into: into
@@ -124,6 +126,8 @@ strings:
     time: time
     restart: restart
     set: set
+    from_guild_desc: Specify a server to import a playlist from (use before `import`)
+    transfer_desc: Import a playlist from another server (use after `from`)
     add_desc: Add a playlist
     clone_desc: Clone a playlist or copy its tracks into another playlist (for the latter, use together with `into`)
     into_desc: Specify a playlist to copy another playlist's tracks into (use together with `clone`)

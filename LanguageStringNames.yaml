@@ -101,6 +101,8 @@ names:
 -   dismiss_command_desc
 -   language_command_desc
 -   working_thread_command_desc
+-   from_guild
+-   transfer
 -   add
 -   clone
 -   into
@@ -121,6 +123,8 @@ names:
 -   time
 -   restart
 -   set
+-   from_guild_desc
+-   transfer_desc
 -   add_desc
 -   clone_desc
 -   into_desc
