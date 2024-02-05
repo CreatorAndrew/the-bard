@@ -85,66 +85,45 @@ class Music(commands.Cog):
 
     def init_guilds(self, set_languages=True):
         if self.cursor is None:
-            # add all guilds with this bot to memory that were not already
-            if len(self.guilds) < len(self.data["guilds"]):
-                ids = []
-                for guild in self.data["guilds"]:
-                    for guild_searched in self.guilds: ids.append(guild_searched["id"])
-                    if guild["id"] not in ids: self.guilds.append({"id": guild["id"],
-                                                                   "strings": yaml.safe_load(open(f"{self.language_directory}/{guild['language']}.yaml", "r"))["strings"],
-                                                                   "repeat": guild["repeat"],
-                                                                   "keep": guild["keep"],
-                                                                   "queue": [],
-                                                                   "index": 0,
-                                                                   "time": .0,
-                                                                   "volume": 1.0,
-                                                                   "connected": False})
-            # remove any guilds from memory that had removed this bot
-            elif len(self.guilds) > len(self.data["guilds"]):
-                index = 0
-                while index < len(self.guilds):
-                    try:
-                        if self.guilds[index]["id"] != self.data["guilds"][index]["id"]:
-                            self.guilds.remove(self.guilds[index])
-                            index -= 1
-                    except: self.guilds.remove(self.guilds[index])
-                    index += 1
-
-            if set_languages:
-                for guild in self.data["guilds"]:
-                    self.guilds[self.data["guilds"].index(guild)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild['language']}.yaml", "r"))["strings"]
+            guilds = self.data["guilds"]
+            id = "id"
+            language = "language"
+            repeat = "repeat"
+            keep = "keep"
         else:
             guilds = self.cursor.execute("select guild_id, guild_lang, repeat_queue, keep_in_voice from guilds").fetchall()
-            # add all guilds with this bot to memory that were not already
-            if len(self.guilds) < len(guilds):
-                ids = []
-                for guild in guilds:
-                    for guild_searched in self.guilds: ids.append(guild_searched["id"])
-                    if guild[0] not in ids: self.guilds.append({"id": guild[0],
-                                                                "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[1]}.yaml", "r"))["strings"],
-                                                                "repeat": bool(guild[2]),
-                                                                "keep": bool(guild[3]),
-                                                                "queue": [],
-                                                                "index": 0,
-                                                                "time": .0,
-                                                                "volume": 1.0,
-                                                                "connected": False})
-            # remove any guilds from memory that had removed this bot
-            elif len(self.guilds) > len(guilds):
-                index = 0
-                while index < len(self.guilds):
-                    try:
-                        if self.guilds[index]["id"] != guilds[index][0]:
-                            self.guilds.remove(self.guilds[index])
-                            index -= 1
-                    except: self.guilds.remove(self.guilds[index])
-                    index += 1
+            id = 0
+            language = 1
+            repeat = 2
+            keep = 3
+        # add all guilds with this bot to memory that were not already
+        if len(self.guilds) < len(guilds):
+            ids = []
+            for guild in guilds:
+                for guild_searched in self.guilds: ids.append(guild_searched["id"])
+                if guild[id] not in ids: self.guilds.append({"id": guild[id],
+                                                               "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"],
+                                                               "repeat": guild[repeat],
+                                                               "keep": guild[keep],
+                                                               "queue": [],
+                                                               "index": 0,
+                                                               "time": .0,
+                                                               "volume": 1.0,
+                                                               "connected": False})
+        # remove any guilds from memory that had removed this bot
+        elif len(self.guilds) > len(guilds):
+            index = 0
+            while index < len(self.guilds):
+                try:
+                    if self.guilds[index]["id"] != guilds[index][id]:
+                        self.guilds.remove(self.guilds[index])
+                        index -= 1
+                except: self.guilds.remove(self.guilds[index])
+                index += 1
 
-            if set_languages:
-                index = 0
-                for guild in guilds:
-                    self.guilds[index]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[1]}.yaml", "r"))["strings"]
-                    index += 1
+        if set_languages:
+            for guild in guilds:
+                self.guilds[guilds.index(guild)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]
 
     # return a list of playlists for the calling guild
     @app_commands.command(description="playlists_command_desc")
