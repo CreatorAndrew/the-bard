@@ -218,7 +218,7 @@ class Main(commands.Cog):
         else:
             try: self.cursor.execute("insert into users values (?)", (member.id,))
             except: pass
-            self.cursor.execute("insert into guild_users values (?, ?, null)", (member.guild.id, member.id))
+            self.cursor.execute("insert into guild_users values (?, ?)", (member.guild.id, member.id))
             self.connection.commit()
 
     @commands.Cog.listener()
