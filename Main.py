@@ -146,7 +146,7 @@ class Main(commands.Cog):
             if (current == "" or current.lower() in language_option.name.lower()) and len(language_options) < 25: language_options.append(language_option)
         return language_options
 
-    # add a guild that added this bot to the flat file for guilds
+    # add a guild that added this bot to the database or flat file for guilds
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         if self.cursor is None:
@@ -171,7 +171,7 @@ class Main(commands.Cog):
                 self.connection.commit()
             except: pass
 
-    # remove a guild that removed this bot from the flat file for guilds
+    # remove a guild that removed this bot from the database or flat file for guilds
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         if self.cursor is None:
