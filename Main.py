@@ -361,7 +361,8 @@ async def sync_users(context):
                         user_count = len(guild_searched["users"])
                         break
             else: user_count = cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,)).fetchone()[0]
-            if len(guild.members) > user_count:
+            # subtract 1 from the member count to exclude the bot itself
+            if len(guild.members) - 1 > user_count:
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != bot.user.id:
                         if cursor is None:
@@ -373,7 +374,8 @@ async def sync_users(context):
                             except: pass
                             try: cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
                             except: pass
-            elif len(guild.members) < user_count:
+            # subtract 1 from the member count to exclude the bot itself
+            elif len(guild.members) - 1 < user_count:
                 ids = []
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != bot.user.id: ids.append(user.id)
