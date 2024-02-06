@@ -297,7 +297,7 @@ async def sync_commands(context):
     if context.author.id == variables["master_id"]:
         await bot.tree.set_translator(CommandTranslator())
         synced = await bot.tree.sync()
-        await context.reply(f"Synced {len(synced)} command" + ("" if len(synced) == 1 else "s"))
+        await context.reply(f"Synced {len(synced)} command{'' if len(synced) == 1 else 's'}")
 
 @bot.command()
 async def sync_guilds(context):
