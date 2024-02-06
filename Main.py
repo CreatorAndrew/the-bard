@@ -326,7 +326,7 @@ async def sync_guilds(context):
                     except: pass
         elif len(bot.guilds) < guild_count:
             ids = []
-            async for guild in bot.fetch_guilds: ids.append(guild.id)
+            async for guild in bot.fetch_guilds(): ids.append(guild.id)
             if cursor is None:
                 index = 0
                 while index < len(data["guilds"]):
