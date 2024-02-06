@@ -293,13 +293,11 @@ lock = asyncio.Lock()
 async def on_ready(): print(f"Logged in as {bot.user}")
 
 @bot.command()
-async def sync(context):
+async def sync_commands(context):
     if context.author.id == variables["master_id"]:
         await bot.tree.set_translator(CommandTranslator())
         synced = await bot.tree.sync()
-        if len(synced) == 1: plural = ""
-        else: plural = "s"
-        await context.reply(f"Synced {len(synced)} command" + plural)
+        await context.reply(f"Synced {len(synced)} command" + ("" if len(synced) == 1 else "s"))
 
 @bot.command()
 async def sync_guilds(context):
