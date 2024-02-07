@@ -118,12 +118,12 @@ class Main(commands.Cog):
             await context.response.send_message(strings["invalid_command"])
             if self.cursor is None: self.lock.release()
             return
+        language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
+        self.guilds[guild_index]["strings"] = language_data["strings"]
+        self.guilds[guild_index]["language"] = language
         if self.cursor is None:
             for guild in self.data["guilds"]:
                 if guild["id"] == context.guild.id:
-                    language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-                    self.guilds[guild_index]["strings"] = language_data["strings"]
-                    self.guilds[guild_index]["language"] = language
                     guild["language"] = language
                     # modify the flat file for guilds to reflect the change of language
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
@@ -132,9 +132,6 @@ class Main(commands.Cog):
                     break
             self.lock.release()
         else:
-            language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-            self.guilds[guild_index]["strings"] = language_data["strings"]
-            self.guilds[guild_index]["language"] = language
             self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
             self.connection.commit()
             await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
