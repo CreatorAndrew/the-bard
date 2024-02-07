@@ -145,8 +145,8 @@ class Main(commands.Cog):
     # add a guild that added this bot to the database or flat file for guilds
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        await self.lock.acquire()
         if self.cursor is None:
-            await self.lock.acquire()
             users = []
             async for user in guild.fetch_members(limit=guild.member_count):
                 if user.id != self.bot.user.id: users.append({"id": user.id})
@@ -159,7 +159,6 @@ class Main(commands.Cog):
                                                                 "playlists": [],
                                                                 "users": users})
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-            self.lock.release()
         else:
             try:
                 self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, "american_english", None, False, False))
@@ -170,17 +169,17 @@ class Main(commands.Cog):
                         self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
                 self.connection.commit()
             except: pass
+        self.lock.release()
 
     # remove a guild that removed this bot from the database or flat file for guilds
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
+        await self.lock.acquire()
         if self.cursor is None:
-            await self.lock.acquire()
             ids = []
             for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
             if guild.id in ids: self.data["guilds"].remove(self.data["guilds"][ids.index(guild.id)])
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-            self.lock.release()
         else:
             self.cursor.execute("delete from guild_users where guild_id = ?", (guild.id,))
             async for user in guild.fetch_members(limit=guild.member_count):
@@ -193,12 +192,13 @@ class Main(commands.Cog):
             self.cursor.execute("delete from playlists where guild_id = ?", (guild.id,))
             self.cursor.execute("delete from guilds where guild_id = ?", (guild.id,))
             self.connection.commit()
+        self.lock.release()
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        await self.lock.acquire()
         if member.id != self.bot.user.id:
             if self.cursor is None:
-                await self.lock.acquire()
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         ids = []
@@ -206,18 +206,18 @@ class Main(commands.Cog):
                         if member.id not in ids: guild["users"].append({"id": member.id})
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                self.lock.release()
             else:
                 try: self.cursor.execute("insert into users values (?)", (member.id,))
                 except: pass
                 self.cursor.execute("insert into guild_users values (?, ?)", (member.guild.id, member.id))
                 self.connection.commit()
+        self.lock.release()
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
+        await self.lock.acquire()
         if member.id != self.bot.user.id:
             if self.cursor is None:
-                await self.lock.acquire()
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         ids = []
@@ -225,7 +225,6 @@ class Main(commands.Cog):
                         if member.id in ids: guild["users"].remove(guild["users"][ids.index(member.id)])
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                self.lock.release()
             else:
                 self.cursor.execute("delete from guild_users where user_id = ? and guild_id = ?", (member.guild.id, member.id))
                 if not (cursor.execute("select guild_id from guild_users left outer join users on users.user_id = guild_users.user_id where users.user_id = ?",
@@ -233,6 +232,7 @@ class Main(commands.Cog):
                               .fetchall()):
                     self.cursor.execute("delete from users where user_id = ?", (member.id,))
                 self.connection.commit()
+        self.lock.release()
 
 intents = discord.Intents.default()
 intents.guilds = True
