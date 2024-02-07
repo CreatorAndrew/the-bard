@@ -1611,11 +1611,11 @@ class Music(commands.Cog):
         return threads
 
     async def renew_attachment(self, guild_id, playlist_index, song_index, song_id=None):
+        if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
         if self.cursor is None:
             for guild in self.data["guilds"]:
                 if guild["id"] == guild_id:
                     file = f"{self.music_directory}/{self.get_file_name(guild['playlists'][playlist_index]['songs'][song_index]['file'])}"
-                    if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
                     open(file, "wb").write(requests.get(guild["playlists"][playlist_index]["songs"][song_index]["file"]).content)
                     while not os.path.exists(file): await asyncio.sleep(.1)
                     try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index, "song_index": song_index}),
@@ -1626,7 +1626,6 @@ class Music(commands.Cog):
             url = self.cursor.execute("select song_url from songs where songs.song_id = ?", (song_id,)).fetchone()[0]
             working_thread_id = self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,)).fetchone()[0]
             file = f"{self.music_directory}/{self.get_file_name(url)}"
-            if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
             open(file, "wb").write(requests.get(url).content)
             while not os.path.exists(file): await asyncio.sleep(.1)
             try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}), files=[discord.File(file)])
@@ -1642,13 +1641,11 @@ class Music(commands.Cog):
                     if guild["id"] == message.guild.id:                    
                         if self.get_file_name(guild["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"]) == message.attachments[0].filename:
                             guild["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"] = str(message.attachments[0])
-                        try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
-                        except: pass
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
                 self.cursor.execute("update songs set song_url = ? where song_id = ?", (str(message.attachments[0]), message_data["song_id"]))
                 self.connection.commit()
-                try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
-                except: pass
+            try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
+            except: pass
         except: pass
