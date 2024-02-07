@@ -151,6 +151,9 @@ class Main(commands.Cog):
     async def on_guild_join(self, guild):
         if self.cursor is None:
             await self.lock.acquire()
+            users = []
+            async for user in guild.fetch_members(limit=guild.member_count):
+                if user.id != self.bot.user.id: users.append({"id": user.id})
             ids = []
             for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
             if guild.id not in ids: self.data["guilds"].append({"id": guild.id,
@@ -158,7 +161,7 @@ class Main(commands.Cog):
                                                                 "repeat": False,
                                                                 "keep": False,
                                                                 "playlists": [],
-                                                                "users": []})
+                                                                "users": users})
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             self.lock.release()
         else:
@@ -307,6 +310,9 @@ async def sync_guilds(context):
         if len(bot.guilds) > guild_count:
             async for guild in bot.fetch_guilds():
                 if cursor is None:
+                    users = []
+                    async for user in guild.fetch_members(limit=guild.member_count):
+                        if user.id != bot.user.id: users.append({"id": user.id})
                     ids = []
                     for guild_searched in data["guilds"]: ids.append(guild_searched["id"])
                     if guild.id not in ids: data["guilds"].append({"id": guild.id,
@@ -314,7 +320,7 @@ async def sync_guilds(context):
                                                                    "repeat": False,
                                                                    "keep": False,
                                                                    "playlists": [],
-                                                                   "users": []})
+                                                                   "users": users})
                 else:
                     try:
                         cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, "american_english", None, False, False))
