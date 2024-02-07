@@ -128,13 +128,12 @@ class Main(commands.Cog):
                     # modify the flat file for guilds to reflect the change of language
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
-                    await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
                     break
             self.lock.release()
         else:
             self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
             self.connection.commit()
-            await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
+        await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
 
     @language_command.autocomplete("new_name")
     async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
