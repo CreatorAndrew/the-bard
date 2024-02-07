@@ -301,6 +301,7 @@ async def sync_commands(context):
 @bot.command()
 async def sync_guilds(context):
     if context.author.id == variables["master_id"]:
+        await lock.acquire()
         if cursor is None: guild_count = len(data["guilds"])
         else: guild_count = cursor.execute("select count(guild_id) from guilds").fetchone()[0]
         if len(bot.guilds) > guild_count:
@@ -351,10 +352,12 @@ async def sync_guilds(context):
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
         else: connection.commit()
         await context.reply(f"Synced all guilds")
+        lock.release()
 
 @bot.command()
 async def sync_users(context):
     if context.author.id == variables["master_id"]:
+        await lock.acquire()
         async for guild in bot.fetch_guilds():
             if cursor is None:
                 for guild_searched in data["guilds"]:
@@ -401,6 +404,7 @@ async def sync_users(context):
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
         else: connection.commit()
         await context.reply(f"Synced all users")
+        lock.release()
 
 async def main():
     async with bot:
