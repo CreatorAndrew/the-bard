@@ -565,7 +565,7 @@ class Music(commands.Cog):
             # change a playlist's position in the order of playlists
             elif move is not None and move > 0 and move <= playlist_count:
                 playlist_copies = self.cursor.execute("select pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id", (context.guild.id,)).fetchall()
-                if new_index is None or new_index < 1 or new_index > playlist_count or new_index == move:
+                if new_index is None or new_index < 1 or new_index > playlist_count:
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
                     return
