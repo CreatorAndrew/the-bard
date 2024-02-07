@@ -1,6 +1,6 @@
-# Replace `null` with the token of the bot.
-token: null
 # Replace `null` with the ID of the user who manages the bot.
 master_id: null
-# use a flat file instead of a database to store guild data
+# Replace `null` with the token of the bot.
+token: null
+# Use a flat file instead of a database to store guild data.
 use_flat_file: false
