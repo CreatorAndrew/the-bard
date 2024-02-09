@@ -404,7 +404,7 @@ class Music(commands.Cog):
                                 self.lock.release()
                                 return
                         else:
-                            context.followup.send(strings["invalid_playlist_number"])
+                            await context.followup.send(self.polished_message(strings["invalid_playlist_number"], {"playlist_index": select}))
                             self.lock.release()
                             return
                     else:
@@ -727,7 +727,7 @@ class Music(commands.Cog):
                         self.lock.release()
                         return
                 else:
-                    context.followup.send(strings["invalid_playlist_number"])
+                    await context.followup.send(self.polished_message(strings["invalid_playlist_number"], {"playlist_index": select}))
                     self.lock.release()
                     return
             else:
