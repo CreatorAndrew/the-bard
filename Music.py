@@ -306,7 +306,7 @@ class Music(commands.Cog):
                                                                                 {"playlist": guild["playlists"][load - 1]["name"], "playlist_index": load}))
                         return
                     # select a playlist to modify or show the contents of
-                    elif select is not None:
+                    elif select is not None and action is not None:
                         if select > 0 and select <= len(guild["playlists"]):
                             # add a track to the playlist
                             if action == "add":
@@ -599,7 +599,7 @@ class Music(commands.Cog):
                                                                          "playlist_index": load}))
                 return
             # select a playlist to modify or show the contents of
-            elif select is not None:
+            elif select is not None and action is not None:
                 if select > 0 and select <= playlist_count:
                     global_playlist_id, song_count, playlist = (self.cursor.execute("""select songs.pl_id, count(song_id), playlists.pl_name from songs
                                                                                        left outer join playlists on playlists.pl_id = songs.pl_id
