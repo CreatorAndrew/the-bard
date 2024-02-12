@@ -29,7 +29,8 @@ class Main(commands.Cog):
         self.guilds = []
         self.set_language_options()
 
-    def init_guilds(self):
+    async def init_guilds(self):
+        await self.lock.acquire()
         if self.cursor is None:
             guilds = self.data["guilds"]
             id = "id"
@@ -56,6 +57,8 @@ class Main(commands.Cog):
                         index -= 1
                 except: self.guilds.remove(self.guilds[index])
                 index += 1
+        
+        self.lock.release()
 
     def set_language_options(self):
         self.language_options = []
@@ -67,7 +70,7 @@ class Main(commands.Cog):
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, set: str=None, add: discord.Attachment=None):
         if self.cursor is None: await self.lock.acquire()
-        self.init_guilds()
+        await self.init_guilds()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
                 current_language_file = guild["language"] + ".yaml"
