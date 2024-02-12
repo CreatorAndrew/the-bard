@@ -565,7 +565,7 @@ class Music(commands.Cog):
                                                                                               .fetchone()[0],
                                                                        "playlist_index": rename,
                                                                        "name": new_name}))
-                    self.cursor.execute("update playlists set pl_name = ? where guild_id = ? and guild_pl_id = ?", (context.guild.id, rename - 1))
+                    self.cursor.execute("update playlists set pl_name = ? where guild_id = ? and guild_pl_id = ?", (new_name, context.guild.id, rename - 1))
             # remove a playlist
             elif remove is not None and remove > 0 and remove <= playlist_count:
                 await context.followup.send(self.polished_message(strings["remove_playlist"],
