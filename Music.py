@@ -1293,8 +1293,8 @@ class Music(commands.Cog):
 
     @app_commands.command(description="loop_command_desc")
     async def loop_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
-        if self.cursor is None: await self.lock.acquire()
         await self.init_guilds()
+        if self.cursor is None: await self.lock.acquire()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
                 strings = guild["strings"]
@@ -1398,8 +1398,8 @@ class Music(commands.Cog):
 
     @app_commands.command(description="keep_command_desc")
     async def keep_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
-        if self.cursor is None: await self.lock.acquire()
         await self.init_guilds()
+        if self.cursor is None: await self.lock.acquire()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
                 strings = guild["strings"]

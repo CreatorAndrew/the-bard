@@ -69,8 +69,8 @@ class Main(commands.Cog):
 
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, set: str=None, add: discord.Attachment=None):
-        if self.cursor is None: await self.lock.acquire()
         await self.init_guilds()
+        if self.cursor is None: await self.lock.acquire()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
                 current_language_file = guild["language"] + ".yaml"
