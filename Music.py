@@ -1290,7 +1290,7 @@ class Music(commands.Cog):
                 break
 
     @app_commands.command(description="loop_command_desc")
-    async def loop_command(self, context: discord.Interaction):
+    async def loop_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
         if self.cursor is None: await self.lock.acquire()
         self.init_guilds()
         for guild in self.guilds:
@@ -1298,24 +1298,26 @@ class Music(commands.Cog):
                 strings = guild["strings"]
                 guild_index = self.guilds.index(guild)
                 break
-        if self.cursor is None:
-            for guild in self.data["guilds"]:
-                if guild["id"] == context.guild.id:
-                    repeat = not guild["repeat"]
-                    guild["repeat"] = repeat
-                    # modify the flat file for guilds to reflect the change of whether playlists repeat
-                    yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-
-                    self.guilds[guild_index]["repeat"] = repeat
-                    break
+        if set is None:
+            await context.response.send_message(self.polished_message(strings["repeat"], {"do_not": "" if self.guilds[guild_index]["repeat"] else strings["do_not"]}))
+            if self.cursor is None: self.lock.release()
+            return
         else:
-            repeat = not self.guilds[guild_index]["repeat"]
-            self.cursor.execute("update guilds set repeat_queue = ? where guild_id = ?", (repeat, context.guild.id))
-            self.connection.commit()
-            self.guilds[guild_index]["repeat"] = repeat
-        if repeat: now_or_no_longer = strings["now"]
-        else: now_or_no_longer = strings["no_longer"]
-        await context.response.send_message(self.polished_message(strings["repeat"], {"now_or_no_longer": now_or_no_longer}))
+            repeat = bool(set)
+            if self.cursor is None:
+                for guild in self.data["guilds"]:
+                    if guild["id"] == context.guild.id:
+                        guild["repeat"] = repeat
+                        # modify the flat file for guilds to reflect the change of whether playlists repeat
+                        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+
+                        self.guilds[guild_index]["repeat"] = repeat
+                        break
+            else:
+                self.cursor.execute("update guilds set repeat_queue = ? where guild_id = ?", (repeat, context.guild.id))
+                self.connection.commit()
+                self.guilds[guild_index]["repeat"] = repeat
+        await context.response.send_message(self.polished_message(strings["repeat_change"], {"now_or_no_longer": strings["now"] if repeat else strings["no_longer"]}))
         if self.cursor is None: self.lock.release()
 
     @app_commands.command(description="shuffle_command_desc")
@@ -1393,7 +1395,7 @@ class Music(commands.Cog):
                 break
 
     @app_commands.command(description="keep_command_desc")
-    async def keep_command(self, context: discord.Interaction):
+    async def keep_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
         if self.cursor is None: await self.lock.acquire()
         self.init_guilds()
         for guild in self.guilds:
@@ -1401,27 +1403,34 @@ class Music(commands.Cog):
                 strings = guild["strings"]
                 guild_index = self.guilds.index(guild)
                 break
-        if self.cursor is None:
-            for guild in self.data["guilds"]:
-                if guild["id"] == context.guild.id:
-                    keep = not guild["keep"]
-                    guild["keep"] = keep
-                    # modify the flat file for guilds to reflect the change of whether to keep this bot in a voice call when no audio is playing
-                    yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-
-                    self.guilds[guild_index]["keep"] = keep
-                    break
-        else:
-            keep = not self.guilds[guild_index]["keep"]
-            self.cursor.execute("update guilds set keep_in_voice = ? where guild_id = ?", (keep, context.guild.id))
-            self.connection.commit()
-            self.guilds[guild_index]["keep"] = keep
         try: voice_channel = context.user.voice.channel.jump_url
         except: voice_channel = strings["whatever_voice"]
-        if keep: now_or_no_longer = strings["now"]
-        else: now_or_no_longer = strings["no_longer"]
-        await context.response.send_message(self.polished_message(strings["keep"],
-                                                                  {"bot": self.bot.user.mention, "voice": voice_channel, "now_or_no_longer": now_or_no_longer}))
+        if set is None:
+            await context.response.send_message(self.polished_message(strings["keep"],
+                                                                      {"bot": self.bot.user.mention,
+                                                                       "voice": voice_channel,
+                                                                       "stay_in_or_leave": strings["stay_in"] if self.guilds[guild_index]["keep"] else strings["leave"]}))
+            if self.cursor is None: self.lock.release()
+            return
+        else:
+            keep = bool(set)
+            if self.cursor is None:
+                for guild in self.data["guilds"]:
+                    if guild["id"] == context.guild.id:
+                        guild["keep"] = keep
+                        # modify the flat file for guilds to reflect the change of whether to keep this bot in a voice call when no audio is playing
+                        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+
+                        self.guilds[guild_index]["keep"] = keep
+                        break
+            else:
+                self.cursor.execute("update guilds set keep_in_voice = ? where guild_id = ?", (keep, context.guild.id))
+                self.connection.commit()
+                self.guilds[guild_index]["keep"] = keep
+        await context.response.send_message(self.polished_message(strings["keep_change"],
+                                                                  {"bot": self.bot.user.mention,
+                                                                   "voice": voice_channel,
+                                                                   "now_or_no_longer": strings["now"] if keep else strings["no_longer"]}))
         if self.cursor is None: self.lock.release()
 
     @app_commands.command(description="recruit_command_desc")

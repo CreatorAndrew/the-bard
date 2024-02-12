@@ -61,11 +61,11 @@ class Main(commands.Cog):
         self.language_options = []
         for language_file in sorted(os.listdir(self.language_directory)):
             if language_file.endswith(".yaml"):
-                language = yaml.safe_load(open(f"{self.language_directory}/{language_file}", "r"))["strings"]["language"]
+                language = yaml.safe_load(open(f"{self.language_directory}/{language_file}", "r"))["name"]
                 self.language_options.append(app_commands.Choice(name=language, value=language_file.replace(".yaml", "")))
 
     @app_commands.command(description="language_command_desc")
-    async def language_command(self, context: discord.Interaction, file: discord.Attachment=None, new_name: str=None):
+    async def language_command(self, context: discord.Interaction, set: str=None, add: discord.Attachment=None):
         if self.cursor is None: await self.lock.acquire()
         self.init_guilds()
         for guild in self.guilds:
@@ -74,11 +74,11 @@ class Main(commands.Cog):
                 strings = guild["strings"]
                 guild_index = self.guilds.index(guild)
                 break
-        if file is not None and new_name is None:
-            file_name = str(file)[str(file).rindex("/") + 1:str(file).index("?")]
+        if add is not None and set is None:
+            file_name = str(add)[str(add).rindex("/") + 1:str(add).index("?")]
             if file_name.endswith(".yaml"):
                 if not os.path.exists(f"{self.language_directory}/{file_name}"):
-                    response = requests.get(str(file))
+                    response = requests.get(str(add))
                     content = yaml.safe_load(response.content.decode("utf-8"))
                     try:
                         if content["strings"]: pass
@@ -107,13 +107,18 @@ class Main(commands.Cog):
 
                 self.set_language_options()
                 language = file_name.replace(".yaml", "")
-        elif file is None and new_name is not None:
-            language = new_name
+        elif add is None and set is not None:
+            language = set
             if not os.path.exists(f"{self.language_directory}/{language}.yaml"):
                 await context.response.send_message(content=strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
                                                     file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"), filename=current_language_file))
                 if self.cursor is None: self.lock.release()
                 return
+        elif add is None and set is None:
+            await context.response.send_message(strings["language"].replace("%{language}",
+                                                                            yaml.safe_load(open(f"{self.language_directory}/{current_language_file}", "r"))["name"]))
+            if self.cursor is None: self.lock.release()
+            return
         else:
             await context.response.send_message(strings["invalid_command"])
             if self.cursor is None: self.lock.release()
@@ -133,7 +138,7 @@ class Main(commands.Cog):
         else:
             self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
             self.connection.commit()
-        await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["strings"]["language"]))
+        await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["name"]))
 
     @language_command.autocomplete("new_name")
     async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
@@ -194,6 +199,7 @@ class Main(commands.Cog):
             self.connection.commit()
         self.lock.release()
 
+    # add a user that joined a guild with this bot to the database or flat file for guilds
     @commands.Cog.listener()
     async def on_member_join(self, member):
         await self.lock.acquire()
@@ -213,6 +219,7 @@ class Main(commands.Cog):
                 self.connection.commit()
         self.lock.release()
 
+    # remove a user that left a guild with this bot from the database or flat file for guilds
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         await self.lock.acquire()

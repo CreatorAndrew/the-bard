@@ -1,6 +1,7 @@
 # Do not modify the variable names. Only modify their values.
 # Also do not modify whatever's in %{}. Those are placeholders.
 
+name: American English
 strings:
     now_playing: 'Now playing: %{song} (%{index}/%{max})'
     no_playlists: No playlists exist for this server.
@@ -36,14 +37,19 @@ strings:
     shuffle: The queue has been shuffled.
     volume: The current volume is %{volume}.
     volume_change: The volume has been changed to %{volume}.
-    repeat: Playlists will %{now_or_no_longer} repeat.
-    keep: '%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing.'
+    repeat: Playlists currently%{do_not} repeat.
+    repeat_change: Playlists will %{now_or_no_longer} repeat.
+    do_not: ' do not'
+    keep: '%{bot} will %{stay_in_or_leave} %{voice} when there is no audio playing.'
+    keep_change: '%{bot} will %{now_or_no_longer} stay in %{voice} when there is no audio playing.'
+    stay_in: stay in
+    leave: leave
     recruit_or_dismiss: '%{bot} is %{now_or_no_longer} in %{voice}'
     now: now
     no_longer: no longer
     whatever_voice: whatever voice channel it is in
     not_in_voice: '%{user} is not in a voice channel.'
-    language: American English
+    language: The current language is %{language}.
     language_change: The language has been changed to %{language}.
     invalid_language: '%{language} is not yet a language that %{bot} can translate to. Here is a template for localization:'
     invalid_language_file: 'The file "%{language_file}" does not have sufficient data for a full translation. Here is a template for localization:'
@@ -94,15 +100,15 @@ strings:
     forward_command_desc: Fast forward the track
     rewind_command_desc: Rewind the track
     when_command_desc: Show the time marker of the current track
-    loop_command_desc: Toggle whether playlists will repeat
+    loop_command_desc: Show or set whether playlists will repeat
     shuffle_command_desc: Randomize the order of the tracks in the queue
     queue_command_desc: Show the list of tracks in the queue
     what_command_desc: Show the name of the current track playing
     volume_command_desc: Show or set the volume
-    keep_command_desc: Toggle immediate dismissal from a voice channel after all audio stops playing
+    keep_command_desc: Show or set whether to stay in a voice channel after all audio stops playing
     recruit_command_desc: Connect me to a voice channel
     dismiss_command_desc: Disconnect me from a voice channel
-    language_command_desc: Change the language for this server
+    language_command_desc: Show or set the language for this server
     working_thread_command_desc: Show or set the thread to dump file attachments to
     from_guild: from
     transfer: import

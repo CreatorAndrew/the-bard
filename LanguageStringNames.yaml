@@ -34,7 +34,12 @@ names:
 -   volume
 -   volume_change
 -   repeat
+-   repeat_change
+-   do_not
 -   keep
+-   keep_change
+-   stay_in
+-   leave
 -   recruit_or_dismiss
 -   now
 -   no_longer
