@@ -57,7 +57,7 @@ class Main(commands.Cog):
                         index -= 1
                 except: self.guilds.remove(self.guilds[index])
                 index += 1
-        
+
         self.lock.release()
 
     def set_language_options(self):
