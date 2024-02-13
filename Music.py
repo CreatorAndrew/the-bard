@@ -1014,7 +1014,7 @@ class Music(commands.Cog):
                                     source.read()
                                     voice.play(source)
                                     guild["queue"][guild["index"]]["time"] = "0"
-                                    voice.source = discord.PCMVolumeTransformer(voice.source, volume = 1.0)
+                                    voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
                                     voice.source.volume = guild["volume"]
                                 # ensure that the track plays completely or is skipped by command before proceeding
                                 while voice.is_playing() or voice.is_paused():
