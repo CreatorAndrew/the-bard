@@ -59,7 +59,7 @@ for guild in data["guilds"]:
                                                         where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
                            (song["name"], song["file"], song["duration"], guild["id"], guild["playlists"].index(playlist), guild["id"], guild["playlists"].index(playlist)))
     for user in guild["users"]:
-        try: cursor.execute("""insert into users values(?)""", (user["id"],))
+        try: cursor.execute("insert into users values(?)", (user["id"],))
         except: pass
         cursor.execute("insert into guild_users values(?, ?)", (guild["id"], user["id"]))
 
