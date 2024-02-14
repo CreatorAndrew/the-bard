@@ -1033,8 +1033,8 @@ class Music(commands.Cog):
         await self.init_guilds()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
-                if file is None and new_index is not None and song_url is not None: await self.insert_song(context, str(file), new_name, new_index)
-                elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, song_url, new_name, new_index)
+                if file is None and new_index is not None and song_url is not None: await self.insert_song(context, song_url, new_name, new_index)
+                elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, str(file), new_name, new_index)
                 else: await context.response.send_message(guild["strings"]["invalid_command"])
                 break
 
