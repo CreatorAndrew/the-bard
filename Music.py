@@ -802,7 +802,8 @@ class Music(commands.Cog):
         else:
             if context.namespace.from_guild is None:
                 playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id",
-                                                          (context.guild.id,)).fetchall())
+                                                          (context.guild.id,))
+                                                 .fetchall())
             else: playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id",
                                                             (int(context.namespace.from_guild),))
                                                    .fetchall())
