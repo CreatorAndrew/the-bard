@@ -57,7 +57,13 @@ for guild in data["guilds"]:
                                                        (select count(songs.pl_id) from playlists
                                                         left outer join songs on songs.pl_id = playlists.pl_id
                                                         where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
-                           (song["name"], song["file"], song["duration"], guild["id"], guild["playlists"].index(playlist), guild["id"], guild["playlists"].index(playlist)))
+                           (song["name"],
+                            song["file"],
+                            song["duration"],
+                            guild["id"],
+                            guild["playlists"].index(playlist),
+                            guild["id"],
+                            guild["playlists"].index(playlist)))
     for user in guild["users"]:
         try: cursor.execute("insert into users values(?)", (user["id"],))
         except: pass

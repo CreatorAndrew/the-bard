@@ -135,7 +135,8 @@ class Music(commands.Cog):
                 if self.cursor is None: playlists = []
                 else: playlists = self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (guild["id"],)).fetchall()
                 message = ""
-                if playlists or (self.cursor is None and self.data["guilds"][self.guilds.index(guild)]["playlists"]): message += guild["strings"]["playlists_header"] + "\n"
+                if playlists or (self.cursor is None and self.data["guilds"][self.guilds.index(guild)]["playlists"]):
+                    message += guild["strings"]["playlists_header"] + "\n"
                 else:
                     await context.followup.send(guild["strings"]["no_playlists"])
                     return
@@ -143,8 +144,8 @@ class Music(commands.Cog):
                 while index < len(self.data["guilds"][self.guilds.index(guild)]["playlists"] if self.cursor is None else playlists):
                     previous_message = message
                     new_message = self.polished_message(guild["strings"]["playlist"] + "\n",
-                                                        {"playlist": self.data["guilds"][self.guilds.index(guild)]["playlists"][index]["name"] if self.cursor is None else
-                                                                     playlists[index][0],
+                                                        {"playlist": self.data["guilds"][self.guilds.index(guild)]["playlists"][index]["name"]
+                                                                     if self.cursor is None else playlists[index][0],
                                                          "playlist_index": index + 1})
                     message += new_message
                     if len(message) > 2000:
@@ -286,12 +287,11 @@ class Music(commands.Cog):
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
-                        else:
-                            await context.followup.send(self.polished_message(strings["rename_playlist"],
-                                                                              {"playlist": guild["playlists"][rename - 1]["name"],
-                                                                               "playlist_index": rename,
-                                                                               "name": new_name}))
-                            guild["playlists"][rename - 1]["name"] = new_name
+                        await context.followup.send(self.polished_message(strings["rename_playlist"],
+                                                                          {"playlist": guild["playlists"][rename - 1]["name"],
+                                                                           "playlist_index": rename,
+                                                                           "name": new_name}))
+                        guild["playlists"][rename - 1]["name"] = new_name
                     # remove a playlist
                     elif remove is not None and remove > 0 and remove <= len(guild["playlists"]):
                         await context.followup.send(self.polished_message(strings["remove_playlist"],
@@ -337,44 +337,41 @@ class Music(commands.Cog):
                                     await context.followup.send(strings["invalid_command"])
                                     self.lock.release()
                                     return
-                                else:
-                                    song = guild["playlists"][select - 1]["songs"][song_index - 1]
-                                    guild["playlists"][select - 1]["songs"].remove(song)
-                                    guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
-                                    await context.followup.send(self.polished_message(strings["playlist_move_song"],
-                                                                                      {"playlist": guild["playlists"][select - 1]["name"],
-                                                                                       "playlist_index": select,
-                                                                                       "song": self.polished_song_name(song["file"], song["name"]),
-                                                                                       "index": new_index}))
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
+                                guild["playlists"][select - 1]["songs"].remove(song)
+                                guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
+                                await context.followup.send(self.polished_message(strings["playlist_move_song"],
+                                                                                  {"playlist": guild["playlists"][select - 1]["name"],
+                                                                                   "playlist_index": select,
+                                                                                   "song": self.polished_song_name(song["file"], song["name"]),
+                                                                                   "index": new_index}))
                             # rename a track in the playlist
                             elif action == "rename":
                                 if song_index is None or song_index < 1 or song_index > len(guild["playlists"][select - 1]["songs"]) or new_name is None:
                                     await context.followup.send(strings["invalid_command"])
                                     self.lock.release()
                                     return
-                                else:
-                                    song = guild["playlists"][select - 1]["songs"][song_index - 1]
-                                    await context.followup.send(self.polished_message(strings["playlist_rename_song"],
-                                                                                      {"playlist": guild["playlists"][select - 1]["name"],
-                                                                                       "playlist_index": select,
-                                                                                       "song": self.polished_song_name(song["file"], song["name"]),
-                                                                                       "index": song_index,
-                                                                                       "name": new_name}))
-                                    song["name"] = new_name
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
+                                await context.followup.send(self.polished_message(strings["playlist_rename_song"],
+                                                                                  {"playlist": guild["playlists"][select - 1]["name"],
+                                                                                   "playlist_index": select,
+                                                                                   "song": self.polished_song_name(song["file"], song["name"]),
+                                                                                   "index": song_index,
+                                                                                   "name": new_name}))
+                                song["name"] = new_name
                             # remove a track from the playlist
                             elif action == "remove":
                                 if song_index is None or song_index < 1 or song_index > len(guild["playlists"][select - 1]["songs"]):
                                     await context.followup.send(strings["invalid_command"])
                                     self.lock.release()
                                     return
-                                else:
-                                    song = guild["playlists"][select - 1]["songs"][song_index - 1]
-                                    guild["playlists"][select - 1]["songs"].remove(song)
-                                    await context.followup.send(self.polished_message(strings["playlist_remove_song"],
-                                                                                      {"playlist": guild["playlists"][select - 1]["name"],
-                                                                                       "playlist_index": select,
-                                                                                       "song": self.polished_song_name(song["file"], song["name"]),
-                                                                                       "index": song_index}))
+                                song = guild["playlists"][select - 1]["songs"][song_index - 1]
+                                guild["playlists"][select - 1]["songs"].remove(song)
+                                await context.followup.send(self.polished_message(strings["playlist_remove_song"],
+                                                                                  {"playlist": guild["playlists"][select - 1]["name"],
+                                                                                   "playlist_index": select,
+                                                                                   "song": self.polished_song_name(song["file"], song["name"]),
+                                                                                   "index": song_index}))
                             # return a list of tracks in the playlist
                             elif action == "list":
                                 message = ""
@@ -432,8 +429,9 @@ class Music(commands.Cog):
                                                 order by songs.pl_song_id""",
                                              (int(from_guild), transfer - 1))
                                     .fetchall())
-                if new_name is None:
-                        new_name = self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (int(from_guild), transfer - 1)).fetchone()[0]
+                if new_name is None: new_name = (self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                     (int(from_guild), transfer - 1))
+                                                            .fetchone()[0])
                 if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
@@ -443,20 +441,22 @@ class Music(commands.Cog):
                                                                     ?,
                                                                     (select count(pl_id) from playlists where guild_id = ?))""",
                                     (new_name, context.guild.id, context.guild.id))
-                for song in songs: self.cursor.execute("""insert into songs values((select count(song_id) from songs),
-                                                                                   ?,
-                                                                                   ?,
-                                                                                   ?,
-                                                                                   (select count(pl_id) from playlists) - 1,
-                                                                                   (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
-                                                       (song[0], song[1], song[2]))
+                for song in songs:
+                    self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                                                                    ?,
+                                                                    ?,
+                                                                    ?,
+                                                                    (select count(pl_id) from playlists) - 1,
+                                                                    (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
+                                        (song[0], song[1], song[2]))
                 if new_index is None: new_index = playlist_count + 1
                 else:
                     self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                         (new_index - 1, playlist_count, context.guild.id))
                     self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select count(pl_id) from playlists) - 1", (new_index - 1,))
                 await context.followup.send(self.polished_message(strings["clone_playlist"],
-                                                                  {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                  {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                      where guild_id = ? and guild_pl_id = ?""",
                                                                                                    (int(from_guild), transfer - 1))
                                                                                           .fetchone()[0],
                                                                    "playlist_index": transfer,
@@ -489,8 +489,9 @@ class Music(commands.Cog):
                                              (context.guild.id, clone - 1))
                                     .fetchall())
                 if into is None or into < 1 or into > playlist_count:
-                    if new_name is None:
-                        new_name = self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1)).fetchone()[0]
+                    if new_name is None: new_name = (self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                         (context.guild.id, clone - 1))
+                                                                .fetchone()[0])
                     if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
                         await context.followup.send(strings["invalid_command"])
                         self.lock.release()
@@ -500,20 +501,22 @@ class Music(commands.Cog):
                                                                         ?,
                                                                         (select count(pl_id) from playlists where guild_id = ?))""",
                                         (new_name, context.guild.id, context.guild.id))
-                    for song in songs: self.cursor.execute("""insert into songs values((select count(song_id) from songs),
-                                                                                       ?,
-                                                                                       ?,
-                                                                                       ?,
-                                                                                       (select count(pl_id) from playlists) - 1,
-                                                                                       (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
-                                                           (song[0], song[1], song[2]))
+                    for song in songs:
+                        self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                                                                        ?,
+                                                                        ?,
+                                                                        ?,
+                                                                        (select count(pl_id) from playlists) - 1,
+                                                                        (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
+                                            (song[0], song[1], song[2]))
                     if new_index is None: new_index = playlist_count + 1
                     else:
                         self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                             (new_index - 1, playlist_count, context.guild.id))
                         self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select count(pl_id) from playlists) - 1", (new_index - 1,))
                     await context.followup.send(self.polished_message(strings["clone_playlist"],
-                                                                      {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                      {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                          where guild_id = ? and guild_pl_id = ?""",
                                                                                                        (context.guild.id, clone - 1))
                                                                                               .fetchone()[0],
                                                                        "playlist_index": clone,
@@ -531,11 +534,13 @@ class Music(commands.Cog):
                                                                                         where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
                                                            (song[0], song[1], song[2], context.guild.id, into - 1, context.guild.id, into - 1))
                     await context.followup.send(self.polished_message(strings["clone_playlist"],
-                                                                      {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                      {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                          where guild_id = ? and guild_pl_id = ?""",
                                                                                                        (context.guild.id, clone - 1))
                                                                                               .fetchone()[0],
                                                                        "playlist_index": clone,
-                                                                       "into_playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                       "into_playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                               where guild_id = ? and guild_pl_id = ?""",
                                                                                                             (context.guild.id, into - 1))
                                                                                                    .fetchone()[0],
                                                                        "into_playlist_index": into}))
@@ -546,9 +551,11 @@ class Music(commands.Cog):
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
                     return
-                elif new_index > move: self.cursor.execute("update playlists set guild_pl_id = guild_pl_id - 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
+                elif new_index > move: self.cursor.execute("""update playlists set guild_pl_id = guild_pl_id - 1
+                                                              where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?""",
                                                            (move - 1, new_index - 1, context.guild.id))
-                elif new_index < move: self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
+                elif new_index < move: self.cursor.execute("""update playlists set guild_pl_id = guild_pl_id + 1
+                                                              where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?""",
                                                            (new_index - 1, move - 1, context.guild.id))
                 self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = ?", (new_index - 1, playlist_copies[move - 1][0]))
                 await context.followup.send(self.polished_message(strings["move_playlist"], {"playlist": playlist_copies[move - 1][1], "playlist_index": new_index}))
@@ -558,22 +565,24 @@ class Music(commands.Cog):
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
                     return
-                else:
-                    await context.followup.send(self.polished_message(strings["rename_playlist"],
-                                                                      {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
-                                                                                                       (context.guild.id, rename - 1))
-                                                                                              .fetchone()[0],
-                                                                       "playlist_index": rename,
-                                                                       "name": new_name}))
-                    self.cursor.execute("update playlists set pl_name = ? where guild_id = ? and guild_pl_id = ?", (new_name, context.guild.id, rename - 1))
+                await context.followup.send(self.polished_message(strings["rename_playlist"],
+                                                                  {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                      where guild_id = ? and guild_pl_id = ?""",
+                                                                                                   (context.guild.id, rename - 1))
+                                                                                          .fetchone()[0],
+                                                                   "playlist_index": rename,
+                                                                   "name": new_name}))
+                self.cursor.execute("update playlists set pl_name = ? where guild_id = ? and guild_pl_id = ?", (new_name, context.guild.id, rename - 1))
             # remove a playlist
             elif remove is not None and remove > 0 and remove <= playlist_count:
                 await context.followup.send(self.polished_message(strings["remove_playlist"],
-                                                                  {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                  {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                      where guild_id = ? and guild_pl_id = ?""",
                                                                                                    (context.guild.id, remove - 1))
                                                                                           .fetchone()[0],
                                                                    "playlist_index": remove}))
-                self.cursor.execute("delete from songs where pl_id = (select pl_id from playlists where guild_id = ? and guild_pl_id = ?)", (context.guild.id, remove - 1))
+                self.cursor.execute("delete from songs where pl_id = (select pl_id from playlists where guild_id = ? and guild_pl_id = ?)",
+                                    (context.guild.id, remove - 1))
                 self.cursor.execute("delete from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, remove - 1))
                 self.cursor.execute("update playlists set guild_pl_id = guild_pl_id - 1 where guild_pl_id >= ? and guild_id = ?", (remove - 1, context.guild.id))
             # load a playlist
@@ -589,13 +598,15 @@ class Music(commands.Cog):
                     proper_songs = []
                     for song in songs: proper_songs.append({"name": song[0], "file": song[1], "duration": song[2]})
                     await context.followup.send(self.polished_message(strings["load_playlist"],
-                                                                      {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                      {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                          where guild_id = ? and guild_pl_id = ?""",
                                                                                                        (context.guild.id, load - 1))
                                                                                               .fetchone()[0],
                                                                        "playlist_index": load}))
                     await self.play_song(context, playlist=proper_songs)
                 else: await context.followup.send(self.polished_message(strings["playlist_no_songs"],
-                                                                        {"playlist": self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
+                                                                        {"playlist": self.cursor.execute("""select pl_name from playlists
+                                                                                                            where guild_id = ? and guild_pl_id = ?""",
                                                                                                          (context.guild.id, load - 1))
                                                                                                 .fetchone()[0],
                                                                          "playlist_index": load}))
@@ -636,7 +647,10 @@ class Music(commands.Cog):
                                                                            "index": new_index}))
                         if file is not None:
                             self.lock.release()
-                            await self.renew_attachment(context.guild.id, select - 1, new_index - 1, self.cursor.execute("select count(song_id) from songs").fetchone()[0] - 1)
+                            await self.renew_attachment(context.guild.id,
+                                                        select - 1,
+                                                        new_index - 1,
+                                                        self.cursor.execute("select count(song_id) from songs").fetchone()[0] - 1)
                             return
                     # change the position of a track within the playlist
                     elif action == "move":
@@ -650,15 +664,18 @@ class Music(commands.Cog):
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
-                        elif new_index > song_index: self.cursor.execute("update songs set pl_song_id = pl_song_id - 1 where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?",
+                        elif new_index > song_index: self.cursor.execute("""update songs set pl_song_id = pl_song_id - 1
+                                                                            where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?""",
                                                                          (song_index - 1, new_index - 1, global_playlist_id))
-                        elif new_index < song_index: self.cursor.execute("update songs set pl_song_id = pl_song_id + 1 where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?",
+                        elif new_index < song_index: self.cursor.execute("""update songs set pl_song_id = pl_song_id + 1
+                                                                            where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?""",
                                                                          (new_index - 1, song_index - 1, global_playlist_id))
                         self.cursor.execute("update songs set pl_song_id = ? where song_id = ?", (new_index - 1, song_copies[song_index - 1][0]))
                         await context.followup.send(self.polished_message(strings["playlist_move_song"],
                                                                           {"playlist": playlist,
                                                                            "playlist_index": select,
-                                                                           "song": self.polished_song_name(song_copies[song_index - 1][1], song_copies[song_index - 1][2]),
+                                                                           "song": self.polished_song_name(song_copies[song_index - 1][1],
+                                                                                                           song_copies[song_index - 1][2]),
                                                                            "index": new_index}))
                     # rename a track in the playlist
                     elif action == "rename":
@@ -666,38 +683,36 @@ class Music(commands.Cog):
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
-                        else:
-                            song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
-                                                                                    left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                    where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
-                                                                                 (context.guild.id, select - 1, song_index - 1))
-                                                                        .fetchone())
-                            await context.followup.send(self.polished_message(strings["playlist_rename_song"],
-                                                                              {"playlist": playlist,
-                                                                               "playlist_index": select,
-                                                                               "song": self.polished_song_name(song_file, song_name),
-                                                                               "index": song_index,
-                                                                               "name": new_name}))
-                            self.cursor.execute("update songs set song_name = ? where song_id = ?", (new_name, song_id))
+                        song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
+                                                                                left outer join playlists on playlists.pl_id = songs.pl_id
+                                                                                where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
+                                                                             (context.guild.id, select - 1, song_index - 1))
+                                                                    .fetchone())
+                        await context.followup.send(self.polished_message(strings["playlist_rename_song"],
+                                                                          {"playlist": playlist,
+                                                                           "playlist_index": select,
+                                                                           "song": self.polished_song_name(song_file, song_name),
+                                                                           "index": song_index,
+                                                                           "name": new_name}))
+                        self.cursor.execute("update songs set song_name = ? where song_id = ?", (new_name, song_id))
                     # remove a track from the playlist
                     elif action == "remove":
                         if song_index is None or song_index < 1 or song_index > song_count:
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
-                        else:
-                            song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
-                                                                                    left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                    where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
-                                                                                 (context.guild.id, select - 1, song_index - 1))
-                                                                        .fetchone())
-                            self.cursor.execute("delete from songs where song_id = ?", (song_id,))
-                            self.cursor.execute("update songs set pl_song_id = pl_song_id - 1 where pl_song_id >= ? and pl_id = ?", (song_index - 1, global_playlist_id))
-                            await context.followup.send(self.polished_message(strings["playlist_remove_song"],
-                                                                              {"playlist": playlist,
-                                                                               "playlist_index": select,
-                                                                               "song": self.polished_song_name(song_file, song_name),
-                                                                               "index": song_index}))
+                        song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
+                                                                                left outer join playlists on playlists.pl_id = songs.pl_id
+                                                                                where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
+                                                                             (context.guild.id, select - 1, song_index - 1))
+                                                                    .fetchone())
+                        self.cursor.execute("delete from songs where song_id = ?", (song_id,))
+                        self.cursor.execute("update songs set pl_song_id = pl_song_id - 1 where pl_song_id >= ? and pl_id = ?", (song_index - 1, global_playlist_id))
+                        await context.followup.send(self.polished_message(strings["playlist_remove_song"],
+                                                                          {"playlist": playlist,
+                                                                           "playlist_index": select,
+                                                                           "song": self.polished_song_name(song_file, song_name),
+                                                                           "index": song_index}))
                     # return a list of tracks in the playlist
                     elif action == "list":
                         message = ""
@@ -715,7 +730,8 @@ class Music(commands.Cog):
                         index = 0
                         while index < len(songs):
                             previous_message = message
-                            new_message = self.polished_message(strings["song"] + "\n", {"song": self.polished_song_name(songs[index][0], songs[index][1]), "index": index + 1})
+                            new_message = self.polished_message(strings["song"] + "\n",
+                                                                {"song": self.polished_song_name(songs[index][0], songs[index][1]), "index": index + 1})
                             message += new_message
                             if len(message) > 2000:
                                 await context.followup.send(previous_message)
@@ -777,20 +793,25 @@ class Music(commands.Cog):
                     index = 1
                     for playlist in guild["playlists"]:
                         polished_playlist_name = self.polished_message(strings["playlist"], {"playlist": playlist["name"], "playlist_index": index})
-                        playlist["name"] = playlist["name"][:97 - len(polished_playlist_name) + len(playlist["name"])] + "..." if len(polished_playlist_name) > 100 else playlist["name"]
+                        playlist["name"] = (playlist["name"][:97 - len(polished_playlist_name) + len(playlist["name"])] + "..."
+                                            if len(polished_playlist_name) > 100 else playlist["name"])
                         if (current == "" or current.lower() in polished_playlist_name.lower()) and len(playlists) < 25:
                             playlists.append(app_commands.Choice(name=polished_playlist_name, value=index))
                         index += 1
                     break
         else:
             if context.namespace.from_guild is None:
-                playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (context.guild.id,)).fetchall())
-            else: playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (int(context.namespace.from_guild),)).fetchall())
+                playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id",
+                                                          (context.guild.id,)).fetchall())
+            else: playlist_names = list(self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id",
+                                                            (int(context.namespace.from_guild),))
+                                                   .fetchall())
             index = 1
             for playlist in playlist_names:
                 playlist_name = list(playlist)
                 polished_playlist_name = self.polished_message(strings["playlist"], {"playlist": playlist_name[0], "playlist_index": index})
-                playlist_name[0] = playlist_name[0][:97 - len(polished_playlist_name) + len(playlist_name[0])] + "..." if len(polished_playlist_name) > 100 else playlist_name[0]
+                playlist_name[0] = (playlist_name[0][:97 - len(polished_playlist_name) + len(playlist_name[0])] + "..."
+                                    if len(polished_playlist_name) > 100 else playlist_name[0])
                 if (current == "" or current.lower() in polished_playlist_name.lower()) and len(playlists) < 25:
                     playlists.append(app_commands.Choice(name=polished_playlist_name, value=index))
                 index += 1
@@ -863,12 +884,14 @@ class Music(commands.Cog):
                 index = 1
                 if self.cursor is None:
                     for playlist in self.data["guilds"][self.guilds.index(guild)]["playlists"]:
-                        playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"], {"playlist": playlist["name"], "playlist_index": index}),
+                        playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
+                                                                                                 {"playlist": playlist["name"], "playlist_index": index}),
                                                                      value=str(index)))
                         index += 1
                 else:
                     for playlist in self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (guild["id"],)).fetchall():
-                        playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"], {"playlist": playlist[0], "playlist_index": index}),
+                        playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
+                                                                                                 {"playlist": playlist[0], "playlist_index": index}),
                                                                      value=str(index)))
                         index += 1
                 playlist_menu = discord.ui.Select(placeholder=strings["playlist_select_menu_placeholder"], options=playlist_options)
@@ -1512,7 +1535,9 @@ class Music(commands.Cog):
                     if set is None:
                         try: await context.response.send_message(self.polished_message(strings["working_thread"],
                                                                                        {"bot": self.bot.user.mention,
-                                                                                        "thread": self.bot.get_guild(guild["id"]).get_thread(guild["working_thread_id"]).jump_url}))
+                                                                                        "thread": self.bot.get_guild(guild["id"])
+                                                                                                          .get_thread(guild["working_thread_id"])
+                                                                                                          .jump_url}))
                         except: await context.response.send_message(self.polished_message(strings["working_thread_not_assigned"], {"bot": self.bot.user.mention}))
                         break
                     thread_nonexistent = True
@@ -1520,7 +1545,8 @@ class Music(commands.Cog):
                         if set == thread.name:
                             guild["working_thread_id"] = thread.id
                             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                            await context.response.send_message(self.polished_message(strings["working_thread_change"], {"bot": self.bot.user.mention, "thread": thread.jump_url}))
+                            await context.response.send_message(self.polished_message(strings["working_thread_change"],
+                                                                                      {"bot": self.bot.user.mention, "thread": thread.jump_url}))
                             thread_nonexistent = False
                             break
                     if thread_nonexistent: await context.response.send_message(strings["invalid_command"])
@@ -1538,7 +1564,8 @@ class Music(commands.Cog):
                 if set == thread.name:
                     self.cursor.execute("update guilds set working_thread_id = ? where guild_id = ?", (thread.id, context.guild.id))
                     self.connection.commit()
-                    await context.response.send_message(self.polished_message(strings["working_thread_change"], {"bot": self.bot.user.mention, "thread": thread.jump_url}))
+                    await context.response.send_message(self.polished_message(strings["working_thread_change"],
+                                                                              {"bot": self.bot.user.mention, "thread": thread.jump_url}))
                     thread_nonexistent = False
                     break
             if thread_nonexistent: await context.response.send_message(strings["invalid_command"])
@@ -1558,7 +1585,8 @@ class Music(commands.Cog):
                     file = f"{self.music_directory}/{self.get_file_name(guild['playlists'][playlist_index]['songs'][song_index]['file'])}"
                     open(file, "wb").write(requests.get(guild["playlists"][playlist_index]["songs"][song_index]["file"]).content)
                     while not os.path.exists(file): await asyncio.sleep(.1)
-                    try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index, "song_index": song_index}),
+                    try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
+                                                                                                                        "song_index": song_index}),
                                                                                                         files=[discord.File(file)])
                     except: pass
                     break
@@ -1575,16 +1603,16 @@ class Music(commands.Cog):
     async def renew_attachment_from_message(self, message: discord.Message):
         try:
             if message.author.id != self.bot.user.id: return
-            message_data = yaml.safe_load(message.content)
+            content = yaml.safe_load(message.content)
             if self.cursor is None:
                 for guild in self.data["guilds"]:
                     if guild["id"] == message.guild.id:                    
-                        if self.get_file_name(guild["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"]) == message.attachments[0].filename:
-                            guild["playlists"][message_data["playlist_index"]]["songs"][message_data["song_index"]]["file"] = str(message.attachments[0])
+                        if self.get_file_name(guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["file"]) == message.attachments[0].filename:
+                            guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["file"] = str(message.attachments[0])
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                self.cursor.execute("update songs set song_url = ? where song_id = ?", (str(message.attachments[0]), message_data["song_id"]))
+                self.cursor.execute("update songs set song_url = ? where song_id = ?", (str(message.attachments[0]), content["song_id"]))
                 self.connection.commit()
             try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
             except: pass
