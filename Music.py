@@ -614,7 +614,7 @@ class Music(commands.Cog):
             # select a playlist to modify or show the contents of
             elif select is not None and action is not None:
                 if select > 0 and select <= playlist_count:
-                    global_playlist_id, song_count, playlist = (self.cursor.execute("""select songs.pl_id, count(song_id), playlists.pl_name from songs
+                    global_playlist_id, playlist, song_count = (self.cursor.execute("""select songs.pl_id, playlists.pl_name, count(song_id) from songs
                                                                                        left outer join playlists on playlists.pl_id = songs.pl_id
                                                                                        where playlists.guild_id = ? and playlists.guild_pl_id = ?""",
                                                                                     (context.guild.id, select - 1))
