@@ -190,12 +190,7 @@ class Main(commands.Cog):
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         else:
             self.cursor.execute("delete from guild_users where guild_id = ?", (guild.id,))
-            async for user in guild.fetch_members(limit=guild.member_count):
-                if user.id != self.bot.user.id:
-                    if not (cursor.execute("select guild_id from guild_users left outer join users on users.user_id = guild_users.user_id where users.user_id = ?",
-                                           (user.id,))
-                                  .fetchall()):
-                        self.cursor.execute("delete from users where user_id = ?", (user.id,))
+            self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
             self.cursor.execute("delete from songs where pl_id in (select pl_id from playlists where guild_id = ?)", (guild.id,))
             self.cursor.execute("delete from playlists where guild_id = ?", (guild.id,))
             self.cursor.execute("delete from guilds where guild_id = ?", (guild.id,))
@@ -237,10 +232,7 @@ class Main(commands.Cog):
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
                 self.cursor.execute("delete from guild_users where user_id = ? and guild_id = ?", (member.guild.id, member.id))
-                if not (cursor.execute("select guild_id from guild_users left outer join users on users.user_id = guild_users.user_id where users.user_id = ?",
-                                       (member.id,))
-                              .fetchall()):
-                    self.cursor.execute("delete from users where user_id = ?", (member.id,))
+                self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
                 self.connection.commit()
         self.lock.release()
 
@@ -352,13 +344,7 @@ async def sync_guilds(context):
                     if id[0] not in ids:
                         cursor.execute("delete from guild_users where guild_id = ?", id)
                         cursor.execute("delete from guilds where guild_id = ?", id)
-                for user_id in cursor.execute("select user_id from users"):
-                    if not (cursor.execute("""select guild_id from guild_users
-                                              left outer join users on users.user_id = guild_users.user_id
-                                              where users.user_id = ?""",
-                                           user_id)
-                                  .fetchall()):
-                        cursor.execute("delete from users where user_id = ?", user_id)
+                cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
         else: connection.commit()
         await context.reply(f"Synced all guilds")
@@ -403,14 +389,8 @@ async def sync_users(context):
                         index += 1
                 else:
                     for id in cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,)).fetchall():
-                        if id[0] not in ids:
-                            cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
-                            if not (cursor.execute("""select guild_id from guild_users
-                                                      left outer join users on users.user_id = guild_users.user_id
-                                                      where users.user_id = ?""",
-                                                   id)
-                                          .fetchall()):
-                                cursor.execute("delete from users where user_id = ?", id)
+                        if id[0] not in ids: cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
+                    cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
         else: connection.commit()
         await context.reply(f"Synced all users")

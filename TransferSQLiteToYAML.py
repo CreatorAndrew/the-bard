@@ -15,8 +15,8 @@ for guild in cursor.execute("select * from guilds").fetchall():
         songs = []
         for song in (cursor.execute("""select song_name, song_url, song_duration from songs
                                        left outer join playlists on playlists.pl_id = songs.pl_id
-                                       where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                       order by songs.pl_song_id""",
+                                       where guild_id = ? and guild_pl_id = ?
+                                       order by pl_song_id""",
                                     (guild[0], playlist[0]))
                            .fetchall()):
             songs.append({"name": song[0], "file": song[1], "duration": song[2]})

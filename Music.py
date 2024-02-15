@@ -425,8 +425,8 @@ class Music(commands.Cog):
                     return
                 songs = (self.cursor.execute("""select song_name, song_url, song_duration from songs
                                                 left outer join playlists on playlists.pl_id = songs.pl_id
-                                                where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                order by songs.pl_song_id""",
+                                                where guild_id = ? and guild_pl_id = ?
+                                                order by pl_song_id""",
                                              (int(from_guild), transfer - 1))
                                     .fetchall())
                 if new_name is None: new_name = (self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?",
@@ -484,8 +484,8 @@ class Music(commands.Cog):
                 # clone a playlist
                 songs = (self.cursor.execute("""select song_name, song_url, song_duration from songs
                                                 left outer join playlists on playlists.pl_id = songs.pl_id
-                                                where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                order by songs.pl_song_id""",
+                                                where guild_id = ? and guild_pl_id = ?
+                                                order by pl_song_id""",
                                              (context.guild.id, clone - 1))
                                     .fetchall())
                 if into is None or into < 1 or into > playlist_count:
@@ -531,7 +531,7 @@ class Music(commands.Cog):
                                                                                        (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                                                                                        (select count(song_id) from songs
                                                                                         left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                        where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
+                                                                                        where guild_id = ? and guild_pl_id = ?))""",
                                                            (song[0], song[1], song[2], context.guild.id, into - 1, context.guild.id, into - 1))
                     await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                       {"playlist": self.cursor.execute("""select pl_name from playlists
@@ -590,8 +590,8 @@ class Music(commands.Cog):
                 self.lock.release()
                 songs = (self.cursor.execute("""select song_name, song_url, song_duration from songs
                                                 left outer join playlists on playlists.pl_id = songs.pl_id
-                                                where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                order by songs.pl_song_id""",
+                                                where guild_id = ? and guild_pl_id = ?
+                                                order by pl_song_id""",
                                              (context.guild.id, load - 1))
                                     .fetchall())
                 if songs:
@@ -614,9 +614,9 @@ class Music(commands.Cog):
             # select a playlist to modify or show the contents of
             elif select is not None and action is not None:
                 if select > 0 and select <= playlist_count:
-                    global_playlist_id, playlist, song_count = (self.cursor.execute("""select songs.pl_id, playlists.pl_name, count(song_id) from songs
+                    global_playlist_id, playlist, song_count = (self.cursor.execute("""select songs.pl_id, pl_name, count(song_id) from songs
                                                                                        left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                       where playlists.guild_id = ? and playlists.guild_pl_id = ?""",
+                                                                                       where guild_id = ? and guild_pl_id = ?""",
                                                                                     (context.guild.id, select - 1))
                                                                            .fetchone())
                     # add a track to the playlist
@@ -633,7 +633,7 @@ class Music(commands.Cog):
                                                                         (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                                                                         (select count(song_id) from songs
                                                                          left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                         where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
+                                                                         where guild_id = ? and guild_pl_id = ?))""",
                                             (new_name, url, metadata["duration"], context.guild.id, select - 1, context.guild.id, select - 1))
                         if new_index is None: new_index = song_count + 1
                         else:
@@ -656,8 +656,8 @@ class Music(commands.Cog):
                     elif action == "move":
                         song_copies = (self.cursor.execute("""select song_id, song_url, song_name from songs
                                                               left outer join playlists on playlists.pl_id = songs.pl_id
-                                                              where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                              order by songs.pl_song_id""",
+                                                              where guild_id = ? and guild_pl_id = ?
+                                                              order by pl_song_id""",
                                                            (context.guild.id, select - 1))
                                                   .fetchall())
                         if song_index is None or song_index < 1 or song_index > song_count or new_index is None or new_index < 1 or new_index > song_count:
@@ -685,7 +685,7 @@ class Music(commands.Cog):
                             return
                         song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
                                                                                 left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
+                                                                                where guild_id = ? and guild_pl_id = ? and pl_song_id = ?""",
                                                                              (context.guild.id, select - 1, song_index - 1))
                                                                     .fetchone())
                         await context.followup.send(self.polished_message(strings["playlist_rename_song"],
@@ -703,7 +703,7 @@ class Music(commands.Cog):
                             return
                         song_id, song_name, song_file = (self.cursor.execute("""select song_id, song_name, song_url from songs
                                                                                 left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                where playlists.guild_id = ? and playlists.guild_pl_id = ? and songs.pl_song_id = ?""",
+                                                                                where guild_id = ? and guild_pl_id = ? and pl_song_id = ?""",
                                                                              (context.guild.id, select - 1, song_index - 1))
                                                                     .fetchone())
                         self.cursor.execute("delete from songs where song_id = ?", (song_id,))
@@ -718,8 +718,8 @@ class Music(commands.Cog):
                         message = ""
                         songs = (self.cursor.execute("""select song_url, song_name from songs
                                                         left outer join playlists on playlists.pl_id = songs.pl_id
-                                                        where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                        order by songs.pl_song_id""",
+                                                        where guild_id = ? and guild_pl_id = ?
+                                                        order by pl_song_id""",
                                                      (context.guild.id, select - 1))
                                             .fetchall())
                         if songs: message += self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select})
@@ -859,8 +859,8 @@ class Music(commands.Cog):
             try:
                 song_names = list(self.cursor.execute("""select song_name from songs
                                                          left outer join playlists on playlists.pl_id = songs.pl_id
-                                                         where playlists.guild_id = ? and playlists.guild_pl_id = ?
-                                                         order by songs.pl_song_id""",
+                                                         where guild_id = ? and guild_pl_id = ?
+                                                         order by pl_song_id""",
                                                       (context.guild.id, context.namespace.select - 1))
                                              .fetchall())
                 index = 1
@@ -953,7 +953,7 @@ class Music(commands.Cog):
                                                                 (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                                                                 (select count(song_id) from songs
                                                                  left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                 where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
+                                                                 where guild_id = ? and guild_pl_id = ?))""",
                                     (song["name"], song["file"], song["duration"], context.guild.id, index - 1, context.guild.id, index - 1))
                 previous_message = message
                 new_message = self.polished_message(strings["playlist_add_song"] + "\n",
@@ -964,7 +964,7 @@ class Music(commands.Cog):
                                                      "song": self.polished_song_name(song["file"], song["name"]),
                                                      "index": self.cursor.execute("""select count(song_id) from songs
                                                                                      left outer join playlists on playlists.pl_id = songs.pl_id
-                                                                                     where playlists.guild_id = ? and playlists.guild_pl_id = ?""",
+                                                                                     where guild_id = ? and guild_pl_id = ?""",
                                                                                   (context.guild.id, index - 1))
                                                                          .fetchone()[0]})
                 message += new_message

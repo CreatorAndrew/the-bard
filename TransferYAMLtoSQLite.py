@@ -41,22 +41,20 @@ for guild in data["guilds"]:
     except: working_thread_id = None
     cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild["id"], guild["language"], working_thread_id, guild["keep"], guild["repeat"]))
     for playlist in guild["playlists"]:
-        cursor.execute("""insert into playlists values((select count(playlists.pl_id) from playlists),
+        cursor.execute("""insert into playlists values((select count(pl_id) from playlists),
                                                        ?,
                                                        ?,
-                                                       (select count(playlists.guild_id) from guilds
-                                                        left outer join playlists on playlists.guild_id = guilds.guild_id
-                                                        where guilds.guild_id = ?))""",
+                                                       (select count(pl_id) from playlists where guild_id = ?))""",
                        (playlist["name"], guild["id"], guild["id"]))
         for song in playlist["songs"]:
             cursor.execute("""insert into songs values((select count(songs.song_id) from songs),
                                                        ?,
                                                        ?,
                                                        ?,
-                                                       (select playlists.pl_id from playlists where playlists.guild_id = ? and playlists.guild_pl_id = ?),
+                                                       (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                                                        (select count(songs.pl_id) from playlists
                                                         left outer join songs on songs.pl_id = playlists.pl_id
-                                                        where playlists.guild_id = ? and playlists.guild_pl_id = ?))""",
+                                                        where guild_id = ? and guild_pl_id = ?))""",
                            (song["name"],
                             song["file"],
                             song["duration"],
