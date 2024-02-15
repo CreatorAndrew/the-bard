@@ -1592,7 +1592,7 @@ class Music(commands.Cog):
                     except: pass
                     break
         else:
-            url = self.cursor.execute("select song_url from songs where songs.song_id = ?", (song_id,)).fetchone()[0]
+            url = self.cursor.execute("select song_url from songs where song_id = ?", (song_id,)).fetchone()[0]
             working_thread_id = self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,)).fetchone()[0]
             file = f"{self.music_directory}/{self.get_file_name(url)}"
             open(file, "wb").write(requests.get(url).content)
