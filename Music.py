@@ -1034,7 +1034,7 @@ class Music(commands.Cog):
                                 # play the track
                                 if not voice.is_playing():
                                     source = discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
-                                                                    before_options=f"-ss {guild['queue'][guild['index']]['time']}")
+                                                                    before_options=f"-re -ss {guild['queue'][guild['index']]['time']}")
                                     source.read()
                                     voice.play(source)
                                     guild["queue"][guild["index"]]["time"] = "0"
