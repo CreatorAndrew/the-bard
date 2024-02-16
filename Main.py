@@ -36,7 +36,8 @@ class Main(commands.Cog):
             id = "id"
             language = "language"
         else:
-            guilds = self.cursor.execute("select guild_id, guild_lang from guilds").fetchall()
+            self.cursor.execute("select guild_id, guild_lang from guilds")
+            guilds = self.cursor.fetchall()
             id = 0
             language = 1
         # add all guilds with this bot to memory that were not already
@@ -305,7 +306,9 @@ async def sync_guilds(context):
     if context.author.id == variables["master_id"]:
         await lock.acquire()
         if cursor is None: guild_count = len(data["guilds"])
-        else: guild_count = cursor.execute("select count(guild_id) from guilds").fetchone()[0]
+        else:
+            cursor.execute("select count(guild_id) from guilds")
+            guild_count = cursor.fetchone()[0]
         if len(bot.guilds) > guild_count:
             async for guild in bot.fetch_guilds():
                 if cursor is None:
@@ -340,7 +343,8 @@ async def sync_guilds(context):
                         index -= 1
                     index += 1
             else:
-                for id in cursor.execute("select guild_id from guilds").fetchall():
+                cursor.execute("select guild_id from guilds")
+                for id in cursor.fetchall():
                     if id[0] not in ids:
                         cursor.execute("delete from guild_users where guild_id = ?", id)
                         cursor.execute("delete from guilds where guild_id = ?", id)
@@ -361,7 +365,9 @@ async def sync_users(context):
                         guild_index = data["guilds"].index(guild_searched)
                         user_count = len(guild_searched["users"])
                         break
-            else: user_count = cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,)).fetchone()[0]
+            else:
+                cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,))
+                user_count = cursor.fetchone()[0]
             # subtract 1 from the member count to exclude the bot itself
             if len(guild.members) - 1 > user_count:
                 async for user in guild.fetch_members(limit=guild.member_count):
@@ -388,7 +394,8 @@ async def sync_users(context):
                             index -= 1
                         index += 1
                 else:
-                    for id in cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,)).fetchall():
+                    cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,))
+                    for id in cursor.fetchall():
                         if id[0] not in ids: cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
                     cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
         if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)

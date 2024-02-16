@@ -9,20 +9,22 @@ data = yaml.safe_load(open(flat_file, "r"))
 connection = sqlite3.connect("Guilds.db")
 cursor = connection.cursor()
 
-for guild in cursor.execute("select * from guilds").fetchall():
+cursor.execute("select * from guilds")
+for guild in cursor.fetchall():
     playlists = []
-    for playlist in cursor.execute("select guild_pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id", (guild[0],)).fetchall():
+    cursor.execute("select guild_pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id", (guild[0],))
+    for playlist in cursor.fetchall():
         songs = []
-        for song in (cursor.execute("""select song_name, song_url, song_duration from songs
-                                       left outer join playlists on playlists.pl_id = songs.pl_id
-                                       where guild_id = ? and guild_pl_id = ?
-                                       order by pl_song_id""",
-                                    (guild[0], playlist[0]))
-                           .fetchall()):
-            songs.append({"name": song[0], "file": song[1], "duration": song[2]})
+        cursor.execute("""select song_name, song_url, song_duration from songs
+                          left outer join playlists on playlists.pl_id = songs.pl_id
+                          where guild_id = ? and guild_pl_id = ?
+                          order by pl_song_id""",
+                       (guild[0], playlist[0]))
+        for song in cursor.fetchall(): songs.append({"name": song[0], "file": song[1], "duration": song[2]})
         playlists.append({"name": playlist[1], "songs": songs})
     users = []
-    for user in cursor.execute("select user_id from guild_users where guild_id = ?", (guild[0],)).fetchall(): users.append({"id": user[0]})
+    cursor.execute("select user_id from guild_users where guild_id = ?", (guild[0],))
+    for user in cursor.fetchall(): users.append({"id": user[0]})
     data["guilds"].append({"id": guild[0],
                            "language": guild[1],
                            "keep": bool(guild[3]),
