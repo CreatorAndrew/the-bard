@@ -1,6 +1,13 @@
-# Replace `null` with the ID of the user who manages the bot.
-master_id: null
-# Replace `null` with the token of the bot.
-token: null
-# Use a flat file instead of a database to store guild data.
-use_flat_file: false
+# Set the token of the bot.
+token:
+# Set the ID of the user who manages the bot.
+master_id:
+# Set the storage medium for storing guild and user data (possible values: 'postgresql', 'sqlite', 'yaml').
+storage: sqlite
+# Set the credentials for the PostgreSQL database if it is selected storage medium.
+postgresql_credentials:
+    database:
+    user:
+    password:
+    host: # Optional
+    port: # Optional

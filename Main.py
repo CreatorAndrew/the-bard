@@ -1,13 +1,25 @@
 import os
 import requests
 import yaml
-import sqlite3
 import asyncio
 import typing
 import discord
 from discord import app_commands
 from discord.ext import commands
 from Music import Music
+
+class CursorHandler():
+    def __init__(self, cursor, integer_data_type, placeholder):
+        self.cursor = cursor
+        self.integer_data_type = integer_data_type
+        self.placeholder = placeholder
+
+    def execute(self, statement, args=tuple()):
+        self.cursor.execute(statement.replace("?", self.placeholder).replace("integer", self.integer_data_type), args)
+
+    def fetchall(self): return self.cursor.fetchall()
+
+    def fetchone(self): return self.cursor.fetchone()
 
 class CommandTranslator(app_commands.Translator):
     async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext) -> "str | None":
@@ -247,7 +259,7 @@ bot.remove_command("help")
 
 variables = yaml.safe_load(open("Variables.yaml", "r"))
 
-if variables["use_flat_file"]:
+if variables["storage"] == "yaml":
     connection = None
     cursor = None
     flat_file = "Guilds.yaml"
@@ -256,37 +268,60 @@ if variables["use_flat_file"]:
 else:
     data = None
     flat_file = None
-    database = "Guilds.db"
-    database_exists = os.path.exists(database)
-    connection = sqlite3.connect(database)
-    cursor = connection.cursor()
+    if variables["storage"] == "postgresql":
+        import subprocess
+        import psycopg2cffi
+        subprocess.run(["psql",
+                        "-c",
+                        f"create database \"{variables['postgresql_credentials']['database']}\"",
+                        f"""user={variables["postgresql_credentials"]["user"]}
+                            dbname={variables["postgresql_credentials"]["user"]}
+                            password={variables["postgresql_credentials"]["password"]}"""],
+                       stdout=subprocess.DEVNULL,
+                       stderr=subprocess.STDOUT)
+        database_exists = False
+        connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
+                                          user=variables["postgresql_credentials"]["user"],
+                                          password=variables["postgresql_credentials"]["password"],
+                                          host=variables["postgresql_credentials"]["host"],
+                                          port=variables["postgresql_credentials"]["port"])
+        connection.autocommit = True
+        cursor = CursorHandler(connection.cursor(), "bigint", "%s")
+    elif variables["storage"] == "sqlite":
+        import sqlite3
+        database = "Guilds.db"
+        database_exists = os.path.exists(database)
+        connection = sqlite3.connect(database)
+        cursor = CursorHandler(connection.cursor(), "integer", "?")
     if not database_exists:
-        cursor.execute("""create table guilds(guild_id integer not null,
-                                              guild_lang text not null,
-                                              working_thread_id integer null,
-                                              keep_in_voice boolean not null,
-                                              repeat_queue boolean not null,
-                                              primary key (guild_id))""")
-        cursor.execute("""create table playlists(pl_id integer not null,
-                                                 pl_name text not null,
-                                                 guild_id integer not null,
-                                                 guild_pl_id integer not null,
-                                                 primary key (pl_id),
-                                                 foreign key (guild_id) references guilds(guild_id))""")
-        cursor.execute("""create table songs(song_id integer not null,
-                                             song_name text not null,
-                                             song_url text not null,
-                                             song_duration float not null,
-                                             pl_id integer not null,
-                                             pl_song_id integer not null,
-                                             primary key (song_id),
-                                             foreign key (pl_id) references playlists(pl_id))""")
-        cursor.execute("create table users(user_id integer not null, primary key (user_id))")
-        cursor.execute("""create table guild_users(guild_id integer not null,
-                                                   user_id integer not null,
-                                                   primary key (guild_id, user_id),
-                                                   foreign key (guild_id) references guilds(guild_id),
-                                                   foreign key (user_id) references users(user_id))""")
+        try:
+            cursor.execute("""create table guilds(guild_id integer not null,
+                                                  guild_lang text not null,
+                                                  working_thread_id integer null,
+                                                  keep_in_voice boolean not null,
+                                                  repeat_queue boolean not null,
+                                                  primary key (guild_id))""")
+            cursor.execute("""create table playlists(pl_id integer not null,
+                                                     pl_name text not null,
+                                                     guild_id integer not null,
+                                                     guild_pl_id integer not null,
+                                                     primary key (pl_id),
+                                                     foreign key (guild_id) references guilds(guild_id))""")
+            cursor.execute("""create table songs(song_id integer not null,
+                                                 song_name text not null,
+                                                 song_url text not null,
+                                                 song_duration float not null,
+                                                 pl_id integer not null,
+                                                 pl_song_id integer not null,
+                                                 primary key (song_id),
+                                                 foreign key (pl_id) references playlists(pl_id))""")
+            cursor.execute("create table users(user_id integer not null, primary key (user_id))")
+            cursor.execute("""create table guild_users(guild_id integer not null,
+                                                       user_id integer not null,
+                                                       primary key (guild_id, user_id),
+                                                       foreign key (guild_id) references guilds(guild_id),
+                                                       foreign key (user_id) references users(user_id))""")
+        except: pass
 
 language_directory = "Languages"
 lock = asyncio.Lock()

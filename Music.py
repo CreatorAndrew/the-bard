@@ -603,7 +603,8 @@ class Music(commands.Cog):
                 if select > 0 and select <= playlist_count:
                     self.cursor.execute("""select songs.pl_id, pl_name, count(song_id) from songs
                                            left outer join playlists on playlists.pl_id = songs.pl_id
-                                           where guild_id = ? and guild_pl_id = ?""",
+                                           where guild_id = ? and guild_pl_id = ?
+                                           group by songs.pl_id, pl_name""",
                                         (context.guild.id, select - 1))
                     global_playlist_id, playlist, song_count = self.cursor.fetchone()
                     # add a track to the playlist
