@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg2cffi
 import subprocess
 import yaml
 
@@ -14,11 +14,11 @@ subprocess.run(["psql",
                     password={variables["postgresql_credentials"]["password"]}"""],
                stdout=subprocess.DEVNULL,
                stderr=subprocess.STDOUT)
-connection = psycopg2.connect(database=variables["postgresql_credentials"]["database"],
-                              user=variables["postgresql_credentials"]["user"],
-                              password=variables["postgresql_credentials"]["password"],
-                              host=variables["postgresql_credentials"]["host"],
-                              port=variables["postgresql_credentials"]["port"])
+connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
+                                  user=variables["postgresql_credentials"]["user"],
+                                  password=variables["postgresql_credentials"]["password"],
+                                  host=variables["postgresql_credentials"]["host"],
+                                  port=variables["postgresql_credentials"]["port"])
 connection.autocommit = True
 cursor = connection.cursor()
 try:
