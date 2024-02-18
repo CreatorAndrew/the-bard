@@ -8,7 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from Music import Music
 
-class CursorHandler():
+class CursorHandler:
     def __init__(self, cursor, integer_data_type, placeholder):
         self.cursor = cursor
         self.integer_data_type = integer_data_type
