@@ -212,7 +212,7 @@ class Music(commands.Cog):
             response = requests.get(url, stream=True)
             # verify that the URL file is a media container
             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.followup.send(self.polished_message(strings["invalid_song"], {"song": self.polished_song_name(url, song["name"])}))
+                await context.followup.send(self.polished_message(strings["invalid_song"], {"song": self.polished_song_name(url, metadata["name"])}))
                 return
         await self.lock.acquire()
         if self.cursor is None:
@@ -1051,31 +1051,30 @@ class Music(commands.Cog):
     async def insert_song(self, context, url, name, index, time="0", duration=None, silence=False):
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
-        if voice_channel is None: await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
-        else:
-            for guild in self.guilds:
-                if guild["id"] == context.guild.id:
-                    if index > 0 and index < len(guild["queue"]) + 2:
-                        try:
-                            if name is None or duration is None:
-                                metadata = self.get_metadata(url)
-                                if name is None: name = metadata["name"]
-                                if duration is None: duration = metadata["duration"]
-                        except:
-                            await context.response.send_message(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
-                            return
-                        response = requests.get(url, stream=True)
-                        # verify that the URL file is a media container
-                        if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                            await context.response.send_message(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
-                            return
-                        # add the track to the queue
-                        guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silence})
-                        if index - 1 <= guild["index"]: guild["index"] += 1
-                        if not silence: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
-                                                                                                  {"song": self.polished_song_name(url, name), "index": index}))
-                    else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
-                    break
+        for guild in self.guilds:
+            if guild["id"] == context.guild.id:
+                if voice_channel is None: await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+                elif index > 0 and index < len(guild["queue"]) + 2:
+                    try:
+                        if name is None or duration is None:
+                            metadata = self.get_metadata(url)
+                            if name is None: name = metadata["name"]
+                            if duration is None: duration = metadata["duration"]
+                    except:
+                        await context.response.send_message(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
+                        return
+                    response = requests.get(url, stream=True)
+                    # verify that the URL file is a media container
+                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                        await context.response.send_message(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
+                        return
+                    # add the track to the queue
+                    guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silence})
+                    if index - 1 <= guild["index"]: guild["index"] += 1
+                    if not silence: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
+                                                                                              {"song": self.polished_song_name(url, name), "index": index}))
+                else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
+                break
 
     @app_commands.command(description="move_command_desc")
     async def move_command(self, context: discord.Interaction, song_index: int, new_index: int):
