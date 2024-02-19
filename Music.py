@@ -434,24 +434,24 @@ class Music(commands.Cog):
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
                     return
-                self.cursor.execute("""insert into playlists values((select count(pl_id) from playlists),
+                self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                     ?,
                                                                     ?,
                                                                     (select count(pl_id) from playlists where guild_id = ?))""",
                                     (new_name, context.guild.id, context.guild.id))
                 for song in songs:
-                    self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                    self.cursor.execute("""insert into songs values((select max(song_id) from songs) + 1,
                                                                     ?,
                                                                     ?,
                                                                     ?,
-                                                                    (select count(pl_id) from playlists) - 1,
-                                                                    (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
+                                                                    (select max(pl_id) from playlists),
+                                                                    (select count(song_id) from songs where pl_id = (select max(pl_id) from playlists)))""",
                                         (song[0], song[1], song[2]))
                 if new_index is None: new_index = playlist_count + 1
                 else:
                     self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                         (new_index - 1, playlist_count, context.guild.id))
-                    self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select count(pl_id) from playlists) - 1", (new_index - 1,))
+                    self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                 self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (int(from_guild), transfer - 1))
                 await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                   {"playlist": self.cursor.fetchone()[0],
@@ -464,7 +464,7 @@ class Music(commands.Cog):
                     await context.followup.send(strings["invalid_command"])
                     self.lock.release()
                     return
-                self.cursor.execute("""insert into playlists values((select count(pl_id) from playlists),
+                self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                     ?,
                                                                     ?,
                                                                     (select count(pl_id) from playlists where guild_id = ?))""",
@@ -473,7 +473,7 @@ class Music(commands.Cog):
                 else:
                     self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                         (new_index - 1, playlist_count, context.guild.id))
-                    self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select count(pl_id) from playlists) - 1", (new_index - 1,))
+                    self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                 await context.followup.send(self.polished_message(strings["add_playlist"], {"playlist": add, "playlist_index": new_index}))
             # clone a playlist or copy its tracks into another playlist
             elif clone is not None and clone > 0 and clone <= playlist_count:
@@ -492,24 +492,24 @@ class Music(commands.Cog):
                         await context.followup.send(strings["invalid_command"])
                         self.lock.release()
                         return
-                    self.cursor.execute("""insert into playlists values((select count(pl_id) from playlists),
+                    self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                         ?,
                                                                         ?,
                                                                         (select count(pl_id) from playlists where guild_id = ?))""",
                                         (new_name, context.guild.id, context.guild.id))
                     for song in songs:
-                        self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                        self.cursor.execute("""insert into songs values((select max(song_id) from songs) + 1,
                                                                         ?,
                                                                         ?,
                                                                         ?,
-                                                                        (select count(pl_id) from playlists) - 1,
-                                                                        (select count(song_id) from songs where pl_id = (select count(pl_id) from playlists) - 1))""",
+                                                                        (select max(pl_id) from playlists),
+                                                                        (select count(song_id) from songs where pl_id = (select max(pl_id) from playlists)))""",
                                             (song[0], song[1], song[2]))
                     if new_index is None: new_index = playlist_count + 1
                     else:
                         self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                             (new_index - 1, playlist_count, context.guild.id))
-                        self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select count(pl_id) from playlists) - 1", (new_index - 1,))
+                        self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                     self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1))
                     await context.followup.send(self.polished_message(strings["clone_playlist"],
                                                                       {"playlist": self.cursor.fetchone()[0],
@@ -518,7 +518,7 @@ class Music(commands.Cog):
                                                                        "into_playlist_index": new_index}))
                 # copy a playlist's tracks into another playlist
                 else:
-                    for song in songs: self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                    for song in songs: self.cursor.execute("""insert into songs values((select max(song_id) from songs) + 1,
                                                                                        ?,
                                                                                        ?,
                                                                                        ?,
@@ -607,7 +607,7 @@ class Music(commands.Cog):
                             await context.followup.send(strings["invalid_command"])
                             self.lock.release()
                             return
-                        self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                        self.cursor.execute("""insert into songs values((select max(song_id) from songs) + 1,
                                                                         ?,
                                                                         ?,
                                                                         ?,
@@ -620,7 +620,7 @@ class Music(commands.Cog):
                         else:
                             self.cursor.execute("update songs set pl_song_id = pl_song_id + 1 where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?",
                                                 (new_index - 1, song_count, global_playlist_id))
-                            self.cursor.execute("update songs set pl_song_id = ? where song_id = (select count(song_id) from songs) - 1", (new_index - 1,))
+                            self.cursor.execute("update songs set pl_song_id = ? where song_id = (select max(song_id) from songs) - 1", (new_index - 1,))
                         await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                           {"playlist": playlist,
                                                                            "playlist_index": select,
@@ -628,8 +628,8 @@ class Music(commands.Cog):
                                                                            "index": new_index}))
                         if file is not None:
                             self.lock.release()
-                            self.cursor.execute("select count(song_id) from songs")
-                            await self.renew_attachment(context.guild.id, select - 1, new_index - 1, self.cursor.fetchone()[0] - 1)
+                            self.cursor.execute("select max(song_id) from songs")
+                            await self.renew_attachment(context.guild.id, select - 1, new_index - 1, self.cursor.fetchone()[0])
                             return
                     # change the position of a track within the playlist
                     elif action == "move":
@@ -924,7 +924,7 @@ class Music(commands.Cog):
         else:
             message = ""
             for song in playlist:
-                self.cursor.execute("""insert into songs values((select count(song_id) from songs),
+                self.cursor.execute("""insert into songs values((select max(song_id) from songs) + 1,
                                                                 ?,
                                                                 ?,
                                                                 ?,
