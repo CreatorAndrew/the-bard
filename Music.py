@@ -596,7 +596,7 @@ class Music(commands.Cog):
             elif select is not None and action is not None:
                 if select > 0 and select <= playlist_count:
                     self.cursor.execute("""select songs.pl_id, pl_name, count(song_id) from songs
-                                           left outer join playlists on playlists.pl_id = songs.pl_id
+                                           right outer join playlists on playlists.pl_id = songs.pl_id
                                            where guild_id = ? and guild_pl_id = ?
                                            group by songs.pl_id, pl_name""",
                                         (context.guild.id, select - 1))
