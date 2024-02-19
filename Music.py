@@ -1,4 +1,3 @@
-import os
 import requests
 import yaml
 import asyncio
@@ -7,6 +6,7 @@ import random
 import discord
 from discord import app_commands
 from discord.ext import commands
+from io import BytesIO
 from subprocess import check_output
 
 class Music(commands.Cog):
@@ -18,7 +18,6 @@ class Music(commands.Cog):
         self.flat_file = flat_file
         self.language_directory = language_directory
         self.lock = lock
-        self.music_directory = "Media"
         self.guilds = []
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
         self.bot.tree.add_command(self.playlist_add_files_context_menu)
@@ -1559,16 +1558,14 @@ class Music(commands.Cog):
         return threads
 
     async def renew_attachment(self, guild_id, playlist_index, song_index, song_id=None):
-        if not os.path.exists(self.music_directory): os.mkdir(self.music_directory)
         if self.cursor is None:
             for guild in self.data["guilds"]:
                 if guild["id"] == guild_id:
-                    file = f"{self.music_directory}/{self.get_file_name(guild['playlists'][playlist_index]['songs'][song_index]['file'])}"
-                    open(file, "wb").write(requests.get(guild["playlists"][playlist_index]["songs"][song_index]["file"]).content)
-                    while not os.path.exists(file): await asyncio.sleep(.1)
+                    url = guild["playlists"][playlist_index]["songs"][song_index]["file"]
                     try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
                                                                                                                         "song_index": song_index}),
-                                                                                                        files=[discord.File(file)])
+                                                                                                        file=discord.File(BytesIO(requests.get(url).content),
+                                                                                                                          self.get_file_name(url)))
                     except: pass
                     break
         else:
@@ -1576,10 +1573,8 @@ class Music(commands.Cog):
             url = self.cursor.fetchone()[0]
             self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,))
             working_thread_id = self.cursor.fetchone()[0]
-            file = f"{self.music_directory}/{self.get_file_name(url)}"
-            open(file, "wb").write(requests.get(url).content)
-            while not os.path.exists(file): await asyncio.sleep(.1)
-            try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}), files=[discord.File(file)])
+            try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}),
+                                                                                       file=discord.File(BytesIO(requests.get(url).content), self.get_file_name(url)))
             except: pass
 
     @commands.Cog.listener("on_message")
@@ -1597,6 +1592,4 @@ class Music(commands.Cog):
             else:
                 self.cursor.execute("update songs set song_url = ? where song_id = ?", (str(message.attachments[0]), content["song_id"]))
                 self.connection.commit()
-            try: os.remove(f"{self.music_directory}/{message.attachments[0].filename}")
-            except: pass
         except: pass
