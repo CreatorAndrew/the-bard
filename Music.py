@@ -40,13 +40,7 @@ class Music(commands.Cog):
             except: duration = .0
             return {"name": name, "duration": duration}
 
-    def polished_song_name(self, file, name):
-        index = 0
-        while index <= 9:
-            if f"{index}. " in name:
-                return f"[{name[:name.index(f'{index}. ') + len(f'{index}. ')]}](<{file}>)" + f"[{name[name.index(f'{index}. ') + len(f'{index}. '):]}](<{file}>)"
-            index += 1
-        return f"[{name}](<{file}>)"
+    def polished_song_name(self, file, name): return f"[{name}](<{file}>)"
 
     def polished_message(self, message, replacements):
         for placeholder, replacement in replacements.items(): message = message.replace("%{" + placeholder + "}", str(replacement))
