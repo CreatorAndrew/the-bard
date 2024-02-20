@@ -620,7 +620,7 @@ class Music(commands.Cog):
                         else:
                             self.cursor.execute("update songs set pl_song_id = pl_song_id + 1 where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?",
                                                 (new_index - 1, song_count, global_playlist_id))
-                            self.cursor.execute("update songs set pl_song_id = ? where song_id = (select max(song_id) from songs) - 1", (new_index - 1,))
+                            self.cursor.execute("update songs set pl_song_id = ? where song_id = (select max(song_id) from songs)", (new_index - 1,))
                         await context.followup.send(self.polished_message(strings["playlist_add_song"],
                                                                           {"playlist": playlist,
                                                                            "playlist_index": select,
