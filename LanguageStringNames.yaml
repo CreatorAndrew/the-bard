@@ -80,6 +80,7 @@ names:
 -   dismiss_command
 -   language_command
 -   working_thread_command
+-   page_selector_title
 -   playlist_select_menu_placeholder
 -   playlists_command_desc
 -   playlist_command_desc
@@ -106,6 +107,7 @@ names:
 -   dismiss_command_desc
 -   language_command_desc
 -   working_thread_command_desc
+-   page
 -   from_guild
 -   transfer
 -   add

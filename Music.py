@@ -119,6 +119,39 @@ class Music(commands.Cog):
                 self.guilds[guilds.index(guild)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]
         self.lock.release()
 
+    async def page_selector(self, context, strings, pages, index, message=None):
+        previous_button = discord.ui.Button(label="<", disabled=index == 0, style=discord.ButtonStyle.primary)
+        page_input_button = discord.ui.Button(label=f"{str(index + 1)}/{len(pages)}", disabled=len(pages) == 1)
+        next_button = discord.ui.Button(label=">", disabled=index == len(pages) - 1, style=discord.ButtonStyle.primary)
+        async def previous_callback(context):
+            await context.response.defer()
+            await self.page_selector(context, strings, pages, index - 1, message)
+        async def page_input_callback(context):
+            page_input = discord.ui.TextInput(label=strings["page"])
+            modal = discord.ui.Modal(title=strings["page_selector_title"])
+            modal.add_item(page_input)
+            async def submit(context):
+                await context.response.defer()
+                await self.page_selector(context,
+                                         strings,
+                                         pages,
+                                         int(page_input.value) - 1 if int(page_input.value) > 0 and int(page_input.value) <= len(pages) else index,
+                                         message)
+            modal.on_submit = submit
+            await context.response.send_modal(modal)
+        async def next_callback(context):
+            await context.response.defer()
+            await self.page_selector(context, strings, pages, index + 1, message)
+        next_button.callback = next_callback
+        page_input_button.callback = page_input_callback
+        previous_button.callback = previous_callback
+        view = discord.ui.View()
+        view.add_item(previous_button)
+        view.add_item(page_input_button)
+        view.add_item(next_button)
+        if message is None: message = await context.followup.send("...")
+        await context.followup.edit_message(message.id, content=pages[index], view=view)
+
     # return a list of playlists for the calling guild
     @app_commands.command(description="playlists_command_desc")
     async def playlists_command(self, context: discord.Interaction):
@@ -130,12 +163,11 @@ class Music(commands.Cog):
                 else:
                     self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (guild["id"],))
                     playlists = self.cursor.fetchall()
-                message = ""
-                if playlists or (self.cursor is None and self.data["guilds"][self.guilds.index(guild)]["playlists"]):
-                    message += guild["strings"]["playlists_header"] + "\n"
-                else:
+                message = guild["strings"]["playlists_header"] + "\n"
+                if not (playlists or (self.cursor is None and self.data["guilds"][self.guilds.index(guild)]["playlists"])):
                     await context.followup.send(guild["strings"]["no_playlists"])
                     return
+                pages = []
                 index = 0
                 while index < len(self.data["guilds"][self.guilds.index(guild)]["playlists"] if self.cursor is None else playlists):
                     previous_message = message
@@ -145,10 +177,11 @@ class Music(commands.Cog):
                                                          "playlist_index": index + 1})
                     message += new_message
                     if len(message) > 2000:
-                        await context.followup.send(previous_message)
-                        message = new_message
+                        pages.append(previous_message)
+                        message = guild["strings"]["playlists_header"] + "\n" + new_message
                     index += 1
-                await context.followup.send(message)
+                pages.append(message)
+                await self.page_selector(context, guild["strings"], pages, 0)
                 break
 
     @app_commands.command(description="playlist_command_desc")
@@ -370,17 +403,14 @@ class Music(commands.Cog):
                                                                                    "index": song_index}))
                             # return a list of tracks in the playlist
                             elif action == "list":
-                                message = ""
-                                if guild["playlists"][select - 1]["songs"]: message += self.polished_message(strings["playlist_songs_header"] + "\n",
-                                                                                                             {"playlist": guild["playlists"][select - 1]["name"],
-                                                                                                              "playlist_index": select})
-                                else:
-                                    await context.followup.send(self.polished_message(strings["playlist_no_songs"],
-                                                                                      {"playlist": guild["playlists"][select - 1]["name"], "playlist_index": select}))
+                                message = self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select})
+                                if not guild["playlists"][select - 1]["songs"]:
+                                    await context.followup.send(self.polished_message(strings["playlist_no_songs"], {"playlist": playlist, "playlist_index": select}))
                                     self.lock.release()
                                     return
+                                pages = []
                                 index = 0
-                                while index < len(guild["playlists"][select - 1]["songs"]):
+                                while index < len(songs):
                                     previous_message = message
                                     new_message = self.polished_message(strings["song"] + "\n",
                                                                         {"song": self.polished_song_name(guild["playlists"][select - 1]["songs"][index]["file"],
@@ -388,10 +418,11 @@ class Music(commands.Cog):
                                                                          "index": index + 1})
                                     message += new_message
                                     if len(message) > 2000:
-                                        await context.followup.send(previous_message)
-                                        message = new_message
+                                        pages.append(previous_message)
+                                        message = self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select}) + new_message
                                     index += 1
-                                await context.followup.send(message)
+                                pages.append(message)
+                                await self.page_selector(context, strings, pages, 0)
                                 self.lock.release()
                                 return
                             else:
@@ -694,18 +725,18 @@ class Music(commands.Cog):
                                                                            "index": song_index}))
                     # return a list of tracks in the playlist
                     elif action == "list":
-                        message = ""
+                        message = self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select})
                         self.cursor.execute("""select song_url, song_name from songs
                                                left outer join playlists on playlists.pl_id = songs.pl_id
                                                where guild_id = ? and guild_pl_id = ?
                                                order by pl_song_id""",
                                             (context.guild.id, select - 1))
                         songs = self.cursor.fetchall()
-                        if songs: message += self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select})
-                        else:
+                        if not songs:
                             await context.followup.send(self.polished_message(strings["playlist_no_songs"], {"playlist": playlist, "playlist_index": select}))
                             self.lock.release()
                             return
+                        pages = []
                         index = 0
                         while index < len(songs):
                             previous_message = message
@@ -713,10 +744,11 @@ class Music(commands.Cog):
                                                                 {"song": self.polished_song_name(songs[index][0], songs[index][1]), "index": index + 1})
                             message += new_message
                             if len(message) > 2000:
-                                await context.followup.send(previous_message)
-                                message = new_message
+                                pages.append(previous_message)
+                                message = self.polished_message(strings["playlist_songs_header"] + "\n", {"playlist": playlist, "playlist_index": select}) + new_message
                             index += 1
-                        await context.followup.send(message)
+                        pages.append(message)
+                        await self.page_selector(context, strings, pages, 0)
                         self.lock.release()
                         return
                     else:
@@ -1351,11 +1383,11 @@ class Music(commands.Cog):
         await self.init_guilds()
         for guild in self.guilds:
             if guild["id"] == context.guild.id:
-                message = ""
-                if guild["queue"]: message += guild["strings"]["queue_songs_header"] + "\n"
-                else:
+                message = guild["strings"]["queue_songs_header"] + "\n"
+                if not guild["queue"]:
                     await context.followup.send(guild["strings"]["queue_no_songs"])
                     return
+                pages = []
                 index = 0
                 while index < len(guild["queue"]):
                     previous_message = message
@@ -1364,10 +1396,11 @@ class Music(commands.Cog):
                                                          "index": index + 1})
                     message += new_message
                     if len(message) > 2000:
-                        await context.followup.send(previous_message)
-                        message = new_message
+                        pages.append(previous_message)
+                        message = guild["strings"]["queue_songs_header"] + "\n" + new_message
                     index += 1
-                await context.followup.send(message)
+                pages.append(message)
+                await self.page_selector(context, guild["strings"], pages, 0)
                 break
 
     @app_commands.command(description="what_command_desc")

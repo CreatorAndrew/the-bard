@@ -84,6 +84,7 @@ strings:
     dismiss_command: dismiss
     language_command: language
     working_thread_command: working-thread
+    page_selector_title: Specify a page
     playlist_select_menu_placeholder: Select a playlist
     playlists_command_desc: Show the list of playlists for this server
     playlist_command_desc: Interact with playlists
@@ -110,6 +111,7 @@ strings:
     dismiss_command_desc: Disconnect me from a voice channel
     language_command_desc: Show or set the language for this server
     working_thread_command_desc: Show or set the thread to dump file attachments to
+    page: Page
     from_guild: from
     transfer: import
     add: add
