@@ -1274,7 +1274,8 @@ class Music(commands.Cog):
     async def when_command(self, context: discord.Interaction):
         guild = self.guilds[str(context.guild.id)]
         if guild["queue"]:
-            await context.response.send_message(self.convert_to_time(guild["time"]) + " / " + self.convert_to_time(guild["queue"][guild["index"]]["duration"]))
+            await context.response.send_message(self.convert_to_time(guild["time"]) + " / " + self.convert_to_time(guild["queue"][guild["index"]]["duration"]),
+                                                ephemeral=True)
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
     @app_commands.command(description="loop_command_desc")
