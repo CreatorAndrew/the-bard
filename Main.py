@@ -79,18 +79,20 @@ class Main(commands.Cog):
                     try:
                         if content["strings"]: pass
                     except:
-                        await context.response.send_message(content=strings["invalid_language_file"].replace("%{language_file}", file_name),
+                        await context.response.send_message(strings["invalid_language_file"].replace("%{language_file}", file_name),
                                                             file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
-                                                                              filename=current_language_file))
+                                                                              filename=current_language_file),
+                                                            ephemeral=True)
                         if self.cursor is None: self.lock.release()
                         return
                     for string in yaml.safe_load(open("LanguageStringNames.yaml", "r"))["names"]:
                         try:
                             if content["strings"][string]: pass
                         except:
-                            await context.response.send_message(content=strings["invalid_language_file"].replace("%{language_file}", file_name),
+                            await context.response.send_message(strings["invalid_language_file"].replace("%{language_file}", file_name),
                                                                 file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
-                                                                                  filename=current_language_file))
+                                                                                  filename=current_language_file),
+                                                                ephemeral=True)
                             if self.cursor is None: self.lock.release()
                             return
                     open(f"{self.language_directory}/{file_name}", "wb").write(response.content)
@@ -106,17 +108,19 @@ class Main(commands.Cog):
         elif add is None and set is not None:
             language = set
             if not os.path.exists(f"{self.language_directory}/{language}.yaml"):
-                await context.response.send_message(content=strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
-                                                    file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"), filename=current_language_file))
+                await context.response.send_message(strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
+                                                    file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"), filename=current_language_file),
+                                                    ephemeral=True)
                 if self.cursor is None: self.lock.release()
                 return
         elif add is None and set is None:
             await context.response.send_message(strings["language"].replace("%{language}",
-                                                                            yaml.safe_load(open(f"{self.language_directory}/{current_language_file}", "r"))["name"]))
+                                                                            yaml.safe_load(open(f"{self.language_directory}/{current_language_file}", "r"))["name"]),
+                                                ephemeral=True)
             if self.cursor is None: self.lock.release()
             return
         else:
-            await context.response.send_message(strings["invalid_command"])
+            await context.response.send_message(strings["invalid_command"], ephemeral=True)
             if self.cursor is None: self.lock.release()
             return
         language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
