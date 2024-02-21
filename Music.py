@@ -10,15 +10,16 @@ from io import BytesIO
 from subprocess import check_output
 
 class Music(commands.Cog):
-    def __init__(self, bot, connection, cursor, data, flat_file, language_directory, lock):
+    def __init__(self, bot, connection, cursor, data, flat_file, guilds, language_directory, lock):
         self.bot = bot
         self.connection = connection
         self.cursor = cursor
         self.data = data
         self.flat_file = flat_file
+        self.guilds = guilds
         self.language_directory = language_directory
         self.lock = lock
-        self.guilds = []
+        self.init_guilds()
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
         self.bot.tree.add_command(self.playlist_add_files_context_menu)
 
@@ -74,50 +75,26 @@ class Music(commands.Cog):
         else: seconds = float(time)
         return seconds
 
-    async def init_guilds(self, set_languages=True):
-        await self.lock.acquire()
+    def init_guilds(self):
         if self.cursor is None:
             guilds = self.data["guilds"]
             id = "id"
-            language = "language"
-            repeat = "repeat"
             keep = "keep"
+            repeat = "repeat"
         else:
-            self.cursor.execute("select guild_id, guild_lang, repeat_queue, keep_in_voice from guilds")
+            self.cursor.execute("select guild_id, keep_in_voice, repeat_queue from guilds")
             guilds = self.cursor.fetchall()
             id = 0
-            language = 1
+            keep = 1
             repeat = 2
-            keep = 3
-        # add all guilds with this bot to memory that were not already
-        if len(self.guilds) < len(guilds):
-            ids = []
-            for guild in guilds:
-                for guild_searched in self.guilds: ids.append(guild_searched["id"])
-                if guild[id] not in ids: self.guilds.append({"id": guild[id],
-                                                             "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"],
-                                                             "repeat": guild[repeat],
-                                                             "keep": guild[keep],
-                                                             "queue": [],
-                                                             "index": 0,
-                                                             "time": .0,
-                                                             "volume": 1.0,
-                                                             "connected": False})
-        # remove any guilds from memory that had removed this bot
-        elif len(self.guilds) > len(guilds):
-            index = 0
-            while index < len(self.guilds):
-                try:
-                    if self.guilds[index]["id"] != guilds[index][id]:
-                        self.guilds.remove(self.guilds[index])
-                        index -= 1
-                except: self.guilds.remove(self.guilds[index])
-                index += 1
-
-        if set_languages:
-            for guild in guilds:
-                self.guilds[guilds.index(guild)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]
-        self.lock.release()
+        for guild in guilds:
+            self.guilds[str(guild[id])]["keep"] = guild[keep]
+            self.guilds[str(guild[id])]["repeat"] = guild[repeat]
+            self.guilds[str(guild[id])]["queue"] = []
+            self.guilds[str(guild[id])]["index"] = 0
+            self.guilds[str(guild[id])]["time"] = .0
+            self.guilds[str(guild[id])]["volume"] = 1.0
+            self.guilds[str(guild[id])]["connected"] = False
 
     async def page_selector(self, context, strings, pages, index, message=None):
         previous_button = discord.ui.Button(label="<", disabled=index == 0, style=discord.ButtonStyle.primary)
@@ -156,33 +133,36 @@ class Music(commands.Cog):
     @app_commands.command(description="playlists_command_desc")
     async def playlists_command(self, context: discord.Interaction):
         await context.response.defer()
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if self.cursor is None: playlists = []
-                else:
-                    self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (guild["id"],))
-                    playlists = self.cursor.fetchall()
-                message = guild["strings"]["playlists_header"] + "\n"
-                if not (playlists or (self.cursor is None and self.data["guilds"][self.guilds.index(guild)]["playlists"])):
-                    await context.followup.send(guild["strings"]["no_playlists"])
-                    return
-                pages = []
-                index = 0
-                while index < len(self.data["guilds"][self.guilds.index(guild)]["playlists"] if self.cursor is None else playlists):
-                    previous_message = message
-                    new_message = self.polished_message(guild["strings"]["playlist"] + "\n",
-                                                        {"playlist": self.data["guilds"][self.guilds.index(guild)]["playlists"][index]["name"]
-                                                                     if self.cursor is None else playlists[index][0],
-                                                         "playlist_index": index + 1})
-                    message += new_message
-                    if len(message) > 2000:
-                        pages.append(previous_message)
-                        message = guild["strings"]["playlists_header"] + "\n" + new_message
-                    index += 1
-                pages.append(message)
-                await self.page_selector(context, guild["strings"], pages, 0)
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if self.cursor is None:
+            playlists = []
+            for guild_searched in self.data["guilds"]:
+                if guild_searched["id"] == context.guild.id:
+                    guild_index = self.data["guilds"].index(guild_searched)
+                    break
+        else:
+            self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (context.guild.id,))
+            playlists = self.cursor.fetchall()
+        message = guild["strings"]["playlists_header"] + "\n"
+        if not (playlists or (self.cursor is None and self.data["guilds"][guild_index]["playlists"])):
+            await context.followup.send(guild["strings"]["no_playlists"])
+            return
+        pages = []
+        index = 0
+        while index < len(self.data["guilds"][guild_index]["playlists"] if self.cursor is None else playlists):
+            previous_message = message
+            new_message = self.polished_message(guild["strings"]["playlist"] + "\n",
+                                                {"playlist": self.data["guilds"][guild_index]["playlists"][index]["name"]
+                                                             if self.cursor is None
+                                                             else playlists[index][0],
+                                                 "playlist_index": index + 1})
+            message += new_message
+            if len(message) > 2000:
+                pages.append(previous_message)
+                message = guild["strings"]["playlists_header"] + "\n" + new_message
+            index += 1
+        pages.append(message)
+        await self.page_selector(context, guild["strings"], pages, 0)
 
     @app_commands.command(description="playlist_command_desc")
     @app_commands.describe(from_guild="from_guild_desc")
@@ -220,11 +200,7 @@ class Music(commands.Cog):
                                new_name: str=None,
                                new_index: int=None):
         await context.response.defer()
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         if select is not None and action == "add":
             if file is None and song_url is not None: url = song_url
             elif file is not None and song_url is None: url = str(file)
@@ -794,11 +770,7 @@ class Music(commands.Cog):
     @playlist_command.autocomplete("load")
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
-        await self.init_guilds(False)
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         playlists = []
         if self.cursor is None:
             for guild in self.data["guilds"]:
@@ -829,15 +801,12 @@ class Music(commands.Cog):
 
     @playlist_command.autocomplete("action")
     async def playlist_action_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
-        await self.init_guilds(False)
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                action_options = [app_commands.Choice(name=guild["strings"]["add"], value="add"),
-                                  app_commands.Choice(name=guild["strings"]["move"], value="move"),
-                                  app_commands.Choice(name=guild["strings"]["rename"], value="rename"),
-                                  app_commands.Choice(name=guild["strings"]["remove"], value="remove"),
-                                  app_commands.Choice(name=guild["strings"]["list"], value="list")]
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
+        action_options = [app_commands.Choice(name=strings["add"], value="add"),
+                          app_commands.Choice(name=strings["move"], value="move"),
+                          app_commands.Choice(name=strings["rename"], value="rename"),
+                          app_commands.Choice(name=strings["remove"], value="remove"),
+                          app_commands.Choice(name=strings["list"], value="list")]
         actions = []
         for action in action_options:
             if current == "" or current.lower() in action.name.lower(): actions.append(action)
@@ -845,11 +814,7 @@ class Music(commands.Cog):
 
     @playlist_command.autocomplete("song_index")
     async def playlist_song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
-        await self.init_guilds(False)
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         songs = []
         if self.cursor is None:
             for guild in self.data["guilds"]:
@@ -885,41 +850,41 @@ class Music(commands.Cog):
 
     async def playlist_add_files(self, context: discord.Interaction, message_regarded: discord.Message):
         await context.response.defer()
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                # show a dropdown menu of all the playlists for the calling guild
-                playlist_options = [discord.SelectOption(label=strings["cancel_option"])]
-                index = 1
-                if self.cursor is None:
-                    for playlist in self.data["guilds"][self.guilds.index(guild)]["playlists"]:
+        guild = self.guilds[str(context.guild.id)]
+        strings = guild["strings"]
+        # show a dropdown menu of all the playlists for the calling guild
+        playlist_options = [discord.SelectOption(label=strings["cancel_option"])]
+        index = 1
+        if self.cursor is None:
+            for guild_searched in self.data["guilds"]:
+                if guild_searched["id"] == context.guild.id:
+                    for playlist in guild_searched["playlists"]:
                         playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
                                                                                                  {"playlist": playlist["name"], "playlist_index": index}),
                                                                      value=str(index)))
                         index += 1
-                else:
-                    self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (guild["id"],))
-                    for playlist in self.cursor.fetchall():
-                        playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
-                                                                                                 {"playlist": playlist[0], "playlist_index": index}),
-                                                                     value=str(index)))
-                        index += 1
-                playlist_menu = discord.ui.Select(placeholder=strings["playlist_select_menu_placeholder"], options=playlist_options)
-                chosen = []
-                async def playlist_callback(context):
-                    await context.response.send_message("...")
-                    await context.delete_original_response()
-                    chosen.append(playlist_menu.values[0])
-                playlist_menu.callback = playlist_callback
-                view = discord.ui.View()
-                view.add_item(playlist_menu)
-                await context.followup.send("", view=view)
-                while not chosen: await asyncio.sleep(.1)
-                if chosen[0] == strings["cancel_option"]: return
-                index = int(chosen[0])
+                    break
+        else:
+            self.cursor.execute("select pl_name from playlists where guild_id = ? order by guild_pl_id", (context.guild.id,))
+            for playlist in self.cursor.fetchall():
+                playlist_options.append(discord.SelectOption(label=self.polished_message(strings["playlist"],
+                                                                                            {"playlist": playlist[0], "playlist_index": index}),
+                                                                value=str(index)))
+                index += 1
+        playlist_menu = discord.ui.Select(placeholder=strings["playlist_select_menu_placeholder"], options=playlist_options)
+        chosen = []
+        async def playlist_callback(context):
+            await context.response.send_message("...")
+            await context.delete_original_response()
+            chosen.append(playlist_menu.values[0])
+        playlist_menu.callback = playlist_callback
+        view = discord.ui.View()
+        view.add_item(playlist_menu)
+        await context.followup.send("", view=view)
+        while not chosen: await asyncio.sleep(.1)
+        if chosen[0] == strings["cancel_option"]: return
+        index = int(chosen[0])
 
-                break
         playlist = []
         for url in message_regarded.attachments:
             try: song = self.get_metadata(str(url))
@@ -989,271 +954,230 @@ class Music(commands.Cog):
     @app_commands.command(description="play_command_desc")
     async def play_command(self, context: discord.Interaction, file: discord.Attachment=None, song_url: str=None, new_name: str=None):
         await context.response.defer()
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if file is None and song_url is not None: await self.play_song(context, song_url, new_name)
-                elif file is not None and song_url is None: await self.play_song(context, str(file), new_name)
-                else: await context.followup.send(guild["strings"]["invalid_command"])
-                break
+        if file is None and song_url is not None: await self.play_song(context, song_url, new_name)
+        elif file is not None and song_url is None: await self.play_song(context, str(file), new_name)
+        else: await context.followup.send(self.guilds[str(context.guild.id)]["strings"]["invalid_command"])
 
     async def play_song(self, context, url=None, name=None, playlist=[]):
         try:
             async def add_time(guild, time): guild["time"] += time
-            for guild in self.guilds:
-                if guild["id"] == context.guild.id:
-                    try: voice_channel = context.user.voice.channel
-                    except: voice_channel = None
-                    if voice_channel is None:
-                        await context.followup.send(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
-                    else:
-                        if url is None:
-                            for song in playlist:
-                                # add the track to the queue
-                                guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
-                        else:
-                            try: metadata = self.get_metadata(url)
-                            except:
-                                await context.followup.send(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
-                                return
-                            if name is None: name = metadata["name"]
-                            response = requests.get(url, stream=True)
-                            # verify that the URL file is a media container
-                            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                                await context.followup.send(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
-                                return
-                            await context.followup.send(self.polished_message(guild["strings"]["queue_add_song"],
-                                                                              {"song": self.polished_song_name(url, name), "index": len(guild["queue"]) + 1}))
-                            # add the track to the queue
-                            guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
-                        if guild["connected"]: voice = context.guild.voice_client
-                        else:
-                            voice = await voice_channel.connect()
-                            guild["connected"] = True
-                            await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
+            guild = self.guilds[str(context.guild.id)]
+            try: voice_channel = context.user.voice.channel
+            except: voice_channel = None
+            if voice_channel is None:
+                await context.followup.send(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+            else:
+                if url is None:
+                    for song in playlist:
+                        # add the track to the queue
+                        guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
+                else:
+                    try: metadata = self.get_metadata(url)
+                    except:
+                        await context.followup.send(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
+                        return
+                    if name is None: name = metadata["name"]
+                    response = requests.get(url, stream=True)
+                    # verify that the URL file is a media container
+                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                        await context.followup.send(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
+                        return
+                    await context.followup.send(self.polished_message(guild["strings"]["queue_add_song"],
+                                                                      {"song": self.polished_song_name(url, name), "index": len(guild["queue"]) + 1}))
+                    # add the track to the queue
+                    guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
+                if guild["connected"]: voice = context.guild.voice_client
+                else:
+                    voice = await voice_channel.connect()
+                    guild["connected"] = True
+                    await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
+                if not voice.is_playing():
+                    while guild["index"] < len(guild["queue"]):
+                        if guild["connected"]:
+                            if guild["queue"][guild["index"]]["silence"]: guild["queue"][guild["index"]]["silence"] = False
+                            else:
+                                await context.channel.send(self.polished_message(guild["strings"]["now_playing"],
+                                                                                 {"song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
+                                                                                                                  guild["queue"][guild["index"]]["name"]),
+                                                                                  "index": guild["index"] + 1,
+                                                                                  "max": len(guild["queue"])}))
+                                guild["time"] = .0
+                        # play the track
                         if not voice.is_playing():
-                            while guild["index"] < len(guild["queue"]):
-                                if guild["connected"]:
-                                    if guild["queue"][guild["index"]]["silence"]: guild["queue"][guild["index"]]["silence"] = False
-                                    else:
-                                        await context.channel.send(self.polished_message(guild["strings"]["now_playing"],
-                                                                                         {"song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
-                                                                                                                          guild["queue"][guild["index"]]["name"]),
-                                                                                          "index": guild["index"] + 1,
-                                                                                          "max": len(guild["queue"])}))
-                                        guild["time"] = .0
-                                # play the track
-                                if not voice.is_playing():
-                                    source = discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
-                                                                    before_options=f"-re -ss {guild['queue'][guild['index']]['time']}")
-                                    source.read()
-                                    voice.play(source)
-                                    guild["queue"][guild["index"]]["time"] = "0"
-                                    voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
-                                    voice.source.volume = guild["volume"]
-                                # ensure that the track plays completely or is skipped by command before proceeding
-                                while voice.is_playing() or voice.is_paused():
-                                    await asyncio.sleep(.1)
-                                    if voice.is_playing(): await add_time(guild, .1)
+                            source = discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
+                                                            before_options=f"-re -ss {guild['queue'][guild['index']]['time']}")
+                            source.read()
+                            voice.play(source)
+                            guild["queue"][guild["index"]]["time"] = "0"
+                            voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
+                            voice.source.volume = guild["volume"]
+                        # ensure that the track plays completely or is skipped by command before proceeding
+                        while voice.is_playing() or voice.is_paused():
+                            await asyncio.sleep(.1)
+                            if voice.is_playing(): await add_time(guild, .1)
 
-                                guild["index"] += 1
-                                if guild["index"] == len(guild["queue"]):
-                                    if not guild["repeat"]: await self.stop_music(context)
-                                    guild["index"] = 0
-                    break
+                        guild["index"] += 1
+                        if guild["index"] == len(guild["queue"]):
+                            if not guild["repeat"]: await self.stop_music(context)
+                            guild["index"] = 0
         except: pass
 
     @app_commands.command(description="insert_command_desc")
     async def insert_command(self, context: discord.Interaction, file: discord.Attachment=None, song_url: str=None, new_name: str=None, new_index: int=None):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if file is None and new_index is not None and song_url is not None: await self.insert_song(context, song_url, new_name, new_index)
-                elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, str(file), new_name, new_index)
-                else: await context.response.send_message(guild["strings"]["invalid_command"])
-                break
+        if file is None and new_index is not None and song_url is not None: await self.insert_song(context, song_url, new_name, new_index)
+        elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, str(file), new_name, new_index)
+        else: await context.response.send_message(self.guilds[str(context.guild.id)]["strings"]["invalid_command"])
 
     async def insert_song(self, context, url, name, index, time="0", duration=None, silence=False):
+        guild = self.guilds[str(context.guild.id)]
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if voice_channel is None: await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
-                elif index > 0 and index < len(guild["queue"]) + 2:
-                    try:
-                        if name is None or duration is None:
-                            metadata = self.get_metadata(url)
-                            if name is None: name = metadata["name"]
-                            if duration is None: duration = metadata["duration"]
-                    except:
-                        await context.response.send_message(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
-                        return
-                    response = requests.get(url, stream=True)
-                    # verify that the URL file is a media container
-                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                        await context.response.send_message(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
-                        return
-                    # add the track to the queue
-                    guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silence})
-                    if index - 1 <= guild["index"]: guild["index"] += 1
-                    if not silence: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
-                                                                                              {"song": self.polished_song_name(url, name), "index": index}))
-                else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
-                break
+        if voice_channel is None: await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+        elif index > 0 and index < len(guild["queue"]) + 2:
+            try:
+                if name is None or duration is None:
+                    metadata = self.get_metadata(url)
+                    if name is None: name = metadata["name"]
+                    if duration is None: duration = metadata["duration"]
+            except:
+                await context.response.send_message(self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
+                return
+            response = requests.get(url, stream=True)
+            # verify that the URL file is a media container
+            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                await context.response.send_message(self.polished_message(guild["strings"]["invalid_song"], {"song": self.polished_song_name(url, name)}))
+                return
+            # add the track to the queue
+            guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silence})
+            if index - 1 <= guild["index"]: guild["index"] += 1
+            if not silence: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
+                                                                                      {"song": self.polished_song_name(url, name), "index": index}))
+        else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
     @app_commands.command(description="move_command_desc")
     async def move_command(self, context: discord.Interaction, song_index: int, new_index: int):
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if song_index > 0 and song_index < len(guild["queue"]) + 1:
-                    if new_index > 0 and new_index < len(guild["queue"]) + 1:
-                        queue = guild["queue"].copy()
-                        guild["queue"].remove(queue[song_index - 1])
-                        guild["queue"].insert(new_index - 1, queue[song_index - 1])
-                        await context.response.send_message(self.polished_message(guild["strings"]["queue_move_song"],
-                                                                                  {"song": self.polished_song_name(queue[song_index - 1]["file"],
-                                                                                                                   queue[song_index - 1]["name"]),
-                                                                                   "index": new_index}))
-                    if song_index - 1 < guild["index"] and new_index - 1 >= guild["index"]: guild["index"] -= 1
-                    elif song_index - 1 > guild["index"] and new_index - 1 <= guild["index"]: guild["index"] += 1
-                    elif song_index - 1 == guild["index"] and new_index - 1 != guild["index"]: guild["index"] = new_index - 1
-                    else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": new_index}))
-                else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": song_index}))
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if song_index > 0 and song_index < len(guild["queue"]) + 1:
+            if new_index > 0 and new_index < len(guild["queue"]) + 1:
+                queue = guild["queue"].copy()
+                guild["queue"].remove(queue[song_index - 1])
+                guild["queue"].insert(new_index - 1, queue[song_index - 1])
+                await context.response.send_message(self.polished_message(guild["strings"]["queue_move_song"],
+                                                                          {"song": self.polished_song_name(queue[song_index - 1]["file"],
+                                                                                                           queue[song_index - 1]["name"]),
+                                                                           "index": new_index}))
+            if song_index - 1 < guild["index"] and new_index - 1 >= guild["index"]: guild["index"] -= 1
+            elif song_index - 1 > guild["index"] and new_index - 1 <= guild["index"]: guild["index"] += 1
+            elif song_index - 1 == guild["index"] and new_index - 1 != guild["index"]: guild["index"] = new_index - 1
+            else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": new_index}))
+        else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": song_index}))
 
     @app_commands.command(description="rename_command_desc")
     async def rename_command(self, context: discord.Interaction, song_index: int, new_name: str):
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                await context.response.send_message(self.polished_message(guild["strings"]["queue_rename_song"],
-                                                                          {"song": self.polished_song_name(guild["queue"][song_index - 1]["file"],
-                                                                                                           guild["queue"][song_index - 1]["name"]),
-                                                                           "index": song_index,
-                                                                           "name": new_name}))
-                guild["queue"][song_index - 1]["name"] = new_name
-                break
+        guild = self.guilds[str(context.guild.id)]
+        await context.response.send_message(self.polished_message(guild["strings"]["queue_rename_song"],
+                                                                  {"song": self.polished_song_name(guild["queue"][song_index - 1]["file"],
+                                                                                                   guild["queue"][song_index - 1]["name"]),
+                                                                   "index": song_index,
+                                                                   "name": new_name}))
+        guild["queue"][song_index - 1]["name"] = new_name
 
     @app_commands.command(description="remove_command_desc")
     async def remove_command(self, context: discord.Interaction, song_index: int): await self.remove_song(context, song_index)
 
     async def remove_song(self, context, index, silence=False):
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if index > 0 and index < len(guild["queue"]) + 1:
-                    if not silence:
-                        await context.response.send_message(self.polished_message(guild["strings"]["queue_remove_song"],
-                                                                                  {"song": self.polished_song_name(guild["queue"][index - 1]["file"],
-                                                                                                                   guild["queue"][index - 1]["name"]),
-                                                                                   "index": index}))
-                    # remove the track from the queue
-                    guild["queue"].remove(guild["queue"][index - 1])
-                    # decrement the index of the current track to match its new position in the queue, should the removed track have been before it
-                    if index - 1 < guild["index"]: guild["index"] -= 1
-                    # if the removed track is the current track, play the new track in its place in the queue
-                    elif index - 1 == guild["index"]:
-                        guild["index"] -= 1
-                        context.guild.voice_client.stop()
-                else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if index > 0 and index < len(guild["queue"]) + 1:
+            if not silence:
+                await context.response.send_message(self.polished_message(guild["strings"]["queue_remove_song"],
+                                                                          {"song": self.polished_song_name(guild["queue"][index - 1]["file"],
+                                                                                                           guild["queue"][index - 1]["name"]),
+                                                                           "index": index}))
+            # remove the track from the queue
+            guild["queue"].remove(guild["queue"][index - 1])
+            # decrement the index of the current track to match its new position in the queue, should the removed track have been before it
+            if index - 1 < guild["index"]: guild["index"] -= 1
+            # if the removed track is the current track, play the new track in its place in the queue
+            elif index - 1 == guild["index"]:
+                guild["index"] -= 1
+                context.guild.voice_client.stop()
+        else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
     @move_command.autocomplete("song_index")
     @rename_command.autocomplete("song_index")
     @remove_command.autocomplete("song_index")
     async def song_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[int]]:
-        await self.init_guilds(False)
+        guild = self.guilds[str(context.guild.id)]
         songs = []
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                index = 1
-                for song in guild["queue"]:
-                    polished_song_name = self.polished_message(guild["strings"]["song"], {"song": song["name"], "index": index})
-                    song["name"] = song["name"][:97 - len(polished_song_name) + len(song["name"])] + "..." if len(polished_song_name) > 100 else song["name"]
-                    if (current == "" or current.lower() in polished_song_name.lower()) and len(songs) < 25:
-                        songs.append(app_commands.Choice(name=polished_song_name, value=index))
-                    index += 1
-                break
+        index = 1
+        for song in guild["queue"]:
+            polished_song_name = self.polished_message(guild["strings"]["song"], {"song": song["name"], "index": index})
+            song["name"] = song["name"][:97 - len(polished_song_name) + len(song["name"])] + "..." if len(polished_song_name) > 100 else song["name"]
+            if (current == "" or current.lower() in polished_song_name.lower()) and len(songs) < 25:
+                songs.append(app_commands.Choice(name=polished_song_name, value=index))
+            index += 1
         return songs
 
     @app_commands.command(description="skip_command_desc")
     async def skip_command(self, context: discord.Interaction, by: int=1, to: int=None):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    if to is None:
-                        if guild["index"] + by < len(guild["queue"]) and by > 0: guild["index"] += by - 1
-                        else:
-                            await context.response.send_message(guild["strings"]["invalid_command"])
-                            return
-                    else:
-                        if to > 0 and to <= len(guild["queue"]): guild["index"] = to - 2
-                        else:
-                            await context.response.send_message(guild["strings"]["invalid_command"])
-                            return
-                    await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
-                                                                              {"song": self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
-                                                                                                               guild["queue"][guild["index"] + 1]["name"]),
-                                                                               "index": guild["index"] + 2,
-                                                                               "max": len(guild["queue"])}))
-                    guild["queue"][guild["index"] + 1]["silence"] = True
-                    guild["time"] = .0
-                    context.guild.voice_client.stop()
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            if to is None:
+                if guild["index"] + by < len(guild["queue"]) and by > 0: guild["index"] += by - 1
                 else:
-                    await context.response.send_message(guild["strings"]["queue_no_songs"])
+                    await context.response.send_message(guild["strings"]["invalid_command"])
                     return
-                break
+            else:
+                if to > 0 and to <= len(guild["queue"]): guild["index"] = to - 2
+                else:
+                    await context.response.send_message(guild["strings"]["invalid_command"])
+                    return
+            await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
+                                                                      {"song": self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
+                                                                                                       guild["queue"][guild["index"] + 1]["name"]),
+                                                                       "index": guild["index"] + 2,
+                                                                       "max": len(guild["queue"])}))
+            guild["queue"][guild["index"] + 1]["silence"] = True
+            guild["time"] = .0
+            context.guild.voice_client.stop()
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="previous_command_desc")
     async def previous_command(self, context: discord.Interaction, by: int=1):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    if guild["index"] - by >= 0 and by > 0: guild["index"] -= by + 1
-                    else:
-                        await context.response.send_message(guild["strings"]["invalid_command"])
-                        return
-                    await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
-                                                                              {"song": self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
-                                                                                                               guild["queue"][guild["index"] + 1]["name"]),
-                                                                               "index": guild["index"] + 2,
-                                                                               "max": len(guild["queue"])}))
-                    guild["queue"][guild["index"] + 1]["silence"] = True
-                    guild["time"] = .0
-                    context.guild.voice_client.stop()
-                else:
-                    await context.response.send_message(guild["strings"]["queue_no_songs"])
-                    return
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            if guild["index"] - by >= 0 and by > 0: guild["index"] -= by + 1
+            else:
+                await context.response.send_message(guild["strings"]["invalid_command"])
+                return
+            await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
+                                                                      {"song": self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
+                                                                                                       guild["queue"][guild["index"] + 1]["name"]),
+                                                                       "index": guild["index"] + 2,
+                                                                       "max": len(guild["queue"])}))
+            guild["queue"][guild["index"] + 1]["silence"] = True
+            guild["time"] = .0
+            context.guild.voice_client.stop()
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="stop_command_desc")
     async def stop_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                await context.response.send_message(guild["strings"]["stop"])
-                break
-        try:
-            await context.response.send_message("...")
-            await context.delete_original_response()
-        except: pass
+        await context.response.send_message(self.guilds[str(context.guild.id)]["strings"]["stop"])
         await self.stop_music(context)
 
     async def stop_music(self, context, leave=False, guild=None):
+        if guild is None: id = context.guild.id
+        else: id = guild.id
+        guild = self.guilds[str(id)]
+        guild["queue"] = []
         try:
-            if guild is None: id = context.guild.id
-            else: id = guild.id
-            for guild in self.guilds:
-                if guild["id"] == id:
-                    guild["queue"] = []
-                    if context.guild.voice_client.is_playing():
-                        guild["index"] = -1
-                        context.guild.voice_client.stop()
-                    else: guild["index"] = 0
-                    if leave or not guild["keep"]:
-                        guild["connected"] = False
-                        await context.guild.voice_client.disconnect()
-                    break
+            if context.guild.voice_client.is_playing():
+                guild["index"] = -1
+                context.guild.voice_client.stop()
+            else: guild["index"] = 0
+            if leave or not guild["keep"]:
+                guild["connected"] = False
+                await context.guild.voice_client.disconnect()
         except:
             guild["index"] = 0
             guild["connected"] = False
@@ -1261,84 +1185,62 @@ class Music(commands.Cog):
 
     @app_commands.command(description="pause_command_desc")
     async def pause_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    if context.guild.voice_client.is_paused():
-                        context.guild.voice_client.resume()
-                        now_or_no_longer = guild["strings"]["no_longer"]
-                    else:
-                        context.guild.voice_client.pause()
-                        now_or_no_longer = guild["strings"]["now"]
-                    await context.response.send_message(self.polished_message(guild["strings"]["pause"], {"now_or_no_longer": now_or_no_longer}))
-                else:
-                    await context.response.send_message(guild["strings"]["queue_no_songs"])
-                    return
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            if context.guild.voice_client.is_paused():
+                context.guild.voice_client.resume()
+                now_or_no_longer = guild["strings"]["no_longer"]
+            else:
+                context.guild.voice_client.pause()
+                now_or_no_longer = guild["strings"]["now"]
+            await context.response.send_message(self.polished_message(guild["strings"]["pause"], {"now_or_no_longer": now_or_no_longer}))
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="jump_command_desc")
     async def jump_command(self, context: discord.Interaction, time: str): await self.jump_to(context, time)
 
     async def jump_to(self, context, time):
-        await self.init_guilds()
         seconds = self.convert_to_seconds(time)
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    await context.response.send_message(self.polished_message(guild["strings"]["jump"],
-                                                                              {"time": self.convert_to_time(seconds),
-                                                                               "song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
-                                                                                                               guild["queue"][guild["index"]]["name"]),
-                                                                               "index": guild["index"] + 1,
-                                                                               "max": len(guild["queue"])}))
-                    guild["time"] = seconds
-                    await self.insert_song(context,
-                                           guild["queue"][guild["index"]]["file"],
-                                           guild["queue"][guild["index"]]["name"],
-                                           guild["index"] + 2,
-                                           seconds,
-                                           guild["queue"][guild["index"]]["duration"],
-                                           True)
-                    await self.remove_song(context, guild["index"] + 1, True)
-                else: await context.response.send_message(guild["strings"]["queue_no_songs"])
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            await context.response.send_message(self.polished_message(guild["strings"]["jump"],
+                                                                      {"time": self.convert_to_time(seconds),
+                                                                       "song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
+                                                                                                       guild["queue"][guild["index"]]["name"]),
+                                                                       "index": guild["index"] + 1,
+                                                                       "max": len(guild["queue"])}))
+            guild["time"] = seconds
+            await self.insert_song(context,
+                                   guild["queue"][guild["index"]]["file"],
+                                   guild["queue"][guild["index"]]["name"],
+                                   guild["index"] + 2,
+                                   seconds,
+                                   guild["queue"][guild["index"]]["duration"],
+                                   True)
+            await self.remove_song(context, guild["index"] + 1, True)
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="forward_command_desc")
     async def forward_command(self, context: discord.Interaction, time: str):
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                await self.jump_to(context, str(float(guild["time"]) + self.convert_to_seconds(time)))
-                break
+        await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) + self.convert_to_seconds(time)))
 
     @app_commands.command(description="rewind_command_desc")
     async def rewind_command(self, context: discord.Interaction, time: str):
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                await self.jump_to(context, str(float(guild["time"]) - self.convert_to_seconds(time)))
-                break
+        await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) - self.convert_to_seconds(time)))
 
     @app_commands.command(description="when_command_desc")
     async def when_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    await context.response.send_message(self.convert_to_time(guild["time"]) + " / " + self.convert_to_time(guild["queue"][guild["index"]]["duration"]))
-                else: await context.response.send_message(guild["strings"]["queue_no_songs"])
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            await context.response.send_message(self.convert_to_time(guild["time"]) + " / " + self.convert_to_time(guild["queue"][guild["index"]]["duration"]))
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="loop_command_desc")
     async def loop_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
-        await self.init_guilds()
         if self.cursor is None: await self.lock.acquire()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                guild_index = self.guilds.index(guild)
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         if set is None:
-            await context.response.send_message(self.polished_message(strings["repeat"], {"do_not": "" if self.guilds[guild_index]["repeat"] else strings["do_not"]}))
+            await context.response.send_message(self.polished_message(strings["repeat"], {"do_not": "" if self.guilds[str(context.guild.id)]["repeat"] else strings["do_not"]}))
             if self.cursor is None: self.lock.release()
             return
         else:
@@ -1350,106 +1252,91 @@ class Music(commands.Cog):
                         # modify the flat file for guilds to reflect the change of whether playlists repeat
                         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
-                        self.guilds[guild_index]["repeat"] = repeat
+                        self.guilds[str(context.guild.id)]["repeat"] = repeat
                         break
             else:
                 self.cursor.execute("update guilds set repeat_queue = ? where guild_id = ?", (repeat, context.guild.id))
                 self.connection.commit()
-                self.guilds[guild_index]["repeat"] = repeat
+                self.guilds[str(context.guild.id)]["repeat"] = repeat
         await context.response.send_message(self.polished_message(strings["repeat_change"], {"now_or_no_longer": strings["now"] if repeat else strings["no_longer"]}))
         if self.cursor is None: self.lock.release()
 
     @app_commands.command(description="shuffle_command_desc")
     async def shuffle_command(self, context: discord.Interaction, restart: typing.Literal[0, 1]=1):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]:
-                    index = 0
-                    while index < len(guild["queue"]):
-                        temp_index = random.randint(0, len(guild["queue"]) - 1)
-                        temp_song = guild["queue"][index]
-                        guild["queue"][index] = guild["queue"][temp_index]
-                        guild["queue"][temp_index] = temp_song
-                        if index == guild["index"]: guild["index"] = temp_index
-                        index += 1
-                    await context.response.send_message(guild["strings"]["shuffle"])
-                    if bool(restart):
-                        guild["index"] = -1
-                        context.guild.voice_client.stop()
-                else: await context.response.send_message(guild["strings"]["queue_no_songs"])
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]:
+            index = 0
+            while index < len(guild["queue"]):
+                temp_index = random.randint(0, len(guild["queue"]) - 1)
+                temp_song = guild["queue"][index]
+                guild["queue"][index] = guild["queue"][temp_index]
+                guild["queue"][temp_index] = temp_song
+                if index == guild["index"]: guild["index"] = temp_index
+                index += 1
+            await context.response.send_message(guild["strings"]["shuffle"])
+            if bool(restart):
+                guild["index"] = -1
+                context.guild.voice_client.stop()
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="queue_command_desc")
     async def queue_command(self, context: discord.Interaction):
         await context.response.defer()
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                message = guild["strings"]["queue_songs_header"] + "\n"
-                if not guild["queue"]:
-                    await context.followup.send(guild["strings"]["queue_no_songs"])
-                    return
-                pages = []
-                index = 0
-                while index < len(guild["queue"]):
-                    previous_message = message
-                    new_message = self.polished_message(guild["strings"]["song"] + "\n",
-                                                        {"song": self.polished_song_name(guild["queue"][index]["file"], guild["queue"][index]["name"]),
-                                                         "index": index + 1})
-                    message += new_message
-                    if len(message) > 2000:
-                        pages.append(previous_message)
-                        message = guild["strings"]["queue_songs_header"] + "\n" + new_message
-                    index += 1
-                pages.append(message)
-                await self.page_selector(context, guild["strings"], pages, 0)
-                break
+        guild = self.guilds[str(context.guild.id)]
+        message = guild["strings"]["queue_songs_header"] + "\n"
+        if not guild["queue"]:
+            await context.followup.send(guild["strings"]["queue_no_songs"])
+            return
+        pages = []
+        index = 0
+        while index < len(guild["queue"]):
+            previous_message = message
+            new_message = self.polished_message(guild["strings"]["song"] + "\n",
+                                                {"song": self.polished_song_name(guild["queue"][index]["file"], guild["queue"][index]["name"]),
+                                                 "index": index + 1})
+            message += new_message
+            if len(message) > 2000:
+                pages.append(previous_message)
+                message = guild["strings"]["queue_songs_header"] + "\n" + new_message
+            index += 1
+        pages.append(message)
+        await self.page_selector(context, guild["strings"], pages, 0)
 
     @app_commands.command(description="what_command_desc")
     async def what_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if guild["queue"]: await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
-                                                                                             {"song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
-                                                                                                                              guild["queue"][guild["index"]]["name"]),
-                                                                                              "index": guild["index"] + 1,
-                                                                                              "max": len(guild["queue"])}))
-                else: await context.response.send_message(guild["strings"]["queue_no_songs"])
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if guild["queue"]: await context.response.send_message(self.polished_message(guild["strings"]["now_playing"],
+                                                                                     {"song": self.polished_song_name(guild["queue"][guild["index"]]["file"],
+                                                                                                                      guild["queue"][guild["index"]]["name"]),
+                                                                                      "index": guild["index"] + 1,
+                                                                                      "max": len(guild["queue"])}))
+        else: await context.response.send_message(guild["strings"]["queue_no_songs"])
 
     @app_commands.command(description="volume_command_desc")
     async def volume_command(self, context: discord.Interaction, set: str=None):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                if set is not None:
-                    if set.endswith("%"): guild["volume"] = float(set.replace("%", "")) / 100
-                    else: guild["volume"] = float(set)
-                    if context.guild.voice_client is not None and context.guild.voice_client.is_playing(): context.guild.voice_client.source.volume = guild["volume"]
-                volume_percent = guild["volume"] * 100
-                if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
-                if set is None: await context.response.send_message(self.polished_message(guild["strings"]["volume"], {"volume": str(volume_percent) + "%"}))
-                else: await context.response.send_message(self.polished_message(guild["strings"]["volume_change"], {"volume": str(volume_percent) + "%"}))
-                break
+        guild = self.guilds[str(context.guild.id)]
+        if set is not None:
+            if set.endswith("%"): guild["volume"] = float(set.replace("%", "")) / 100
+            else: guild["volume"] = float(set)
+            if context.guild.voice_client is not None and context.guild.voice_client.is_playing(): context.guild.voice_client.source.volume = guild["volume"]
+        volume_percent = guild["volume"] * 100
+        if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
+        if set is None: await context.response.send_message(self.polished_message(guild["strings"]["volume"], {"volume": str(volume_percent) + "%"}))
+        else: await context.response.send_message(self.polished_message(guild["strings"]["volume_change"], {"volume": str(volume_percent) + "%"}))
 
     @app_commands.command(description="keep_command_desc")
     async def keep_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
-        await self.init_guilds()
         if self.cursor is None: await self.lock.acquire()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                guild_index = self.guilds.index(guild)
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         try: voice_channel = context.user.voice.channel.jump_url
         except: voice_channel = strings["whatever_voice"]
         if set is None:
             await context.response.send_message(self.polished_message(strings["keep"],
                                                                       {"bot": self.bot.user.mention,
                                                                        "voice": voice_channel,
-                                                                       "stay_in_or_leave": strings["stay_in"] if self.guilds[guild_index]["keep"] else strings["leave"]}))
+                                                                       "stay_in_or_leave": strings["stay_in"]
+                                                                                           if self.guilds[str(context.guild.id)]["keep"]
+                                                                                           else strings["leave"]}))
             if self.cursor is None: self.lock.release()
             return
         else:
@@ -1461,12 +1348,12 @@ class Music(commands.Cog):
                         # modify the flat file for guilds to reflect the change of whether to keep this bot in a voice call when no audio is playing
                         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
-                        self.guilds[guild_index]["keep"] = keep
+                        self.guilds[str(context.guild.id)]["keep"] = keep
                         break
             else:
                 self.cursor.execute("update guilds set keep_in_voice = ? where guild_id = ?", (keep, context.guild.id))
                 self.connection.commit()
-                self.guilds[guild_index]["keep"] = keep
+                self.guilds[str(context.guild.id)]["keep"] = keep
         await context.response.send_message(self.polished_message(strings["keep_change"],
                                                                   {"bot": self.bot.user.mention,
                                                                    "voice": voice_channel,
@@ -1475,45 +1362,39 @@ class Music(commands.Cog):
 
     @app_commands.command(description="recruit_command_desc")
     async def recruit_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                try: voice_channel = context.user.voice.channel
-                except:
-                    await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
-                    return
-                if guild["connected"]:
-                    await context.response.send_message("...")
-                    await context.delete_original_response()
-                else:
-                    await context.response.send_message(self.polished_message(guild["strings"]["recruit_or_dismiss"],
-                                                                              {"bot": self.bot.user.mention,
-                                                                               "voice": voice_channel.jump_url,
-                                                                               "now_or_no_longer": guild["strings"]["now"]}))
-                    await voice_channel.connect()
-                    guild["connected"] = True
-                    await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
-                break
+        guild = self.guilds[str(context.guild.id)]
+        try: voice_channel = context.user.voice.channel
+        except:
+            await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+            return
+        if guild["connected"]:
+            await context.response.send_message("...")
+            await context.delete_original_response()
+        else:
+            await context.response.send_message(self.polished_message(guild["strings"]["recruit_or_dismiss"],
+                                                                      {"bot": self.bot.user.mention,
+                                                                       "voice": voice_channel.jump_url,
+                                                                       "now_or_no_longer": guild["strings"]["now"]}))
+            await voice_channel.connect()
+            guild["connected"] = True
+            await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
 
     @app_commands.command(description="dismiss_command_desc")
     async def dismiss_command(self, context: discord.Interaction):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                try: voice_channel = context.user.voice.channel
-                except:
-                    await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
-                    return
-                if guild["connected"]:
-                    await context.response.send_message(self.polished_message(guild["strings"]["recruit_or_dismiss"],
-                                                                              {"bot": self.bot.user.mention,
-                                                                               "voice": voice_channel.jump_url,
-                                                                               "now_or_no_longer": guild["strings"]["no_longer"]}))
-                    await self.stop_music(context, True)
-                else:
-                    await context.response.send_message("...")
-                    await context.delete_original_response()
-                break
+        guild = self.guilds[str(context.guild.id)]
+        try: voice_channel = context.user.voice.channel
+        except:
+            await context.response.send_message(self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+            return
+        if guild["connected"]:
+            await context.response.send_message(self.polished_message(guild["strings"]["recruit_or_dismiss"],
+                                                                      {"bot": self.bot.user.mention,
+                                                                       "voice": voice_channel.jump_url,
+                                                                       "now_or_no_longer": guild["strings"]["no_longer"]}))
+            await self.stop_music(context, True)
+        else:
+            await context.response.send_message("...")
+            await context.delete_original_response()
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -1526,23 +1407,17 @@ class Music(commands.Cog):
                         break
             # ensure that this bot's connected status and the queue are reset if it is not properly disconnected
             elif member.id == self.bot.user.id:
-                for guild in self.guilds:
-                    if guild["id"] == member.guild.id:
-                        if guild["connected"]:
-                            guild["index"] = 0
-                            guild["queue"] = []
-                            guild["connected"] = False
-                            member.guild.voice_client.cleanup()
-                        break
+                guild = self.guilds[str(member.guild.id)]
+                if guild["connected"]:
+                    guild["index"] = 0
+                    guild["queue"] = []
+                    guild["connected"] = False
+                    member.guild.voice_client.cleanup()
         except: pass
 
     @app_commands.command(description="working_thread_command_desc")
     async def working_thread_command(self, context: discord.Interaction, set: str=None):
-        await self.init_guilds()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                strings = guild["strings"]
-                break
+        strings = self.guilds[str(context.guild.id)]["strings"]
         if self.cursor is None:
             await self.lock.acquire()
             for guild in self.data["guilds"]:

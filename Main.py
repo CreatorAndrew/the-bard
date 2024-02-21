@@ -30,7 +30,7 @@ class CommandTranslator(app_commands.Translator):
         except: return None
 
 class Main(commands.Cog):
-    def __init__(self, bot, connection, cursor, data, flat_file, language_directory, lock):
+    def __init__(self, bot, connection, cursor, data, flat_file, guilds, language_directory, lock):
         self.bot = bot
         self.connection = connection
         self.cursor = cursor
@@ -38,11 +38,11 @@ class Main(commands.Cog):
         self.flat_file = flat_file
         self.language_directory = language_directory
         self.lock = lock
-        self.guilds = []
+        self.guilds = guilds
+        self.init_guilds()
         self.set_language_options()
 
-    async def init_guilds(self):
-        await self.lock.acquire()
+    def init_guilds(self):
         if self.cursor is None:
             guilds = self.data["guilds"]
             id = "id"
@@ -52,26 +52,10 @@ class Main(commands.Cog):
             guilds = self.cursor.fetchall()
             id = 0
             language = 1
-        # add all guilds with this bot to memory that were not already
-        if len(self.guilds) < len(guilds):
-            ids = []
-            for guild in guilds:
-                for guild_searched in self.guilds: ids.append(guild_searched["id"])
-                if guild[id] not in ids: self.guilds.append({"id": guild[id],
-                                                             "language": guild[language],
-                                                             "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]})
-        # remove any guilds from memory that had removed this bot
-        elif len(self.guilds) > len(guilds):
-            index = 0
-            while index < len(self.guilds):
-                try:
-                    if self.guilds[index]["id"] != guilds[index][id]:
-                        self.guilds.remove(self.guilds[index])
-                        index -= 1
-                except: self.guilds.remove(self.guilds[index])
-                index += 1
-
-        self.lock.release()
+        for guild in guilds:
+            self.guilds[str(guild[id])] = {}
+            self.guilds[str(guild[id])]["language"] = guild[language]
+            self.guilds[str(guild[id])]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]
 
     def set_language_options(self):
         self.language_options = []
@@ -82,14 +66,10 @@ class Main(commands.Cog):
 
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, set: str=None, add: discord.Attachment=None):
-        await self.init_guilds()
         if self.cursor is None: await self.lock.acquire()
-        for guild in self.guilds:
-            if guild["id"] == context.guild.id:
-                current_language_file = guild["language"] + ".yaml"
-                strings = guild["strings"]
-                guild_index = self.guilds.index(guild)
-                break
+        guild = self.guilds[str(context.guild.id)]
+        current_language_file = guild["language"] + ".yaml"
+        strings = guild["strings"]
         if add is not None and set is None:
             file_name = str(add)[str(add).rindex("/") + 1:str(add).index("?")]
             if file_name.endswith(".yaml"):
@@ -106,7 +86,7 @@ class Main(commands.Cog):
                         return
                     for string in yaml.safe_load(open("LanguageStringNames.yaml", "r"))["names"]:
                         try:
-                            if content["strings"][string] is not None: pass
+                            if content["strings"][string]: pass
                         except:
                             await context.response.send_message(content=strings["invalid_language_file"].replace("%{language_file}", file_name),
                                                                 file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
@@ -140,12 +120,12 @@ class Main(commands.Cog):
             if self.cursor is None: self.lock.release()
             return
         language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
-        self.guilds[guild_index]["strings"] = language_data["strings"]
-        self.guilds[guild_index]["language"] = language
+        guild["strings"] = language_data["strings"]
+        guild["language"] = language
         if self.cursor is None:
-            for guild in self.data["guilds"]:
-                if guild["id"] == context.guild.id:
-                    guild["language"] = language
+            for guild_searched in self.data["guilds"]:
+                if guild_searched["id"] == context.guild.id:
+                    guild_searched["language"] = language
                     # modify the flat file for guilds to reflect the change of language
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
@@ -156,7 +136,7 @@ class Main(commands.Cog):
             self.connection.commit()
         await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["name"]))
 
-    @language_command.autocomplete("new_name")
+    @language_command.autocomplete("set")
     async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
         language_options = []
         for language_option in self.language_options:
@@ -174,15 +154,15 @@ class Main(commands.Cog):
             ids = []
             for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
             if guild.id not in ids: self.data["guilds"].append({"id": guild.id,
-                                                                "language": "american_english",
-                                                                "repeat": False,
+                                                                "language": default_language,
                                                                 "keep": False,
+                                                                "repeat": False,
                                                                 "playlists": [],
                                                                 "users": users})
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
         else:
             try:
-                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, "american_english", None, False, False))
+                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, default_language, None, False, False))
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         try: self.cursor.execute("insert into users values (?)", (user.id,))
@@ -190,6 +170,9 @@ class Main(commands.Cog):
                         self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
                 self.connection.commit()
             except: pass
+        self.guilds[str(guild.id)] = {}
+        self.guilds[str(guild.id)]["language"] = default_language
+        self.guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{default_language}.yaml", "r"))["strings"]
         self.lock.release()
 
     # remove a guild that removed this bot from the database or flat file for guilds
@@ -208,6 +191,7 @@ class Main(commands.Cog):
             self.cursor.execute("delete from playlists where guild_id = ?", (guild.id,))
             self.cursor.execute("delete from guilds where guild_id = ?", (guild.id,))
             self.connection.commit()
+        del self.guilds[str(guild.id)]
         self.lock.release()
 
     # add a user that joined a guild with this bot to the database or flat file for guilds
@@ -323,6 +307,8 @@ else:
                                                        foreign key (user_id) references users(user_id))""")
         except: pass
 
+default_language = "american_english"
+guilds = {}
 language_directory = "Languages"
 lock = asyncio.Lock()
 
@@ -352,20 +338,27 @@ async def sync_guilds(context):
                         if user.id != bot.user.id: users.append({"id": user.id})
                     ids = []
                     for guild_searched in data["guilds"]: ids.append(guild_searched["id"])
-                    if guild.id not in ids: data["guilds"].append({"id": guild.id,
-                                                                   "language": "american_english",
-                                                                   "repeat": False,
-                                                                   "keep": False,
-                                                                   "playlists": [],
-                                                                   "users": users})
+                    if guild.id not in ids:
+                        data["guilds"].append({"id": guild.id,
+                                               "language": default_language,
+                                               "keep": False,
+                                               "repeat": False,
+                                               "playlists": [],
+                                               "users": users})
+                        guilds[str(guild.id)] = {}
+                        guilds[str(guild.id)]["language"] = default_language
+                        guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{language_directory}/{default_language}.yaml", "r"))["strings"]
                 else:
                     try:
-                        cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, "american_english", None, False, False))
+                        cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, default_language, None, False, False))
                         async for user in guild.fetch_members(limit=guild.member_count):
                             if user.id != bot.user.id:
                                 try: cursor.execute("insert into users values (?)", (user.id,))
                                 except: pass
                                 cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
+                        guilds[str(guild.id)] = {}
+                        guilds[str(guild.id)]["language"] = default_language
+                        guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{language_directory}/{default_language}.yaml", "r"))["strings"]
                     except: pass
         elif len(bot.guilds) < guild_count:
             ids = []
@@ -374,6 +367,7 @@ async def sync_guilds(context):
                 index = 0
                 while index < len(data["guilds"]):
                     if data["guilds"]["id"] not in ids:
+                        del guilds[str(data["guilds"]["id"])]
                         data["guilds"].remove(data["guilds"][index]) 
                         index -= 1
                     index += 1
@@ -381,6 +375,7 @@ async def sync_guilds(context):
                 cursor.execute("select guild_id from guilds")
                 for id in cursor.fetchall():
                     if id[0] not in ids:
+                        del guilds[str(id[0])]
                         cursor.execute("delete from guild_users where guild_id = ?", id)
                         cursor.execute("delete from guilds where guild_id = ?", id)
                 cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
@@ -440,8 +435,8 @@ async def sync_users(context):
 
 async def main():
     async with bot:
-        await bot.add_cog(Main(bot, connection, cursor, data, flat_file, language_directory, lock))
-        await bot.add_cog(Music(bot, connection, cursor, data, flat_file, language_directory, lock))
+        await bot.add_cog(Main(bot, connection, cursor, data, flat_file, guilds, language_directory, lock))
+        await bot.add_cog(Music(bot, connection, cursor, data, flat_file, guilds, language_directory, lock))
         await bot.start(variables["token"])
 
 asyncio.run(main())
