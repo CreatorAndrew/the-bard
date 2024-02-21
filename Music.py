@@ -1246,10 +1246,15 @@ class Music(commands.Cog):
             for guild in self.guilds:
                 if guild["id"] == id:
                     guild["queue"] = []
-                    if context.guild.voice_client.is_playing():
-                        guild["index"] = -1
-                        context.guild.voice_client.stop()
-                    else: guild["index"] = 0
+                    try:
+                        if context.guild.voice_client.is_playing():
+                            guild["index"] = -1
+                            context.guild.voice_client.stop()
+                        else: guild["index"] = 0
+                    except:
+                        guild["index"] = 0
+                        guild["connected"] = False
+                        await context.guild.voice_client.cleanup()
                     if leave or not guild["keep"]:
                         guild["connected"] = False
                         await context.guild.voice_client.disconnect()
