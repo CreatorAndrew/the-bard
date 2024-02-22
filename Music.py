@@ -916,7 +916,8 @@ class Music(commands.Cog):
         playlist_menu.callback = playlist_callback
         view = discord.ui.View()
         view.add_item(playlist_menu)
-        await context.followup.send("", view=view)
+        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+        await context.followup.send("", view=view, ephemeral=True)
         while not chosen: await asyncio.sleep(.1)
         if chosen[0] == strings["cancel_option"]: return
         index = int(chosen[0])
@@ -925,28 +926,29 @@ class Music(commands.Cog):
         for url in message_regarded.attachments:
             try: song = self.get_metadata(str(url))
             except:
-                await context.followup.send(self.polished_message(strings["invalid_url"], {"url": str(url)}))
+                await context.followup.send(self.polished_message(strings["invalid_url"], {"url": str(url)}), ephemeral=True)
                 return
             response = requests.get(str(url), stream=True)
             # verify that the URL file is a media container
             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.followup.send(self.polished_message(strings["invalid_song"], {"song": self.polished_song_name(str(url), song["name"])}))
+                await context.followup.send(self.polished_message(strings["invalid_song"], {"song": self.polished_song_name(str(url), song["name"])}),
+                                            ephemeral=True)
                 return
 
             playlist.append({"file": str(url), "name": song["name"], "duration": song["duration"]})
         await self.lock.acquire()
         if self.cursor is None:
-            for guild in self.data["guilds"]:
-                if guild["id"] == context.guild.id:
+            for guild_searched in self.data["guilds"]:
+                if guild_searched["id"] == context.guild.id:
                     message = ""
                     for song in playlist:
-                        guild["playlists"][index - 1]["songs"].append({"file": song["file"], "name": song["name"], "duration": song["duration"]})
+                        guild_searched["playlists"][index - 1]["songs"].append({"file": song["file"], "name": song["name"], "duration": song["duration"]})
                         previous_message = message
                         new_message = self.polished_message(strings["playlist_add_song"] + "\n",
-                                                            {"playlist": guild["playlists"][index - 1]["name"],
+                                                            {"playlist": guild_searched["playlists"][index - 1]["name"],
                                                              "playlist_index": index,
                                                              "song": self.polished_song_name(song["file"], song["name"]),
-                                                             "index": len(guild["playlists"][index - 1]["songs"])})
+                                                             "index": len(guild_searched["playlists"][index - 1]["songs"])})
                         message += new_message
                         if len(message) > 2000:
                             await context.followup.send(previous_message)
