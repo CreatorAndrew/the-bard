@@ -19,7 +19,6 @@ class Music(commands.Cog):
         self.guilds = guilds
         self.language_directory = language_directory
         self.lock = lock
-        self.init_guilds()
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
         self.bot.tree.add_command(self.playlist_add_files_context_menu)
 
@@ -74,27 +73,6 @@ class Music(commands.Cog):
         elif len(segments) == 3: seconds = float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
         else: seconds = float(time)
         return seconds
-
-    def init_guilds(self):
-        if self.cursor is None:
-            guilds = self.data["guilds"]
-            id = "id"
-            keep = "keep"
-            repeat = "repeat"
-        else:
-            self.cursor.execute("select guild_id, keep_in_voice, repeat_queue from guilds")
-            guilds = self.cursor.fetchall()
-            id = 0
-            keep = 1
-            repeat = 2
-        for guild in guilds:
-            self.guilds[str(guild[id])]["keep"] = guild[keep]
-            self.guilds[str(guild[id])]["repeat"] = guild[repeat]
-            self.guilds[str(guild[id])]["queue"] = []
-            self.guilds[str(guild[id])]["index"] = 0
-            self.guilds[str(guild[id])]["time"] = .0
-            self.guilds[str(guild[id])]["volume"] = 1.0
-            self.guilds[str(guild[id])]["connected"] = False
 
     async def page_selector(self, context, strings, pages, index, message=None):
         previous_button = discord.ui.Button(label="<", disabled=index == 0, style=discord.ButtonStyle.primary)

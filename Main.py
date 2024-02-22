@@ -39,6 +39,7 @@ class Main(commands.Cog):
         self.language_directory = language_directory
         self.lock = lock
         self.guilds = guilds
+        self.default_language = "american_english"
         self.init_guilds()
         self.set_language_options()
 
@@ -47,15 +48,25 @@ class Main(commands.Cog):
             guilds = self.data["guilds"]
             id = "id"
             language = "language"
+            keep = "keep"
+            repeat = "repeat"
         else:
-            self.cursor.execute("select guild_id, guild_lang from guilds")
+            self.cursor.execute("select guild_id, guild_lang, keep_in_voice, repeat_queue from guilds")
             guilds = self.cursor.fetchall()
             id = 0
             language = 1
+            keep = 2
+            repeat = 3
         for guild in guilds:
-            self.guilds[str(guild[id])] = {}
-            self.guilds[str(guild[id])]["language"] = guild[language]
-            self.guilds[str(guild[id])]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"]
+            self.guilds[str(guild[id])] = {"language": guild[language],
+                                           "strings": yaml.safe_load(open(f"{self.language_directory}/{guild[language]}.yaml", "r"))["strings"],
+                                           "keep": guild[keep],
+                                           "repeat": guild[repeat],
+                                           "queue": [],
+                                           "index": 0,
+                                           "time": .0,
+                                           "volume": 1.0,
+                                           "connected": False}
 
     def set_language_options(self):
         self.language_options = []
@@ -151,32 +162,7 @@ class Main(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         await self.lock.acquire()
-        if self.cursor is None:
-            users = []
-            async for user in guild.fetch_members(limit=guild.member_count):
-                if user.id != self.bot.user.id: users.append({"id": user.id})
-            ids = []
-            for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
-            if guild.id not in ids: self.data["guilds"].append({"id": guild.id,
-                                                                "language": default_language,
-                                                                "keep": False,
-                                                                "repeat": False,
-                                                                "playlists": [],
-                                                                "users": users})
-            yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-        else:
-            try:
-                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, default_language, None, False, False))
-                async for user in guild.fetch_members(limit=guild.member_count):
-                    if user.id != self.bot.user.id:
-                        try: self.cursor.execute("insert into users values (?)", (user.id,))
-                        except: pass
-                        self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
-                self.connection.commit()
-            except: pass
-        self.guilds[str(guild.id)] = {}
-        self.guilds[str(guild.id)]["language"] = default_language
-        self.guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{self.language_directory}/{default_language}.yaml", "r"))["strings"]
+        await self.add_guild(guild)
         self.lock.release()
 
     # remove a guild that removed this bot from the database or flat file for guilds
@@ -188,13 +174,7 @@ class Main(commands.Cog):
             for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
             if guild.id in ids: self.data["guilds"].remove(self.data["guilds"][ids.index(guild.id)])
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-        else:
-            self.cursor.execute("delete from guild_users where guild_id = ?", (guild.id,))
-            self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-            self.cursor.execute("delete from songs where pl_id in (select pl_id from playlists where guild_id = ?)", (guild.id,))
-            self.cursor.execute("delete from playlists where guild_id = ?", (guild.id,))
-            self.cursor.execute("delete from guilds where guild_id = ?", (guild.id,))
-            self.connection.commit()
+        else: self.remove_guild_from_database(guild.id)
         del self.guilds[str(guild.id)]
         self.lock.release()
 
@@ -206,15 +186,11 @@ class Main(commands.Cog):
             if self.cursor is None:
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
-                        ids = []
-                        for user in guild["users"]: ids.append(user["id"])
-                        if member.id not in ids: guild["users"].append({"id": member.id})
+                        self.add_user(guild, member)
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                try: self.cursor.execute("insert into users values (?)", (member.id,))
-                except: pass
-                self.cursor.execute("insert into guild_users values (?, ?)", (member.guild.id, member.id))
+                self.add_user(member.guild, member)
                 self.connection.commit()
         self.lock.release()
 
@@ -236,6 +212,133 @@ class Main(commands.Cog):
                 self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
                 self.connection.commit()
         self.lock.release()
+    
+    @commands.command()
+    async def sync_guilds(self, context):
+        if context.author.id == variables["master_id"]:
+            await self.lock.acquire()
+            if self.cursor is None: guild_count = len(self.data["guilds"])
+            else:
+                self.cursor.execute("select count(guild_id) from guilds")
+                guild_count = cursor.fetchone()[0]
+            if len(self.bot.guilds) > guild_count:
+                async for guild in self.bot.fetch_guilds(): await self.add_guild(guild)
+            elif len(self.bot.guilds) < guild_count:
+                ids = []
+                async for guild in self.bot.fetch_guilds(): ids.append(guild.id)
+                if self.cursor is None:
+                    index = 0
+                    while index < len(self.data["guilds"]):
+                        if self.data["guilds"]["id"] not in ids:
+                            del self.guilds[str(self.data["guilds"]["id"])]
+                            self.data["guilds"].remove(self.data["guilds"][index]) 
+                            index -= 1
+                        index += 1
+                    yaml.safe_dump(self.data, open(flat_file, "w"), indent=4)
+                else:
+                    self.cursor.execute("select guild_id from guilds")
+                    for id in cursor.fetchall():
+                        if id[0] not in ids:
+                            del self.guilds[str(id[0])]
+                            self.remove_guild_from_database(id[0])
+            await context.reply(f"Synced all guilds")
+            self.lock.release()
+
+    @commands.command()
+    async def sync_users(self, context):
+        if context.author.id == variables["master_id"]:
+            await self.lock.acquire()
+            async for guild in self.bot.fetch_guilds():
+                if self.cursor is None:
+                    for guild_searched in self.data["guilds"]:
+                        if guild_searched["id"] == guild.id:
+                            guild_index = self.data["guilds"].index(guild_searched)
+                            user_count = len(guild_searched["users"])
+                            break
+                else:
+                    self.cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,))
+                    user_count = cursor.fetchone()[0]
+                # subtract 1 from the member count to exclude the bot itself
+                if len(guild.members) - 1 > user_count:
+                    async for user in guild.fetch_members(limit=guild.member_count):
+                        if user.id != self.bot.user.id: self.add_user(self.data["guilds"][guild_index]["users"] if self.cursor is None else guild, user)
+                # subtract 1 from the member count to exclude the bot itself
+                elif len(guild.members) - 1 < user_count:
+                    ids = []
+                    async for user in guild.fetch_members(limit=guild.member_count):
+                        if user.id != self.bot.user.id: ids.append(user.id)
+                    if self.cursor is None:
+                        index = 0
+                        while index < len(self.data["guilds"][guild_index]["users"]):
+                            if self.data["guilds"][guild_index]["users"][index]["id"] not in ids:
+                                self.data["guilds"][guild_index]["users"].remove(self.data["guilds"][guild_index]["users"][index]) 
+                                index -= 1
+                            index += 1
+                    else:
+                        self.cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,))
+                        for id in cursor.fetchall():
+                            if id[0] not in ids: self.cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
+                        self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
+            if self.cursor is None: yaml.safe_dump(self.data, open(flat_file, "w"), indent=4)
+            else: self.connection.commit()
+            await context.reply(f"Synced all users")
+            self.lock.release()
+
+    async def add_guild(self, guild):
+        init_guild = False
+        keep = False
+        repeat = False
+        if self.cursor is None:
+            ids = []
+            for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
+            if guild.id not in ids:
+                self.data["guilds"].append({"id": guild.id,
+                                            "language": self.default_language,
+                                            "keep": keep,
+                                            "repeat": repeat,
+                                            "playlists": [],
+                                            "users": []})
+                async for user in guild.fetch_members(limit=guild.member_count):
+                    if user.id != self.bot.user.id: self.add_user(self.data["guilds"][len(self.data["guilds"]) - 1], user)
+                yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+                init_guild = True
+        else:
+            try:
+                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, self.default_language, None, False, False))
+                async for user in guild.fetch_members(limit=guild.member_count):
+                    if user.id != self.bot.user.id: self.add_user(guild, user)
+                self.connection.commit()
+                init_guild = True
+            except: pass
+        if init_guild:
+            self.guilds[str(guild.id)] = {"language": self.default_language,
+                                          "strings": yaml.safe_load(open(f"{self.language_directory}/{self.default_language}.yaml", "r"))["strings"],
+                                          "keep": keep,
+                                          "repeat": repeat,
+                                          "queue": [],
+                                          "index": 0,
+                                          "time": .0,
+                                          "volume": 1.0,
+                                          "connected": False}
+
+    def remove_guild_from_database(self, id):
+        self.cursor.execute("delete from guild_users where guild_id = ?", (id,))
+        self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
+        self.cursor.execute("delete from songs where pl_id in (select pl_id from playlists where guild_id = ?)", (id,))
+        self.cursor.execute("delete from playlists where guild_id = ?", (id,))
+        self.cursor.execute("delete from guilds where guild_id = ?", (id,))
+        self.connection.commit()
+
+    def add_user(self, guild, user):
+        if self.cursor is None:
+            ids = []
+            for user_searched in guild["users"]: ids.append(user_searched["id"])
+            if user.id not in ids: guild["users"].append({"id": user.id})
+        else:
+            try: self.cursor.execute("insert into users values (?)", (user.id,))
+            except: pass
+            try: self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
+            except: pass
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -311,7 +414,6 @@ else:
                                                        foreign key (user_id) references users(user_id))""")
         except: pass
 
-default_language = "american_english"
 guilds = {}
 language_directory = "Languages"
 lock = asyncio.Lock()
@@ -325,117 +427,6 @@ async def sync_commands(context):
         await bot.tree.set_translator(CommandTranslator())
         synced = await bot.tree.sync()
         await context.reply(f"Synced {len(synced)} command{'' if len(synced) == 1 else 's'}")
-
-@bot.command()
-async def sync_guilds(context):
-    if context.author.id == variables["master_id"]:
-        await lock.acquire()
-        if cursor is None: guild_count = len(data["guilds"])
-        else:
-            cursor.execute("select count(guild_id) from guilds")
-            guild_count = cursor.fetchone()[0]
-        if len(bot.guilds) > guild_count:
-            async for guild in bot.fetch_guilds():
-                if cursor is None:
-                    users = []
-                    async for user in guild.fetch_members(limit=guild.member_count):
-                        if user.id != bot.user.id: users.append({"id": user.id})
-                    ids = []
-                    for guild_searched in data["guilds"]: ids.append(guild_searched["id"])
-                    if guild.id not in ids:
-                        data["guilds"].append({"id": guild.id,
-                                               "language": default_language,
-                                               "keep": False,
-                                               "repeat": False,
-                                               "playlists": [],
-                                               "users": users})
-                        guilds[str(guild.id)] = {}
-                        guilds[str(guild.id)]["language"] = default_language
-                        guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{language_directory}/{default_language}.yaml", "r"))["strings"]
-                else:
-                    try:
-                        cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, default_language, None, False, False))
-                        async for user in guild.fetch_members(limit=guild.member_count):
-                            if user.id != bot.user.id:
-                                try: cursor.execute("insert into users values (?)", (user.id,))
-                                except: pass
-                                cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
-                        guilds[str(guild.id)] = {}
-                        guilds[str(guild.id)]["language"] = default_language
-                        guilds[str(guild.id)]["strings"] = yaml.safe_load(open(f"{language_directory}/{default_language}.yaml", "r"))["strings"]
-                    except: pass
-        elif len(bot.guilds) < guild_count:
-            ids = []
-            async for guild in bot.fetch_guilds(): ids.append(guild.id)
-            if cursor is None:
-                index = 0
-                while index < len(data["guilds"]):
-                    if data["guilds"]["id"] not in ids:
-                        del guilds[str(data["guilds"]["id"])]
-                        data["guilds"].remove(data["guilds"][index]) 
-                        index -= 1
-                    index += 1
-            else:
-                cursor.execute("select guild_id from guilds")
-                for id in cursor.fetchall():
-                    if id[0] not in ids:
-                        del guilds[str(id[0])]
-                        cursor.execute("delete from guild_users where guild_id = ?", id)
-                        cursor.execute("delete from guilds where guild_id = ?", id)
-                cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-        if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
-        else: connection.commit()
-        await context.reply(f"Synced all guilds")
-        lock.release()
-
-@bot.command()
-async def sync_users(context):
-    if context.author.id == variables["master_id"]:
-        await lock.acquire()
-        async for guild in bot.fetch_guilds():
-            if cursor is None:
-                for guild_searched in data["guilds"]:
-                    if guild_searched["id"] == guild.id:
-                        guild_index = data["guilds"].index(guild_searched)
-                        user_count = len(guild_searched["users"])
-                        break
-            else:
-                cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,))
-                user_count = cursor.fetchone()[0]
-            # subtract 1 from the member count to exclude the bot itself
-            if len(guild.members) - 1 > user_count:
-                async for user in guild.fetch_members(limit=guild.member_count):
-                    if user.id != bot.user.id:
-                        if cursor is None:
-                            ids = []
-                            for user_searched in data["guilds"][guild_index]["users"]: ids.append(user_searched["id"])
-                            if user.id not in ids: data["guilds"][guild_index]["users"].append({"id": user.id})
-                        else:
-                            try: cursor.execute("insert into users values (?)", (user.id,))
-                            except: pass
-                            try: cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
-                            except: pass
-            # subtract 1 from the member count to exclude the bot itself
-            elif len(guild.members) - 1 < user_count:
-                ids = []
-                async for user in guild.fetch_members(limit=guild.member_count):
-                    if user.id != bot.user.id: ids.append(user.id)
-                if cursor is None:
-                    index = 0
-                    while index < len(data["guilds"][guild_index]["users"]):
-                        if data["guilds"][guild_index]["users"][index]["id"] not in ids:
-                            data["guilds"][guild_index]["users"].remove(data["guilds"][guild_index]["users"][index]) 
-                            index -= 1
-                        index += 1
-                else:
-                    cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,))
-                    for id in cursor.fetchall():
-                        if id[0] not in ids: cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
-                    cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-        if cursor is None: yaml.safe_dump(data, open(flat_file, "w"), indent=4)
-        else: connection.commit()
-        await context.reply(f"Synced all users")
-        lock.release()
 
 async def main():
     async with bot:
