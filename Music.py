@@ -617,7 +617,10 @@ class Music(commands.Cog):
                     proper_songs = []
                     for song in songs: proper_songs.append({"name": song[0], "file": song[1], "duration": song[2]})
                     self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, load - 1))
-                    await context.followup.send(self.polished_message(strings["load_playlist"], {"playlist": self.cursor.fetchone()[0], "playlist_index": load}))
+                    try:
+                        if context.user.voice.channel is not None:
+                            await context.followup.send(self.polished_message(strings["load_playlist"], {"playlist": self.cursor.fetchone()[0], "playlist_index": load}))
+                    except: pass
                     await self.play_song(context, playlist=proper_songs)
                 else:
                     await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
