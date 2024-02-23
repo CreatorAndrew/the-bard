@@ -304,7 +304,7 @@ class Main(commands.Cog):
                 init_guild = True
         else:
             try:
-                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, self.default_language, None, False, False))
+                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, self.default_language, None, keep, repeat))
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id: self.add_user(guild, user)
                 self.connection.commit()
