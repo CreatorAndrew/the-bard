@@ -229,8 +229,8 @@ class Main(commands.Cog):
                 if self.cursor is None:
                     index = 0
                     while index < len(self.data["guilds"]):
-                        if self.data["guilds"]["id"] not in ids:
-                            del self.guilds[str(self.data["guilds"]["id"])]
+                        if self.data["guilds"][index]["id"] not in ids:
+                            del self.guilds[str(self.data["guilds"][index]["id"])]
                             self.data["guilds"].remove(self.data["guilds"][index]) 
                             index -= 1
                         index += 1
