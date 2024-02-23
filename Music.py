@@ -1269,7 +1269,8 @@ class Music(commands.Cog):
         if self.cursor is None: await self.lock.acquire()
         strings = self.guilds[str(context.guild.id)]["strings"]
         if set is None:
-            await context.response.send_message(self.polished_message(strings["repeat"], {"do_not": "" if self.guilds[str(context.guild.id)]["repeat"] else strings["do_not"]}),
+            await context.response.send_message(self.polished_message(strings["repeat"],
+                                                                      {"do_not": "" if self.guilds[str(context.guild.id)]["repeat"] else strings["do_not"]}),
                                                 ephemeral=True)
             if self.cursor is None: self.lock.release()
             return
