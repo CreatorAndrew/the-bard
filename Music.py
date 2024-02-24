@@ -974,6 +974,7 @@ class Music(commands.Cog):
         index = int(chosen[0])
 
         playlist = []
+        urls = []
         for url in message_regarded.attachments:
             try: song = self.get_metadata(str(url))
             except:
@@ -986,6 +987,7 @@ class Music(commands.Cog):
                                             ephemeral=True)
                 return
 
+            urls.append(str(url))
             playlist.append({"name": song["name"],
                              "file": None,
                              "duration": song["duration"],
@@ -1004,7 +1006,7 @@ class Music(commands.Cog):
                         new_message = self.polished_message(strings["playlist_add_song"] + "\n",
                                                             {"playlist": guild_searched["playlists"][index - 1]["name"],
                                                              "playlist_index": index,
-                                                             "song": self.polished_song_name(song["file"], song["name"]),
+                                                             "song": self.polished_song_name(urls[playlist.index(song)], song["name"]),
                                                              "index": len(guild_searched["playlists"][index - 1]["songs"])})
                         message += new_message
                         if len(message) > 2000:
@@ -1039,7 +1041,7 @@ class Music(commands.Cog):
                 new_message = self.polished_message(strings["playlist_add_song"] + "\n",
                                                     {"playlist": playlist_name,
                                                      "playlist_index": index,
-                                                     "song": self.polished_song_name(song["file"], song["name"]),
+                                                     "song": self.polished_song_name(urls[playlist.index(song)], song["name"]),
                                                      "index": song_index})
                 message += new_message
                 if len(message) > 2000:
