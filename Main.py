@@ -241,7 +241,7 @@ class Main(commands.Cog):
                         if id[0] not in ids:
                             del self.guilds[str(id[0])]
                             self.remove_guild_from_database(id[0])
-            await context.reply(f"Synced all guilds")
+            await context.reply("Synced all guilds")
             self.lock.release()
 
     @commands.command()
@@ -281,7 +281,7 @@ class Main(commands.Cog):
                         self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
             if self.cursor is None: yaml.safe_dump(self.data, open(flat_file, "w"), indent=4)
             else: self.connection.commit()
-            await context.reply(f"Synced all users")
+            await context.reply("Synced all users")
             self.lock.release()
 
     async def add_guild(self, guild):
