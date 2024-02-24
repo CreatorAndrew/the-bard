@@ -324,7 +324,8 @@ class Main(commands.Cog):
     def remove_guild_from_database(self, id):
         self.cursor.execute("delete from guild_users where guild_id = ?", (id,))
         self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-        self.cursor.execute("delete from songs where pl_id in (select pl_id from playlists where guild_id = ?)", (id,))
+        self.cursor.execute("delete from pl_songs where pl_id in (select pl_id from playlists where guild_id = ?)", (id,))
+        self.cursor.execute("delete from songs where song_id not in (select song_id from pl_songs)")
         self.cursor.execute("delete from playlists where guild_id = ?", (id,))
         self.cursor.execute("delete from guilds where guild_id = ?", (id,))
         self.connection.commit()
@@ -400,12 +401,20 @@ else:
                                                      foreign key (guild_id) references guilds(guild_id))""")
             cursor.execute("""create table songs(song_id integer not null,
                                                  song_name text not null,
-                                                 song_url text not null,
                                                  song_duration float not null,
-                                                 pl_id integer not null,
-                                                 pl_song_id integer not null,
-                                                 primary key (song_id),
-                                                 foreign key (pl_id) references playlists(pl_id))""")
+                                                 guild_id integer not null,
+                                                 channel_id integer not null,
+                                                 message_id integer not null,
+                                                 attachment_index integer not null,
+                                                 primary key (song_id))""")
+            cursor.execute("""create table pl_songs(song_id integer not null,
+                                                    song_name text not null,
+                                                    song_url text null,
+                                                    pl_id integer not null,
+                                                    pl_song_id integer not null,
+                                                    primary key (song_id, pl_id),
+                                                    foreign key (song_id) references songs(song_id),
+                                                    foreign key (pl_id) references playlists(pl_id))""")
             cursor.execute("create table users(user_id integer not null, primary key (user_id))")
             cursor.execute("""create table guild_users(guild_id integer not null,
                                                        user_id integer not null,

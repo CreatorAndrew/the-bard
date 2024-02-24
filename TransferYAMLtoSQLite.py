@@ -23,12 +23,20 @@ if not database_exists:
                                              foreign key (guild_id) references guilds(guild_id))""")
     cursor.execute("""create table songs(song_id integer not null,
                                          song_name text not null,
-                                         song_url text not null,
                                          song_duration float not null,
-                                         pl_id integer not null,
-                                         pl_song_id integer not null,
-                                         primary key (song_id),
-                                         foreign key (pl_id) references playlists(pl_id))""")
+                                         guild_id integer not null,
+                                         channel_id integer not null,
+                                         message_id integer not null,
+                                         attachment_index integer not null,
+                                         primary key (song_id))""")
+    cursor.execute("""create table pl_songs(song_id integer not null,
+                                            song_name text not null,
+                                            song_url text null,
+                                            pl_id integer not null,
+                                            pl_song_id integer not null,
+                                            primary key (song_id, pl_id),
+                                            foreign key (song_id) references songs(song_id),
+                                            foreign key (pl_id) references playlists(pl_id))""")
     cursor.execute("create table users(user_id integer not null, primary key (user_id))")
     cursor.execute("""create table guild_users(guild_id integer not null,
                                                user_id integer not null,
@@ -47,17 +55,17 @@ for guild in data["guilds"]:
                                                        (select count(pl_id) from playlists where guild_id = ?))""",
                        (playlist["name"], guild["id"], guild["id"]))
         for song in playlist["songs"]:
-            cursor.execute("""insert into songs values((select count(songs.song_id) from songs),
-                                                       ?,
-                                                       ?,
-                                                       ?,
-                                                       (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
-                                                       (select count(songs.pl_id) from playlists
-                                                        left outer join songs on songs.pl_id = playlists.pl_id
-                                                        where guild_id = ? and guild_pl_id = ?))""",
+            cursor.execute("insert into songs values((select count(song_id) from songs), ?, ?, ?, ?, ?, ?)",
+                           (song["name"], song["duration"], song["guild_id"], song["channel_id"], song["message_id"], song["attachment_index"]))
+            cursor.execute("""insert into pl_songs values((select max(song_id) from songs),
+                                                          ?,
+                                                          ?,
+                                                          (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
+                                                          (select count(pl_songs.pl_id) from playlists
+                                                           left outer join pl_songs on pl_songs.pl_id = playlists.pl_id
+                                                           where guild_id = ? and guild_pl_id = ?))""",
                            (song["name"],
                             song["file"],
-                            song["duration"],
                             guild["id"],
                             guild["playlists"].index(playlist),
                             guild["id"],
