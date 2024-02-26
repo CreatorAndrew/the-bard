@@ -8,7 +8,7 @@ charset-normalizer==3.3.2
 discord.py==2.3.2
 frozenlist==1.4.1
 greenlet==0.4.13
-hpy==0.0.4.dev179+g9b5d200
+hpy==0.0.4
 idna==3.6
 multidict==6.0.5
 psycopg2cffi==2.9.0
