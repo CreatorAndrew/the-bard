@@ -11,7 +11,7 @@ apt install ffmpeg mediainfo
 
 For Fedora-based distros:
 ```
-`dnf install ffmpeg mediainfo
+dnf install ffmpeg mediainfo
 ```
 
 For macOS (using Homebrew):
