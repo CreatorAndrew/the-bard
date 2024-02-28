@@ -46,15 +46,12 @@ scoop install ffmpeg mediainfo
 ---
 
 Also make sure to grab the Python dependencies by typing the following in your operating system's CLI at the project's directory:
-
 ```
 pip3 install -r requirements.txt
 ```
 
 ## Usage
-
 To run it, type the following in your operating system's CLI at the project's directory:
-
 ```
 python3 Main.py
 ```
