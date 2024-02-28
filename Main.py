@@ -9,17 +9,19 @@ from discord.ext import commands
 from Music import Music
 
 class CursorHandler:
-    def __init__(self, cursor, integer_data_type, placeholder):
+    def __init__(self, connection, cursor, integer_data_type, placeholder):
+        self.connection = connection
         self.cursor = cursor
         self.integer_data_type = integer_data_type
         self.placeholder = placeholder
 
-    def execute(self, statement, args=tuple()):
-        self.cursor.execute(statement.replace("?", self.placeholder).replace("integer", self.integer_data_type), args)
+    async def execute(self, statement, args=tuple()):
+        cursor = await self.connection.execute(statement.replace("integer", self.integer_data_type).replace("?", self.placeholder), args)
+        if self.connection != self.cursor: self.cursor = cursor
 
-    def fetchall(self): return self.cursor.fetchall()
+    async def fetchall(self): return await self.cursor.fetchall()
 
-    def fetchone(self): return self.cursor.fetchone()
+    async def fetchone(self): return await self.cursor.fetchone()
 
 class CommandTranslator(app_commands.Translator):
     async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext) -> "str | None":
@@ -30,7 +32,7 @@ class CommandTranslator(app_commands.Translator):
         except: return None
 
 class Main(commands.Cog):
-    def __init__(self, bot, connection, cursor, data, flat_file, guilds, language_directory, lock):
+    def __init__(self, bot, connection, cursor, data, flat_file, guilds, init_guilds, language_directory, lock):
         self.bot = bot
         self.connection = connection
         self.cursor = cursor
@@ -40,10 +42,10 @@ class Main(commands.Cog):
         self.lock = lock
         self.guilds = guilds
         self.default_language = "american_english"
-        self.init_guilds()
+        self.init_guilds(init_guilds)
         self.set_language_options()
 
-    def init_guilds(self):
+    def init_guilds(self, guilds=None):
         if self.cursor is None:
             guilds = self.data["guilds"]
             id = "id"
@@ -51,8 +53,6 @@ class Main(commands.Cog):
             keep = "keep"
             repeat = "repeat"
         else:
-            self.cursor.execute("select guild_id, guild_lang, keep_in_voice, repeat_queue from guilds")
-            guilds = self.cursor.fetchall()
             id = 0
             language = 1
             keep = 2
@@ -77,7 +77,7 @@ class Main(commands.Cog):
 
     @app_commands.command(description="language_command_desc")
     async def language_command(self, context: discord.Interaction, set: str=None, add: discord.Attachment=None):
-        if self.cursor is None: await self.lock.acquire()
+        await self.lock.acquire()
         guild = self.guilds[str(context.guild.id)]
         current_language_file = guild["language"] + ".yaml"
         strings = guild["strings"]
@@ -94,7 +94,7 @@ class Main(commands.Cog):
                                                             file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
                                                                               filename=current_language_file),
                                                             ephemeral=True)
-                        if self.cursor is None: self.lock.release()
+                        self.lock.release()
                         return
                     for string in yaml.safe_load(open("LanguageStringNames.yaml", "r"))["names"]:
                         try:
@@ -104,12 +104,12 @@ class Main(commands.Cog):
                                                                 file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
                                                                                   filename=current_language_file),
                                                                 ephemeral=True)
-                            if self.cursor is None: self.lock.release()
+                            self.lock.release()
                             return
                     open(f"{self.language_directory}/{file_name}", "wb").write(response.content)
                 else:
                     await context.response.send_message(strings["language_file_exists"].replace("%{language_file}", file_name))
-                    if self.cursor is None: self.lock.release()
+                    self.lock.release()
                     return
                 # ensure that the attached language file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file_name}"): await asyncio.sleep(.1)
@@ -122,17 +122,17 @@ class Main(commands.Cog):
                 await context.response.send_message(strings["invalid_language"].replace("%{language}", language).replace("%{bot}", self.bot.user.mention),
                                                     file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"), filename=current_language_file),
                                                     ephemeral=True)
-                if self.cursor is None: self.lock.release()
+                self.lock.release()
                 return
         elif add is None and set is None:
             await context.response.send_message(strings["language"].replace("%{language}",
                                                                             yaml.safe_load(open(f"{self.language_directory}/{current_language_file}", "r"))["name"]),
                                                 ephemeral=True)
-            if self.cursor is None: self.lock.release()
+            self.lock.release()
             return
         else:
             await context.response.send_message(strings["invalid_command"], ephemeral=True)
-            if self.cursor is None: self.lock.release()
+            self.lock.release()
             return
         language_data = yaml.safe_load(open(f"{self.language_directory}/{language}.yaml", "r"))
         guild["strings"] = language_data["strings"]
@@ -145,11 +145,11 @@ class Main(commands.Cog):
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
 
                     break
-            self.lock.release()
         else:
-            self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
-            self.connection.commit()
+            await self.cursor.execute("update guilds set guild_lang = ? where guild_id = ?", (language, context.guild.id))
+            await self.connection.commit()
         await context.response.send_message(language_data["strings"]["language_change"].replace("%{language}", language_data["name"]))
+        self.lock.release()
 
     @language_command.autocomplete("set")
     async def language_name_autocompletion(self, context: discord.Interaction, current: str) -> typing.List[app_commands.Choice[str]]:
@@ -174,7 +174,7 @@ class Main(commands.Cog):
             for guild_searched in self.data["guilds"]: ids.append(guild_searched["id"])
             if guild.id in ids: self.data["guilds"].remove(self.data["guilds"][ids.index(guild.id)])
             yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-        else: self.remove_guild_from_database(guild.id)
+        else: await self.remove_guild_from_database(guild.id)
         del self.guilds[str(guild.id)]
         self.lock.release()
 
@@ -186,12 +186,12 @@ class Main(commands.Cog):
             if self.cursor is None:
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
-                        self.add_user(guild, member)
+                        await self.add_user(guild, member)
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                self.add_user(member.guild, member)
-                self.connection.commit()
+                await self.add_user(member.guild, member)
+                await self.connection.commit()
         self.lock.release()
 
     # remove a user that left a guild with this bot from the database or flat file for guilds
@@ -208,9 +208,9 @@ class Main(commands.Cog):
                         break
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                self.cursor.execute("delete from guild_users where user_id = ? and guild_id = ?", (member.guild.id, member.id))
-                self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-                self.connection.commit()
+                await self.cursor.execute("delete from guild_users where user_id = ? and guild_id = ?", (member.guild.id, member.id))
+                await self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
+                await self.connection.commit()
         self.lock.release()
     
     @commands.command()
@@ -219,8 +219,8 @@ class Main(commands.Cog):
             await self.lock.acquire()
             if self.cursor is None: guild_count = len(self.data["guilds"])
             else:
-                self.cursor.execute("select count(guild_id) from guilds")
-                guild_count = cursor.fetchone()[0]
+                await self.cursor.execute("select count(guild_id) from guilds")
+                guild_count = (await self.cursor.fetchone())[0]
             if len(self.bot.guilds) > guild_count:
                 async for guild in self.bot.fetch_guilds(): await self.add_guild(guild)
             elif len(self.bot.guilds) < guild_count:
@@ -234,13 +234,13 @@ class Main(commands.Cog):
                             self.data["guilds"].remove(self.data["guilds"][index]) 
                             index -= 1
                         index += 1
-                    yaml.safe_dump(self.data, open(flat_file, "w"), indent=4)
+                    yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
                 else:
-                    self.cursor.execute("select guild_id from guilds")
-                    for id in cursor.fetchall():
+                    await self.cursor.execute("select guild_id from guilds")
+                    for id in await self.cursor.fetchall():
                         if id[0] not in ids:
                             del self.guilds[str(id[0])]
-                            self.remove_guild_from_database(id[0])
+                            await self.remove_guild_from_database(id[0])
             await context.reply("Synced all guilds")
             self.lock.release()
 
@@ -256,12 +256,12 @@ class Main(commands.Cog):
                             user_count = len(guild_searched["users"])
                             break
                 else:
-                    self.cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,))
-                    user_count = cursor.fetchone()[0]
+                    await self.cursor.execute("select count(user_id) from guild_users where guild_id = ?", (guild.id,))
+                    user_count = (await self.cursor.fetchone())[0]
                 # subtract 1 from the member count to exclude the bot itself
                 if len(guild.members) - 1 > user_count:
                     async for user in guild.fetch_members(limit=guild.member_count):
-                        if user.id != self.bot.user.id: self.add_user(self.data["guilds"][guild_index]["users"] if self.cursor is None else guild, user)
+                        if user.id != self.bot.user.id: await self.add_user(self.data["guilds"][guild_index]["users"] if self.cursor is None else guild, user)
                 # subtract 1 from the member count to exclude the bot itself
                 elif len(guild.members) - 1 < user_count:
                     ids = []
@@ -275,12 +275,12 @@ class Main(commands.Cog):
                                 index -= 1
                             index += 1
                     else:
-                        self.cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,))
-                        for id in cursor.fetchall():
-                            if id[0] not in ids: self.cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
-                        self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-            if self.cursor is None: yaml.safe_dump(self.data, open(flat_file, "w"), indent=4)
-            else: self.connection.commit()
+                        await self.cursor.execute("select user_id from guild_users where guild_id = ?", (guild.id,))
+                        for id in await self.cursor.fetchall():
+                            if id[0] not in ids: await self.cursor.execute("delete from guild_users where guild_id = ? and user_id = ?", (guild.id, id[0]))
+                        await self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
+            if self.cursor is None: yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+            else: await self.connection.commit()
             await context.reply("Synced all users")
             self.lock.release()
 
@@ -299,15 +299,15 @@ class Main(commands.Cog):
                                             "playlists": [],
                                             "users": []})
                 async for user in guild.fetch_members(limit=guild.member_count):
-                    if user.id != self.bot.user.id: self.add_user(self.data["guilds"][len(self.data["guilds"]) - 1], user)
+                    if user.id != self.bot.user.id: await self.add_user(self.data["guilds"][len(self.data["guilds"]) - 1], user)
                 yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
                 init_guild = True
         else:
             try:
-                self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, self.default_language, None, keep, repeat))
+                await self.cursor.execute("insert into guilds values(?, ?, ?, ?, ?)", (guild.id, self.default_language, None, keep, repeat))
                 async for user in guild.fetch_members(limit=guild.member_count):
-                    if user.id != self.bot.user.id: self.add_user(guild, user)
-                self.connection.commit()
+                    if user.id != self.bot.user.id: await self.add_user(guild, user)
+                await self.connection.commit()
                 init_guild = True
             except: pass
         if init_guild:
@@ -321,24 +321,24 @@ class Main(commands.Cog):
                                           "volume": 1.0,
                                           "connected": False}
 
-    def remove_guild_from_database(self, id):
-        self.cursor.execute("delete from guild_users where guild_id = ?", (id,))
-        self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
-        self.cursor.execute("delete from pl_songs where pl_id in (select pl_id from playlists where guild_id = ?)", (id,))
-        self.cursor.execute("delete from songs where song_id not in (select song_id from pl_songs)")
-        self.cursor.execute("delete from playlists where guild_id = ?", (id,))
-        self.cursor.execute("delete from guilds where guild_id = ?", (id,))
-        self.connection.commit()
+    async def remove_guild_from_database(self, id):
+        await self.cursor.execute("delete from guild_users where guild_id = ?", (id,))
+        await self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
+        await self.cursor.execute("delete from pl_songs where pl_id in (select pl_id from playlists where guild_id = ?)", (id,))
+        await self.cursor.execute("delete from songs where song_id not in (select song_id from pl_songs)")
+        await self.cursor.execute("delete from playlists where guild_id = ?", (id,))
+        await self.cursor.execute("delete from guilds where guild_id = ?", (id,))
+        await self.connection.commit()
 
-    def add_user(self, guild, user):
+    async def add_user(self, guild, user):
         if self.cursor is None:
             ids = []
             for user_searched in guild["users"]: ids.append(user_searched["id"])
             if user.id not in ids: guild["users"].append({"id": user.id})
         else:
-            try: self.cursor.execute("insert into users values (?)", (user.id,))
+            try: await self.cursor.execute("insert into users values (?)", (user.id,))
             except: pass
-            try: self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
+            try: await self.cursor.execute("insert into guild_users values (?, ?)", (guild.id, user.id))
             except: pass
 
 intents = discord.Intents.default()
@@ -350,78 +350,6 @@ bot = commands.Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
 variables = yaml.safe_load(open("Variables.yaml", "r"))
-
-if variables["storage"] == "yaml":
-    connection = None
-    cursor = None
-    flat_file = "Guilds.yaml"
-    if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
-    data = yaml.safe_load(open(flat_file, "r"))
-else:
-    data = None
-    flat_file = None
-    if variables["storage"] == "postgresql":
-        import subprocess
-        import psycopg2cffi
-        subprocess.run(["psql",
-                        "-c",
-                        f"create database \"{variables['postgresql_credentials']['database']}\"",
-                        f"""user={variables["postgresql_credentials"]["user"]}
-                            dbname={variables["postgresql_credentials"]["user"]}
-                            password={variables["postgresql_credentials"]["password"]}"""],
-                       stdout=subprocess.DEVNULL,
-                       stderr=subprocess.STDOUT)
-        database_exists = False
-        connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
-                                          user=variables["postgresql_credentials"]["user"],
-                                          password=variables["postgresql_credentials"]["password"],
-                                          host=variables["postgresql_credentials"]["host"],
-                                          port=variables["postgresql_credentials"]["port"])
-        connection.autocommit = True
-        cursor = CursorHandler(connection.cursor(), "bigint", "%s")
-    elif variables["storage"] == "sqlite":
-        import sqlite3
-        database = "Guilds.db"
-        database_exists = os.path.exists(database)
-        connection = sqlite3.connect(database)
-        cursor = CursorHandler(connection.cursor(), "integer", "?")
-    if not database_exists:
-        try:
-            cursor.execute("""create table guilds(guild_id integer not null,
-                                                  guild_lang text not null,
-                                                  working_thread_id integer null,
-                                                  keep_in_voice boolean not null,
-                                                  repeat_queue boolean not null,
-                                                  primary key (guild_id))""")
-            cursor.execute("""create table playlists(pl_id integer not null,
-                                                     pl_name text not null,
-                                                     guild_id integer not null,
-                                                     guild_pl_id integer not null,
-                                                     primary key (pl_id),
-                                                     foreign key (guild_id) references guilds(guild_id))""")
-            cursor.execute("""create table songs(song_id integer not null,
-                                                 song_name text not null,
-                                                 song_duration float not null,
-                                                 guild_id integer not null,
-                                                 channel_id integer not null,
-                                                 message_id integer not null,
-                                                 attachment_index integer not null,
-                                                 primary key (song_id))""")
-            cursor.execute("""create table pl_songs(song_id integer not null,
-                                                    song_name text not null,
-                                                    song_url text null,
-                                                    pl_id integer not null,
-                                                    pl_song_id integer not null,
-                                                    primary key (song_id, pl_id),
-                                                    foreign key (song_id) references songs(song_id),
-                                                    foreign key (pl_id) references playlists(pl_id))""")
-            cursor.execute("create table users(user_id integer not null, primary key (user_id))")
-            cursor.execute("""create table guild_users(guild_id integer not null,
-                                                       user_id integer not null,
-                                                       primary key (guild_id, user_id),
-                                                       foreign key (guild_id) references guilds(guild_id),
-                                                       foreign key (user_id) references users(user_id))""")
-        except: pass
 
 guilds = {}
 language_directory = "Languages"
@@ -439,10 +367,78 @@ async def sync_commands(context):
 
 async def main():
     async with bot:
-        await bot.add_cog(Main(bot, connection, cursor, data, flat_file, guilds, language_directory, lock))
+        if variables["storage"] == "yaml":
+            connection = None
+            cursor = None
+            flat_file = "Guilds.yaml"
+            if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
+            data = yaml.safe_load(open(flat_file, "r"))
+        else:
+            data = None
+            flat_file = None
+            if variables["storage"] == "postgresql":
+                import subprocess
+                import psycopg
+                credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
+                                  user={variables["postgresql_credentials"]["user"]}
+                                  password={variables["postgresql_credentials"]["password"]}
+                                  {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
+                                  {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}"""
+                subprocess.run(["psql", "-c", f"create database \"{variables['postgresql_credentials']['database']}\"", credentials],
+                               stdout=subprocess.DEVNULL,
+                               stderr=subprocess.STDOUT)
+                database_exists = False
+                connection = await psycopg.AsyncConnection.connect(credentials, autocommit=True)
+                cursor = CursorHandler(connection.cursor(), connection.cursor(), "bigint", "%s")
+            elif variables["storage"] == "sqlite":
+                import aiosqlite
+                database = "Guilds.db"
+                database_exists = os.path.exists(database)
+                connection = await aiosqlite.connect(database)
+                cursor = CursorHandler(connection, None, "integer", "?")
+            if not database_exists:
+                try:
+                    await cursor.execute("""create table guilds(guild_id integer not null,
+                                                                guild_lang text not null,
+                                                                working_thread_id integer null,
+                                                                keep_in_voice boolean not null,
+                                                                repeat_queue boolean not null,
+                                                                primary key (guild_id))""")
+                    await cursor.execute("""create table playlists(pl_id integer not null,
+                                                                   pl_name text not null,
+                                                                   guild_id integer not null,
+                                                                   guild_pl_id integer not null,
+                                                                   primary key (pl_id),
+                                                                   foreign key (guild_id) references guilds(guild_id))""")
+                    await cursor.execute("""create table songs(song_id integer not null,
+                                                               song_name text not null,
+                                                               song_duration float not null,
+                                                               guild_id integer not null,
+                                                               channel_id integer not null,
+                                                               message_id integer not null,
+                                                               attachment_index integer not null,
+                                                               primary key (song_id))""")
+                    await cursor.execute("""create table pl_songs(song_id integer not null,
+                                                                  song_name text not null,
+                                                                  song_url text null,
+                                                                  pl_id integer not null,
+                                                                  pl_song_id integer not null,
+                                                                  primary key (song_id, pl_id),
+                                                                  foreign key (song_id) references songs(song_id),
+                                                                  foreign key (pl_id) references playlists(pl_id))""")
+                    await cursor.execute("create table users(user_id integer not null, primary key (user_id))")
+                    await cursor.execute("""create table guild_users(guild_id integer not null,
+                                                                     user_id integer not null,
+                                                                     primary key (guild_id, user_id),
+                                                                     foreign key (guild_id) references guilds(guild_id),
+                                                                     foreign key (user_id) references users(user_id))""")
+                except: pass
+        if cursor is None: init_guilds = None
+        else:
+            await cursor.execute("select guild_id, guild_lang, keep_in_voice, repeat_queue from guilds")
+            init_guilds = await cursor.fetchall()
+        await bot.add_cog(Main(bot, connection, cursor, data, flat_file, guilds, init_guilds, language_directory, lock))
         await bot.add_cog(Music(bot, connection, cursor, data, flat_file, guilds, language_directory, lock))
         await bot.start(variables["token"])
 
 asyncio.run(main())
-
-connection.close()
