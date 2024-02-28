@@ -1,21 +1,25 @@
-import psycopg
+import psycopg2cffi
 import subprocess
 import yaml
 
 variables = yaml.safe_load(open("Variables.yaml", "r"))
 
-credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
-                  user={variables["postgresql_credentials"]["user"]}
-                  password={variables["postgresql_credentials"]["password"]}
-                  {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
-                  {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}"""
-
 data = yaml.safe_load(open("Guilds.yaml", "r"))
 
-subprocess.run(["psql", "-c", f"create database \"{variables['postgresql_credentials']['database']}\"", credentials],
+subprocess.run(["psql",
+                "-c",
+                f"create database \"{variables['postgresql_credentials']['database']}\"",
+                f"""user={variables["postgresql_credentials"]["user"]}
+                    dbname={variables["postgresql_credentials"]["user"]}
+                    password={variables["postgresql_credentials"]["password"]}"""],
                stdout=subprocess.DEVNULL,
                stderr=subprocess.STDOUT)
-connection = psycopg.connect(credentials, autocommit=True)
+connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
+                                  user=variables["postgresql_credentials"]["user"],
+                                  password=variables["postgresql_credentials"]["password"],
+                                  host=variables["postgresql_credentials"]["host"],
+                                  port=variables["postgresql_credentials"]["port"])
+connection.autocommit = True
 cursor = connection.cursor()
 try:
     cursor.execute("""create table guilds(guild_id bigint not null,
