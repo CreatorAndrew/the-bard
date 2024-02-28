@@ -1246,12 +1246,12 @@ class Music(commands.Cog):
             if to is None:
                 if guild["index"] + by < len(guild["queue"]) and by > 0: guild["index"] += by - 1
                 else:
-                    await context.response.send_message(guild["strings"]["invalid_command"])
+                    await context.response.send_message(guild["strings"]["invalid_command"], ephemeral=True)
                     return
             else:
                 if to > 0 and to <= len(guild["queue"]): guild["index"] = to - 2
                 else:
-                    await context.response.send_message(guild["strings"]["invalid_command"])
+                    await context.response.send_message(guild["strings"]["invalid_command"], ephemeral=True)
                     return
             await context.response.send_message(await self.polished_message(guild["strings"]["now_playing"],
                                                                             {"song": await self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
@@ -1269,7 +1269,7 @@ class Music(commands.Cog):
         if guild["queue"]:
             if guild["index"] - by >= 0 and by > 0: guild["index"] -= by + 1
             else:
-                await context.response.send_message(guild["strings"]["invalid_command"])
+                await context.response.send_message(guild["strings"]["invalid_command"], ephemeral=True)
                 return
             await context.response.send_message(await self.polished_message(guild["strings"]["now_playing"],
                                                                             {"song": await self.polished_song_name(guild["queue"][guild["index"] + 1]["file"],
