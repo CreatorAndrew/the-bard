@@ -1088,7 +1088,7 @@ class Music(commands.Cog):
                 if url is None:
                     for song in playlist:
                         # add the track to the queue
-                        guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silence": False})
+                        guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silent": False})
                 else:
                     try: metadata = await self.get_metadata(url)
                     except:
@@ -1106,7 +1106,7 @@ class Music(commands.Cog):
                     await context.followup.send(await self.polished_message(guild["strings"]["queue_add_song"],
                                                                             {"song": await self.polished_song_name(url, name), "index": len(guild["queue"]) + 1}))
                     # add the track to the queue
-                    guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silence": False})
+                    guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silent": False})
                 if guild["connected"]: voice = context.guild.voice_client
                 else:
                     voice = await voice_channel.connect()
@@ -1115,7 +1115,7 @@ class Music(commands.Cog):
                 if not voice.is_playing():
                     while guild["index"] < len(guild["queue"]):
                         if guild["connected"]:
-                            if guild["queue"][guild["index"]]["silence"]: guild["queue"][guild["index"]]["silence"] = False
+                            if guild["queue"][guild["index"]]["silent"]: guild["queue"][guild["index"]]["silent"] = False
                             else:
                                 await context.channel.send(await self.polished_message(guild["strings"]["now_playing"],
                                                                                        {"song": await self.polished_song_name(guild["queue"][guild["index"]]["file"],
@@ -1169,7 +1169,7 @@ class Music(commands.Cog):
                 await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song"], {"song": await self.polished_song_name(url, name)}))
                 return
             # add the track to the queue
-            guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silence": silent})
+            guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
             if index - 1 <= guild["index"]: guild["index"] += 1
             if not silent: await context.response.send_message(await self.polished_message(guild["strings"]["queue_insert_song"],
                                                                                             {"song": await self.polished_song_name(url, name), "index": index}))
@@ -1258,7 +1258,7 @@ class Music(commands.Cog):
                                                                                                                    guild["queue"][guild["index"] + 1]["name"]),
                                                                              "index": guild["index"] + 2,
                                                                              "max": len(guild["queue"])}))
-            guild["queue"][guild["index"] + 1]["silence"] = True
+            guild["queue"][guild["index"] + 1]["silent"] = True
             guild["time"] = .0
             context.guild.voice_client.stop()
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
@@ -1276,7 +1276,7 @@ class Music(commands.Cog):
                                                                                                                    guild["queue"][guild["index"] + 1]["name"]),
                                                                              "index": guild["index"] + 2,
                                                                              "max": len(guild["queue"])}))
-            guild["queue"][guild["index"] + 1]["silence"] = True
+            guild["queue"][guild["index"] + 1]["silent"] = True
             guild["time"] = .0
             context.guild.voice_client.stop()
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
