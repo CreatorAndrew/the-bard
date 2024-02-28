@@ -1134,7 +1134,7 @@ class Music(commands.Cog):
         elif file is not None and new_index is not None and song_url is None: await self.insert_song(context, str(file), new_name, new_index)
         else: await context.response.send_message(self.guilds[str(context.guild.id)]["strings"]["invalid_command"])
 
-    async def insert_song(self, context, url, name, index, time="0", duration=None, silence=False):
+    async def insert_song(self, context, url, name, index, time="0", duration=None, silent=False):
         guild = self.guilds[str(context.guild.id)]
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
@@ -1156,7 +1156,7 @@ class Music(commands.Cog):
             # add the track to the queue
             guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
             if index - 1 <= guild["index"]: guild["index"] += 1
-            if not silence: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
+            if not silent: await context.response.send_message(self.polished_message(guild["strings"]["queue_insert_song"],
                                                                                       {"song": self.polished_song_name(url, name), "index": index}))
         else: await context.response.send_message(self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
@@ -1191,10 +1191,10 @@ class Music(commands.Cog):
     @app_commands.command(description="remove_command_desc")
     async def remove_command(self, context: discord.Interaction, song_index: int): await self.remove_song(context, song_index)
 
-    async def remove_song(self, context, index, silence=False):
+    async def remove_song(self, context, index, silent=False):
         guild = self.guilds[str(context.guild.id)]
         if index > 0 and index < len(guild["queue"]) + 1:
-            if not silence:
+            if not silent:
                 await context.response.send_message(self.polished_message(guild["strings"]["queue_remove_song"],
                                                                           {"song": self.polished_song_name(guild["queue"][index - 1]["file"],
                                                                                                            guild["queue"][index - 1]["name"]),

@@ -362,22 +362,17 @@ else:
     flat_file = None
     if variables["storage"] == "postgresql":
         import subprocess
-        import psycopg2cffi
-        subprocess.run(["psql",
-                        "-c",
-                        f"create database \"{variables['postgresql_credentials']['database']}\"",
-                        f"""user={variables["postgresql_credentials"]["user"]}
-                            dbname={variables["postgresql_credentials"]["user"]}
-                            password={variables["postgresql_credentials"]["password"]}"""],
+        import psycopg
+        credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
+                          user={variables["postgresql_credentials"]["user"]}
+                          password={variables["postgresql_credentials"]["password"]}
+                          {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
+                          {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}"""
+        subprocess.run(["psql", "-c", f"create database \"{variables['postgresql_credentials']['database']}\"", credentials],
                        stdout=subprocess.DEVNULL,
                        stderr=subprocess.STDOUT)
         database_exists = False
-        connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
-                                          user=variables["postgresql_credentials"]["user"],
-                                          password=variables["postgresql_credentials"]["password"],
-                                          host=variables["postgresql_credentials"]["host"],
-                                          port=variables["postgresql_credentials"]["port"])
-        connection.autocommit = True
+        connection = psycopg.connect(credentials, autocommit=True)
         cursor = CursorHandler(connection.cursor(), "bigint", "%s")
     elif variables["storage"] == "sqlite":
         import sqlite3
