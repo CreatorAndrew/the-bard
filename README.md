@@ -4,32 +4,37 @@ A music Discord bot that plays from file attachments and custom download URLs in
 ## Setup
 Make sure that FFmpeg and MediaInfo are installed and in the path.
 
-### For Debian-based distros:
+### For Arch-based Linux distributions:
+```
+pacman -S ffmpeg mediainfo
+```
+
+### For Debian-based Linux distributions:
 ```
 apt install ffmpeg mediainfo
 ```
 
-### For Fedora-based distros:
+### For Fedora-based Linux distributions:
 ```
 dnf install ffmpeg mediainfo
 ```
 
-### For macOS (using Homebrew):
+### For macOS (Homebrew):
 ```
 brew install ffmpeg mediainfo
 ```
 
-### For macOS (using MacPorts):
+### For macOS (MacPorts):
 ```
 port install ffmpeg mediainfo
 ```
 
-### For Windows (using Chocolatey):
+### For Windows (Chocolatey):
 ```
 choco install ffmpeg mediainfo-cli
 ```
 
-### For Windows (using Scoop):
+### For Windows (Scoop):
 ```
 scoop install ffmpeg mediainfo
 ```
