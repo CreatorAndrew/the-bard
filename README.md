@@ -35,14 +35,18 @@ scoop install ffmpeg mediainfo
 ```
 
 ### For Windows (Manual):
-Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` subfolder to your `PATH` environment variable.
-Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Download/Windows and add the folder to your `PATH` environment variable.
++ Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` subfolder to your `PATH` environment variable.
++ Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Download/Windows and add the folder to your `PATH` environment variable.
+
+---
 
 Also make sure to grab the following Python dependencies by typing the following in your operating system's CLI at the projects directory:
 
 ```
 pip3 install -r requirements.txt
 ```
+
+## Usage
 
 To run it, type the following in your operating system's CLI at the project's directory:
 
