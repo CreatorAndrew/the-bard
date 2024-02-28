@@ -1,4 +1,4 @@
-import psycopg
+import psycopg2cffi
 import subprocess
 import yaml
 
@@ -15,7 +15,12 @@ data = yaml.safe_load(open("Guilds.yaml", "r"))
 subprocess.run(["psql", "-c", f"create database \"{variables['postgresql_credentials']['database']}\"", credentials],
                stdout=subprocess.DEVNULL,
                stderr=subprocess.STDOUT)
-connection = psycopg.connect(credentials, autocommit=True)
+connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
+                                  user=variables["postgresql_credentials"]["user"],
+                                  password=variables["postgresql_credentials"]["password"],
+                                  host=variables["postgresql_credentials"]["host"],
+                                  port=variables["postgresql_credentials"]["port"])
+connection.autocommit = True
 cursor = connection.cursor()
 try:
     cursor.execute("""create table guilds(guild_id bigint not null,
