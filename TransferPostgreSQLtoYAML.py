@@ -1,5 +1,5 @@
 import os
-import psycopg2cffi
+import psycopg
 import yaml
 
 variables = yaml.safe_load(open("Variables.yaml", "r"))
@@ -14,11 +14,8 @@ flat_file = "Guilds.yaml"
 if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
 data = yaml.safe_load(open(flat_file, "r"))
 
-connection = psycopg2cffi.connect(database=variables["postgresql_credentials"]["database"],
-                                  user=variables["postgresql_credentials"]["user"],
-                                  password=variables["postgresql_credentials"]["password"],
-                                  host=variables["postgresql_credentials"]["host"],
-                                  port=variables["postgresql_credentials"]["port"])
+connection = psycopg.connect(credentials.replace(f"dbname={variables['postgresql_credentials']['user']}",
+                                                 f"dbname={variables['postgresql_credentials']['database']}"))
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds")
