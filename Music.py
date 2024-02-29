@@ -243,7 +243,8 @@ class Music(commands.Cog):
                     elif clone is not None and clone > 0 and clone <= len(guild["playlists"]):
                         # clone a playlist
                         if into is None or into < 1 or into > len(guild["playlists"]):
-                            if new_name is None: new_name = guild["playlists"][clone - 1]["name"]
+                            playlist = guild["playlists"][clone - 1]["name"]
+                            if new_name is None: new_name = playlist
                             if new_index is None: new_index = len(guild["playlists"]) + 1
                             elif new_index < 1 or new_index > len(guild["playlists"]) + 1:
                                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
@@ -252,7 +253,7 @@ class Music(commands.Cog):
                                 return
                             guild["playlists"].insert(new_index - 1, {"name": new_name, "songs": guild["playlists"][clone - 1]["songs"].copy()})
                             await context.followup.send(await self.polished_message(strings["clone_playlist"],
-                                                                                    {"playlist": guild["playlists"][clone - 1]["name"],
+                                                                                    {"playlist": playlist,
                                                                                      "playlist_index": clone,
                                                                                      "into_playlist": new_name,
                                                                                      "into_playlist_index": new_index}))
@@ -537,9 +538,9 @@ class Music(commands.Cog):
                                           (context.guild.id, clone - 1))
                 songs = await self.cursor.fetchall()
                 if into is None or into < 1 or into > playlist_count:
-                    if new_name is None:
-                        await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1))
-                        new_name = (await self.cursor.fetchone())[0]
+                    await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1))
+                    playlist = (await self.cursor.fetchone())[0]
+                    if new_name is None: new_name = playlist
                     if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
                         await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                         await context.followup.send(strings["invalid_command"], ephemeral=True)
@@ -562,9 +563,8 @@ class Music(commands.Cog):
                         await self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
                                                   (new_index - 1, playlist_count, context.guild.id))
                         await self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
-                    await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1))
                     await context.followup.send(await self.polished_message(strings["clone_playlist"],
-                                                                            {"playlist": (await self.cursor.fetchone())[0],
+                                                                            {"playlist": playlist,
                                                                              "playlist_index": clone,
                                                                              "into_playlist": new_name,
                                                                              "into_playlist_index": new_index}))
