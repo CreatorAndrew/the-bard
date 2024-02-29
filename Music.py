@@ -496,7 +496,7 @@ class Music(commands.Cog):
                 if new_index is None: new_index = playlist_count + 1
                 else:
                     await self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
-                                        (new_index - 1, playlist_count, context.guild.id))
+                                              (new_index - 1, playlist_count, context.guild.id))
                     await self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                 await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (int(from_guild), transfer - 1))
                 await context.followup.send(await self.polished_message(strings["clone_playlist"],
@@ -524,7 +524,7 @@ class Music(commands.Cog):
                 if new_index is None: new_index = playlist_count + 1
                 else:
                     await self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
-                                        (new_index - 1, playlist_count, context.guild.id))
+                                              (new_index - 1, playlist_count, context.guild.id))
                     await self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                 await context.followup.send(await self.polished_message(strings["add_playlist"], {"playlist": add, "playlist_index": new_index}))
             # clone a playlist or copy its tracks into another playlist
@@ -560,7 +560,7 @@ class Music(commands.Cog):
                     if new_index is None: new_index = playlist_count + 1
                     else:
                         await self.cursor.execute("update playlists set guild_pl_id = guild_pl_id + 1 where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?",
-                                            (new_index - 1, playlist_count, context.guild.id))
+                                                  (new_index - 1, playlist_count, context.guild.id))
                         await self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)", (new_index - 1,))
                     await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, clone - 1))
                     await context.followup.send(await self.polished_message(strings["clone_playlist"],
@@ -1044,14 +1044,14 @@ class Music(commands.Cog):
                                                                          (select count(song_id) from pl_songs
                                                                           left outer join playlists on playlists.pl_id = pl_songs.pl_id
                                                                           where guild_id = ? and guild_pl_id = ?))""",
-                                    (song["name"], song["file"], context.guild.id, index - 1, context.guild.id, index - 1))
+                                          (song["name"], song["file"], context.guild.id, index - 1, context.guild.id, index - 1))
                 previous_message = message
                 await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, index - 1))
                 playlist_name = (await self.cursor.fetchone())[0]
                 await self.cursor.execute("""select count(song_id) from pl_songs
                                              left outer join playlists on playlists.pl_id = pl_songs.pl_id
                                              where guild_id = ? and guild_pl_id = ?""",
-                                    (context.guild.id, index - 1))
+                                          (context.guild.id, index - 1))
                 song_index = (await self.cursor.fetchone())[0]
                 new_message = await self.polished_message(strings["playlist_add_song"] + "\n",
                                                           {"playlist": playlist_name,
