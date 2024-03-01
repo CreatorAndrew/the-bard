@@ -1075,7 +1075,7 @@ class Music(commands.Cog):
             await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
             await context.followup.send(self.guilds[str(context.guild.id)]["strings"]["invalid_command"], ephemeral=True)
 
-    async def play_song(self, context, url=None, name=None, playlist=[]):
+    async def play_song(self, context, url=None, name=None, playlist=None):
         try:
             async def add_time(guild, time): guild["time"] += time
             guild = self.guilds[str(context.guild.id)]
@@ -1086,6 +1086,7 @@ class Music(commands.Cog):
                 await context.followup.send(await self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}), ephemeral=True)
             else:
                 if url is None:
+                    if playlist is None: playlist = []
                     for song in playlist:
                         # add the track to the queue
                         guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silent": False})
