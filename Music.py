@@ -180,6 +180,10 @@ class Music(commands.Cog):
                                song_index: int=None,
                                new_name: str=None,
                                new_index: int=None):
+        async def declare_command_invalid():
+            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+            await context.followup.send(strings["invalid_command"], ephemeral=True)
+            self.lock.release()
         await context.response.defer()
         strings = self.guilds[str(context.guild.id)]["strings"]
         if select is not None and action == "add":
@@ -212,16 +216,12 @@ class Music(commands.Cog):
                                 from_guild_playlists = guild_searched["playlists"]
                                 break
                         if transfer is None or transfer < 1 or transfer > len(from_guild_playlists):
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         if new_name is None: new_name = from_guild_playlists[transfer - 1]["name"]
                         if new_index is None: new_index = len(guild["playlists"]) + 1
                         elif new_index < 1 or new_index > len(guild["playlists"]) + 1:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         guild["playlists"].insert(new_index - 1, {"name": new_name, "songs": from_guild_playlists[transfer - 1]["songs"].copy()})
                         await context.followup.send(await self.polished_message(strings["clone_playlist"],
@@ -233,9 +233,7 @@ class Music(commands.Cog):
                     elif add is not None:
                         if new_index is None: new_index = len(guild["playlists"]) + 1
                         elif new_index < 1 or new_index > len(guild["playlists"]) + 1:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         guild["playlists"].insert(new_index - 1, {"name": add, "songs": []})
                         await context.followup.send(await self.polished_message(strings["add_playlist"], {"playlist": add, "playlist_index": new_index}))
@@ -247,9 +245,7 @@ class Music(commands.Cog):
                             if new_name is None: new_name = playlist
                             if new_index is None: new_index = len(guild["playlists"]) + 1
                             elif new_index < 1 or new_index > len(guild["playlists"]) + 1:
-                                await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                self.lock.release()
+                                await declare_command_invalid()
                                 return
                             guild["playlists"].insert(new_index - 1, {"name": new_name, "songs": guild["playlists"][clone - 1]["songs"].copy()})
                             await context.followup.send(await self.polished_message(strings["clone_playlist"],
@@ -268,9 +264,7 @@ class Music(commands.Cog):
                     # change a playlist's position in the order of playlists
                     elif move is not None and move > 0 and move <= len(guild["playlists"]):
                         if new_index is None or new_index < 1 or new_index > len(guild["playlists"]):
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         playlists = guild["playlists"].copy()
                         guild["playlists"].remove(playlists[move - 1])
@@ -280,9 +274,7 @@ class Music(commands.Cog):
                     # rename a playlist
                     elif rename is not None and rename > 0 and rename <= len(guild["playlists"]):
                         if new_name is None:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         await context.followup.send(await self.polished_message(strings["rename_playlist"],
                                                                           {"playlist": guild["playlists"][rename - 1]["name"],
@@ -322,9 +314,7 @@ class Music(commands.Cog):
                                 if new_name is None: new_name = metadata["name"]
                                 if new_index is None: new_index = len(guild["playlists"][select - 1]["songs"]) + 1
                                 elif new_index < 1 or new_index > len(guild["playlists"][select - 1]["songs"]):
-                                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                    self.lock.release()
+                                    await declare_command_invalid()
                                     return
                                 song = {"name": new_name, "index": new_index, "duration": metadata["duration"]}
                                 guild["playlists"][select - 1]["songs"].insert(song["index"] - 1, {"name": song["name"],
@@ -351,9 +341,7 @@ class Music(commands.Cog):
                                     new_index is None or
                                     new_index < 1 or
                                     new_index > len(guild["playlists"][select - 1]["songs"])):
-                                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                    self.lock.release()
+                                    await declare_command_invalid()
                                     return
                                 song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 if song["file"] is None:
@@ -370,9 +358,7 @@ class Music(commands.Cog):
                             # rename a track in the playlist
                             elif action == "rename":
                                 if song_index is None or song_index < 1 or song_index > len(guild["playlists"][select - 1]["songs"]) or new_name is None:
-                                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                    self.lock.release()
+                                    await declare_command_invalid()
                                     return
                                 song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 if song["file"] is None:
@@ -389,9 +375,7 @@ class Music(commands.Cog):
                             # remove a track from the playlist
                             elif action == "remove":
                                 if song_index is None or song_index < 1 or song_index > len(guild["playlists"][select - 1]["songs"]):
-                                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                    self.lock.release()
+                                    await declare_command_invalid()
                                     return
                                 song = guild["playlists"][select - 1]["songs"][song_index - 1]
                                 if song["file"] is None:
@@ -438,9 +422,7 @@ class Music(commands.Cog):
                                 await self.page_selector(context, strings, pages, 0)
                                 return
                             else:
-                                await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                                await context.followup.send(strings["invalid_command"], ephemeral=True)
-                                self.lock.release()
+                                await declare_command_invalid()
                                 return
                         else:
                             await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
@@ -448,9 +430,7 @@ class Music(commands.Cog):
                             self.lock.release()
                             return
                     else:
-                        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                        await context.followup.send(strings["invalid_command"], ephemeral=True)
-                        self.lock.release()
+                        await declare_command_invalid()
                         return
                     # modify the flat file for guilds to reflect changes regarding playlists
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
@@ -464,9 +444,7 @@ class Music(commands.Cog):
                 await self.cursor.execute("select count(pl_id) from playlists where guild_id = ?", (int(from_guild),))
                 from_guild_playlist_count = (await self.cursor.fetchone())[0]
                 if transfer is None or transfer < 1 or transfer > from_guild_playlist_count:
-                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                    self.lock.release()
+                    await declare_command_invalid()
                     return
                 await self.cursor.execute("""select song_id, song_name, song_url from pl_songs
                                              left outer join playlists on playlists.pl_id = pl_songs.pl_id
@@ -478,9 +456,7 @@ class Music(commands.Cog):
                     await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (int(from_guild), transfer - 1))
                     new_name = (await self.cursor.fetchone())[0]
                 if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
-                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                    self.lock.release()
+                    await declare_command_invalid()
                     return
                 await self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                           ?,
@@ -508,9 +484,7 @@ class Music(commands.Cog):
             # add a playlist
             elif add is not None:
                 if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
-                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                    self.lock.release()
+                    await declare_command_invalid()
                     return
                 try: await self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                                ?,
@@ -542,9 +516,7 @@ class Music(commands.Cog):
                     playlist = (await self.cursor.fetchone())[0]
                     if new_name is None: new_name = playlist
                     if new_index is not None and (new_index < 1 or new_index > playlist_count + 1):
-                        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                        await context.followup.send(strings["invalid_command"], ephemeral=True)
-                        self.lock.release()
+                        await declare_command_invalid()
                         return
                     await self.cursor.execute("""insert into playlists values((select max(pl_id) from playlists) + 1,
                                                                               ?,
@@ -592,9 +564,7 @@ class Music(commands.Cog):
                 await self.cursor.execute("select pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id", (context.guild.id,))
                 playlist_copies = await self.cursor.fetchall()
                 if new_index is None or new_index < 1 or new_index > playlist_count:
-                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                    self.lock.release()
+                    await declare_command_invalid()
                     return
                 elif new_index > move: await self.cursor.execute("""update playlists set guild_pl_id = guild_pl_id - 1
                                                                     where guild_pl_id >= ? and guild_pl_id <= ? and guild_id = ?""",
@@ -607,9 +577,7 @@ class Music(commands.Cog):
             # rename a playlist
             elif rename is not None and rename > 0 and rename <= playlist_count:
                 if new_name is None:
-                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                    await context.followup.send(strings["invalid_command"], ephemeral=True)
-                    self.lock.release()
+                    await declare_command_invalid()
                     return
                 await self.cursor.execute("select pl_name from playlists where guild_id = ? and guild_pl_id = ?", (context.guild.id, rename - 1))
                 await context.followup.send(await self.polished_message(strings["rename_playlist"],
@@ -674,9 +642,7 @@ class Music(commands.Cog):
                     if action == "add":
                         if new_name is None: new_name = metadata["name"]
                         if new_index is not None and (new_index < 1 or new_index > song_count + 1):
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         try: await self.cursor.execute("insert into songs values((select max(song_id) from songs) + 1, ?, ?, ?, ?, ?, ?)",
                                                        (new_name, metadata["duration"], context.guild.id, 0, 0, 0))
@@ -715,9 +681,7 @@ class Music(commands.Cog):
                                                   (context.guild.id, select - 1))
                         song_copies = await self.cursor.fetchall()
                         if song_index is None or song_index < 1 or song_index > song_count or new_index is None or new_index < 1 or new_index > song_count:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         elif new_index > song_index: await self.cursor.execute("""update pl_songs set pl_song_id = pl_song_id - 1
                                                                                   where pl_song_id >= ? and pl_song_id <= ? and pl_id = ?""",
@@ -738,9 +702,7 @@ class Music(commands.Cog):
                     # rename a track in the playlist
                     elif action == "rename":
                         if song_index is None or song_index < 1 or song_index > song_count or new_name is None:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         await self.cursor.execute("""select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id, message_id, attachment_index, song_url from pl_songs
                                                      left outer join songs on songs.song_id = pl_songs.song_id
@@ -760,9 +722,7 @@ class Music(commands.Cog):
                     # remove a track from the playlist
                     elif action == "remove":
                         if song_index is None or song_index < 1 or song_index > song_count:
-                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                            await context.followup.send(strings["invalid_command"], ephemeral=True)
-                            self.lock.release()
+                            await declare_command_invalid()
                             return
                         await self.cursor.execute("""select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id, message_id, attachment_index, song_url from pl_songs
                                                      left outer join songs on songs.song_id = pl_songs.song_id
@@ -818,9 +778,7 @@ class Music(commands.Cog):
                         await self.page_selector(context, strings, pages, 0)
                         return
                     else:
-                        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                        await context.followup.send(strings["invalid_command"], ephemeral=True)
-                        self.lock.release()
+                        await declare_command_invalid()
                         return
                 else:
                     await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
@@ -828,9 +786,7 @@ class Music(commands.Cog):
                     self.lock.release()
                     return
             else:
-                await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                await context.followup.send(strings["invalid_command"], ephemeral=True)
-                self.lock.release()
+                await declare_command_invalid()
                 return
             await self.connection.commit()
         self.lock.release()
