@@ -212,7 +212,7 @@ class Main(commands.Cog):
                 await self.cursor.execute("delete from users where user_id not in (select user_id from guild_users)")
                 await self.connection.commit()
         self.lock.release()
-    
+
     @commands.command()
     async def sync_guilds(self, context):
         if context.author.id == variables["master_id"]:
@@ -231,7 +231,7 @@ class Main(commands.Cog):
                     while index < len(self.data["guilds"]):
                         if self.data["guilds"][index]["id"] not in ids:
                             del self.guilds[str(self.data["guilds"][index]["id"])]
-                            self.data["guilds"].remove(self.data["guilds"][index]) 
+                            self.data["guilds"].remove(self.data["guilds"][index])
                             index -= 1
                         index += 1
                     yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
@@ -271,7 +271,7 @@ class Main(commands.Cog):
                         index = 0
                         while index < len(self.data["guilds"][guild_index]["users"]):
                             if self.data["guilds"][guild_index]["users"][index]["id"] not in ids:
-                                self.data["guilds"][guild_index]["users"].remove(self.data["guilds"][guild_index]["users"][index]) 
+                                self.data["guilds"][guild_index]["users"].remove(self.data["guilds"][guild_index]["users"][index])
                                 index -= 1
                             index += 1
                     else:

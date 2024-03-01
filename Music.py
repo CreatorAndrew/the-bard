@@ -291,7 +291,7 @@ class Music(commands.Cog):
                         self.lock.release()
                         if guild["playlists"][load - 1]["songs"]:
                             songs = []
-                            for song in guild["playlists"][load - 1]["songs"]:                                
+                            for song in guild["playlists"][load - 1]["songs"]:
                                 if song["file"] is None:
                                     try: song_message = self.messages[str(song["message_id"])]
                                     except:
