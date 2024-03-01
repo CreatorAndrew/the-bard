@@ -1621,22 +1621,22 @@ class Music(commands.Cog):
     @commands.Cog.listener("on_message")
     async def renew_attachment_from_message(self, message: discord.Message):
         try:
-            if message.author.id != self.bot.user.id: return
-            content = yaml.safe_load(message.content)
-            if str(content["message_id"]):
-                if self.cursor is None:
-                    for guild in self.data["guilds"]:
-                        if guild["id"] == message.guild.id:
-                            guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["channel_id"] = guild["working_thread_id"]
-                            guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["message_id"] = message.id
-                            break
-                    yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                else:
-                    await self.lock.acquire()
-                    await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (message.guild.id,))
-                    working_thread_id = (await self.cursor.fetchone())[0]
-                    await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (working_thread_id, content["song_id"]))
-                    await self.cursor.execute("update songs set message_id = ? where song_id = ?", (message.id, content["song_id"]))
-                    await self.connection.commit()
-                    self.lock.release()
+            if message.author.id == self.bot.user.id:
+                content = yaml.safe_load(message.content)
+                if str(content["message_id"]):
+                    if self.cursor is None:
+                        for guild in self.data["guilds"]:
+                            if guild["id"] == message.guild.id:
+                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["channel_id"] = guild["working_thread_id"]
+                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["message_id"] = message.id
+                                break
+                        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+                    else:
+                        await self.lock.acquire()
+                        await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (message.guild.id,))
+                        working_thread_id = (await self.cursor.fetchone())[0]
+                        await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (working_thread_id, content["song_id"]))
+                        await self.cursor.execute("update songs set message_id = ? where song_id = ?", (message.id, content["song_id"]))
+                        await self.connection.commit()
+                        self.lock.release()
         except: pass
