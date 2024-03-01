@@ -6,7 +6,6 @@ import typing
 import discord
 from discord import app_commands
 from discord.ext import commands
-from Music import Music
 
 class CursorHandler:
     def __init__(self, connection, cursor, integer_data_type, placeholder):
@@ -32,17 +31,17 @@ class CommandTranslator(app_commands.Translator):
         except: return None
 
 class Main(commands.Cog):
-    def __init__(self, bot, connection, cursor, data, flat_file, guilds, init_guilds, language_directory, lock):
+    def __init__(self, bot):
         self.bot = bot
-        self.connection = connection
-        self.cursor = cursor
-        self.data = data
-        self.flat_file = flat_file
-        self.language_directory = language_directory
-        self.lock = lock
-        self.guilds = guilds
+        self.connection = bot.connection
+        self.cursor = bot.cursor
+        self.data = bot.data
+        self.flat_file = bot.flat_file
+        self.language_directory = bot.language_directory
+        self.lock = bot.lock
+        self.guilds = bot.guilds_list
         self.default_language = "american_english"
-        self.init_guilds(init_guilds)
+        self.init_guilds(bot.init_guilds)
         self.set_language_options()
 
     def init_guilds(self, guilds=None):
@@ -362,8 +361,8 @@ async def on_ready(): print(f"Logged in as {bot.user}")
 async def sync_commands(context):
     if context.author.id == variables["master_id"]:
         await bot.tree.set_translator(CommandTranslator())
-        synced = await bot.tree.sync()
-        await context.reply(f"Synced {len(synced)} command{'' if len(synced) == 1 else 's'}")
+        await bot.tree.sync()
+        await context.reply(f"Synced {len(bot.tree.get_commands())} command{'' if len(bot.tree.get_commands()) == 1 else 's'}")
 
 async def main():
     async with bot:
@@ -439,8 +438,16 @@ async def main():
         else:
             await cursor.execute("select guild_id, guild_lang, keep_in_voice, repeat_queue from guilds")
             init_guilds = await cursor.fetchall()
-        await bot.add_cog(Main(bot, connection, cursor, data, flat_file, guilds, init_guilds, language_directory, lock))
-        await bot.add_cog(Music(bot, connection, cursor, data, flat_file, guilds, language_directory, lock))
+        bot.connection = connection
+        bot.cursor = cursor
+        bot.data = data
+        bot.flat_file = flat_file
+        bot.guilds_list = guilds
+        bot.init_guilds = init_guilds
+        bot.language_directory = language_directory
+        bot.lock = lock
+        await bot.add_cog(Main(bot))
+        await bot.load_extension("Music")
         await bot.start(variables["token"])
 
 asyncio.run(main())

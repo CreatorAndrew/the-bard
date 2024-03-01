@@ -10,18 +10,18 @@ from io import BytesIO
 from subprocess import check_output
 
 class Music(commands.Cog):
-    def __init__(self, bot, connection, cursor, data, flat_file, guilds, language_directory, lock):
+    def __init__(self, bot):
         self.bot = bot
-        self.connection = connection
-        self.cursor = cursor
-        self.data = data
-        self.flat_file = flat_file
-        self.guilds = guilds
-        self.language_directory = language_directory
-        self.lock = lock
+        self.connection = bot.connection
+        self.cursor = bot.cursor
+        self.data = bot.data
+        self.flat_file = bot.flat_file
+        self.guilds = bot.guilds_list
+        self.language_directory = bot.language_directory
+        self.lock = bot.lock
         self.messages = {}
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
-        self.bot.tree.add_command(self.playlist_add_files_context_menu)
+        bot.tree.add_command(self.playlist_add_files_context_menu)
 
     async def get_file_name(self, file):
         try: return file[file.rindex("/") + 1:file.rindex("?")]
@@ -1596,3 +1596,5 @@ class Music(commands.Cog):
                         await self.connection.commit()
                         self.lock.release()
         except: pass
+
+async def setup(bot): await bot.add_cog(Music(bot))
