@@ -1,13 +1,14 @@
-import requests
-import yaml
 import asyncio
 import typing
 import random
+from io import BytesIO
+from threading import Thread
+import aiohttp
+import yaml
 import discord
 from discord import app_commands
 from discord.ext import commands
-from io import BytesIO
-from subprocess import check_output
+from pymediainfo import MediaInfo
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -28,15 +29,13 @@ class Music(commands.Cog):
         except: return file[file.rindex("/") + 1:]
 
     async def get_metadata(self, file):
-        for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
-            try: name = track["Title"]
+        for track in MediaInfo.parse(file).tracks:
+            try:
+                if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
             except:
-                try: name = track["Track"]
-                except:
-                    name = await self.get_file_name(file)
-                    try: name = name[:name.rindex(".")].replace("_", " ")
-                    except: name = name.replace("_", " ")
-            try: duration = float(track["Duration"])
+                try: name = track.to_data()["track_name"]
+                except: name = track.to_data()["file_name"].replace("_", " ")
+            try: duration = float(track.to_data()["duration"]) / 1000
             except: duration = .0
             return {"name": name, "duration": duration}
 
@@ -193,18 +192,21 @@ class Music(commands.Cog):
                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                 await context.followup.send(strings["invalid_command"], ephemeral=True)
                 return
-            try: metadata = await self.get_metadata(url)
-            except:
-                await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": url}), ephemeral=True)
-                return
-            response = requests.get(url, stream=True)
-            # verify that the URL file is a media container
-            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                await context.followup.send(await self.polished_message(strings["invalid_song"], {"song": await self.polished_song_name(url, metadata["name"])}),
-                                            ephemeral=True)
-                return
+            async with aiohttp.ClientSession() as session:
+                response = await session.get(url)
+                try: metadata = await self.get_metadata(BytesIO(await response.content.read()))
+                except:
+                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+                    await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": url}), ephemeral=True)
+                    return
+                # verify that the URL file is a media container
+                if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                    await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+                    await context.followup.send(await self.polished_message(strings["invalid_song"],
+                                                                            {"song": await self.polished_song_name(url, metadata["name"])}),
+                                                ephemeral=True)
+                    return
+                await session.close()
         await self.lock.acquire()
         if self.cursor is None:
             for guild in self.data["guilds"]:
@@ -947,21 +949,23 @@ class Music(commands.Cog):
         playlist = []
         urls = []
         for url in message_regarded.attachments:
-            try: song = await self.get_metadata(str(url))
-            except:
-                await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": str(url)}), ephemeral=True)
-                return
-            response = requests.get(str(url), stream=True)
-            # verify that the URL file is a media container
-            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.followup.send(await self.polished_message(strings["invalid_song"], {"song": await self.polished_song_name(str(url), song["name"])}),
-                                            ephemeral=True)
-                return
+            async with aiohttp.ClientSession() as session:
+                response = await session.get(url)
+                try: metadata = await self.get_metadata(BytesIO(await response.content.read()))
+                except:
+                    await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": str(url)}), ephemeral=True)
+                    return
+                # verify that the URL file is a media container
+                if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                    await context.followup.send(await self.polished_message(strings["invalid_song"], {"song": await self.polished_song_name(str(url), metadata["name"])}),
+                                                ephemeral=True)
+                    return
+                await session.close()
 
             urls.append(str(url))
-            playlist.append({"name": song["name"],
+            playlist.append({"name": metadata["name"],
                              "file": None,
-                             "duration": song["duration"],
+                             "duration": metadata["duration"],
                              "guild_id": message_regarded.guild.id,
                              "channel_id": message_regarded.channel.id,
                              "message_id": message_regarded.id,
@@ -1033,7 +1037,22 @@ class Music(commands.Cog):
 
     async def play_song(self, context, url=None, name=None, playlist=None):
         try:
-            async def add_time(guild, time): guild["time"] += time
+            async def load_content(guild):
+                async with aiohttp.ClientSession() as session:
+                    index = 0
+                    while index < len(guild["queue"]):
+                        try:
+                            if guild["queue"][index]["data"] is None:
+                                guild["queue"][index]["data"] = await (await session.get(guild["queue"][index]["file"])).content.read()
+                        except: pass
+                        index += 1
+                    await session.close()
+            async def async_load_content(guild):
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(None, lambda: Thread(target=asyncio.run, args=(load_content(guild),)).start())
+            async def add_time(guild, time):
+                await asyncio.sleep(time)
+                guild["time"] += time
             guild = self.guilds[str(context.guild.id)]
             try: voice_channel = context.user.voice.channel
             except: voice_channel = None
@@ -1045,25 +1064,33 @@ class Music(commands.Cog):
                     if playlist is None: playlist = []
                     for song in playlist:
                         # add the track to the queue
-                        guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silent": False})
+                        guild["queue"].append({"file": song["file"],
+                                               "data": None,
+                                               "name": song["name"],
+                                               "time": "0",
+                                               "duration": song["duration"],
+                                               "silent": False})
                 else:
-                    try: metadata = await self.get_metadata(url)
-                    except:
-                        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                        await context.followup.send(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}), ephemeral=True)
-                        return
-                    if name is None: name = metadata["name"]
-                    response = requests.get(url, stream=True)
-                    # verify that the URL file is a media container
-                    if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                        await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
-                        await context.followup.send(await self.polished_message(guild["strings"]["invalid_song"], {"song": await self.polished_song_name(url, name)}),
-                                                    ephemeral=True)
-                        return
-                    await context.followup.send(await self.polished_message(guild["strings"]["queue_add_song"],
-                                                                            {"song": await self.polished_song_name(url, name), "index": len(guild["queue"]) + 1}))
-                    # add the track to the queue
-                    guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silent": False})
+                    async with aiohttp.ClientSession() as session:
+                        response = await session.get(url)
+                        try: metadata = await self.get_metadata(BytesIO(await response.content.read()))
+                        except:
+                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+                            await context.followup.send(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}), ephemeral=True)
+                            return
+                        if name is None: name = metadata["name"]
+                        # verify that the URL file is a media container
+                        if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                            await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
+                            await context.followup.send(await self.polished_message(guild["strings"]["invalid_song"], {"song": await self.polished_song_name(url, name)}),
+                                                        ephemeral=True)
+                            return
+
+                        await context.followup.send(await self.polished_message(guild["strings"]["queue_add_song"],
+                                                                                {"song": await self.polished_song_name(url, name), "index": len(guild["queue"]) + 1}))
+                        # add the track to the queue
+                        guild["queue"].append({"file": url, "data": None, "name": name, "time": "0", "duration": metadata["duration"], "silent": False})
+                        await session.close()
                 if guild["connected"]: voice = context.guild.voice_client
                 else:
                     voice = await voice_channel.connect()
@@ -1082,17 +1109,22 @@ class Music(commands.Cog):
                                 guild["time"] = .0
                         # play the track
                         if not voice.is_playing():
-                            source = discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
+                            if guild["queue"][guild["index"]]["data"] is None:
+                                async with aiohttp.ClientSession() as session:
+                                    guild["queue"][guild["index"]]["data"] = await (await session.get(guild["queue"][guild["index"]]["file"])).content.read()
+                                    await session.close()
+                            source = discord.FFmpegPCMAudio(source=BytesIO(guild["queue"][guild["index"]]["data"]),
+                                                            pipe=True,
                                                             before_options=f"-re -ss {guild['queue'][guild['index']]['time']}")
                             source.read()
                             voice.play(source)
                             guild["queue"][guild["index"]]["time"] = "0"
                             voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
                             voice.source.volume = guild["volume"]
+                            await async_load_content(guild)
                         # ensure that the track plays completely or is skipped by command before proceeding
                         while voice.is_playing() or voice.is_paused():
-                            await asyncio.sleep(.1)
-                            if voice.is_playing(): await add_time(guild, .1)
+                            if voice.is_playing(): await add_time(guild, 1)
 
                         guild["index"] += 1
                         if guild["index"] == len(guild["queue"]):
@@ -1110,26 +1142,31 @@ class Music(commands.Cog):
         guild = self.guilds[str(context.guild.id)]
         try: voice_channel = context.user.voice.channel
         except: voice_channel = None
-        if voice_channel is None: await context.response.send_message(await self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
+        if voice_channel is None: await context.response.send_message(await self.polished_message(guild["strings"]["not_in_voice"],
+                                                                                                  {"user": context.user.mention}))
         elif 0 < index < len(guild["queue"]) + 2:
-            try:
-                if name is None or duration is None:
-                    metadata = await self.get_metadata(url)
-                    if name is None: name = metadata["name"]
-                    if duration is None: duration = metadata["duration"]
-            except:
-                await context.response.send_message(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
-                return
-            response = requests.get(url, stream=True)
-            # verify that the URL file is a media container
-            if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song"], {"song": await self.polished_song_name(url, name)}))
-                return
-            # add the track to the queue
-            guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
-            if index - 1 <= guild["index"]: guild["index"] += 1
-            if not silent: await context.response.send_message(await self.polished_message(guild["strings"]["queue_insert_song"],
-                                                                                            {"song": await self.polished_song_name(url, name), "index": index}))
+            async with aiohttp.ClientSession() as session:
+                response = await session.get(url)
+                try:
+                    if name is None or duration is None:
+                        metadata = await self.get_metadata(BytesIO(await response.content.read()))
+                        if name is None: name = metadata["name"]
+                        if duration is None: duration = metadata["duration"]
+                except:
+                    await context.response.send_message(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
+                    return
+                # verify that the URL file is a media container
+                if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
+                    await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song"],
+                                                                                    {"song": await self.polished_song_name(url, name)}))
+                    return
+                # add the track to the queue
+                guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
+                if index - 1 <= guild["index"]: guild["index"] += 1
+                if not silent: await context.response.send_message(await self.polished_message(guild["strings"]["queue_insert_song"],
+                                                                                               {"song": await self.polished_song_name(url, name),
+                                                                                                "index": index}))
+                await session.close()
         else: await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
     @app_commands.command(description="move_command_desc")
@@ -1556,23 +1593,27 @@ class Music(commands.Cog):
         return threads
 
     async def renew_attachment(self, guild_id, playlist_index, song_index, url, song_id=None):
-        if self.cursor is None:
-            for guild in self.data["guilds"]:
-                if guild["id"] == guild_id:
-                    try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
-                                                                                                                        "song_index": song_index}),
-                                                                                                        file=discord.File(BytesIO(requests.get(url).content),
-                                                                                                                          await self.get_file_name(url)))
-                    except: pass
-                    break
-        else:
-            await self.lock.acquire()
-            await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,))
-            working_thread_id = (await self.cursor.fetchone())[0]
-            self.lock.release()
-            try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}),
-                                                                                       file=discord.File(BytesIO(requests.get(url).content), await self.get_file_name(url)))
-            except: pass
+        async with aiohttp.ClientSession() as session:
+            response = await session.get(url)
+            if self.cursor is None:
+                for guild in self.data["guilds"]:
+                    if guild["id"] == guild_id:
+                        try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
+                                                                                                                            "song_index": song_index}),
+                                                                                                            file=discord.File(BytesIO(await response.content.read()),
+                                                                                                                              await self.get_file_name(url)))
+                        except: pass
+                        break
+            else:
+                await self.lock.acquire()
+                await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,))
+                working_thread_id = (await self.cursor.fetchone())[0]
+                self.lock.release()
+                try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}),
+                                                                                           file=discord.File(BytesIO(await response.content.read()),
+                                                                                                             await self.get_file_name(url)))
+                except: pass
+            await session.close()
 
     @commands.Cog.listener("on_message")
     async def renew_attachment_from_message(self, message: discord.Message):

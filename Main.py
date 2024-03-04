@@ -1,8 +1,8 @@
-import os
-import requests
-import yaml
 import asyncio
+import os
 import typing
+import aiohttp
+import yaml
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -83,21 +83,12 @@ class Main(commands.Cog):
         if add is not None and set is None:
             file_name = str(add)[str(add).rindex("/") + 1:str(add).index("?")]
             if file_name.endswith(".yaml"):
-                if not os.path.exists(f"{self.language_directory}/{file_name}"):
-                    response = requests.get(str(add))
-                    content = yaml.safe_load(response.content.decode("utf-8"))
-                    try:
-                        if content["strings"]: pass
-                    except:
-                        await context.response.send_message(strings["invalid_language_file"].replace("%{language_file}", file_name),
-                                                            file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
-                                                                              filename=current_language_file),
-                                                            ephemeral=True)
-                        self.lock.release()
-                        return
-                    for string in yaml.safe_load(open("LanguageStringNames.yaml", "r"))["names"]:
+                async with aiohttp.ClientSession() as session:
+                    if not os.path.exists(f"{self.language_directory}/{file_name}"):
+                        response = await session.get(str(add))
+                        content = yaml.safe_load(await response.text("utf-8"))
                         try:
-                            if content["strings"][string]: pass
+                            if content["strings"]: pass
                         except:
                             await context.response.send_message(strings["invalid_language_file"].replace("%{language_file}", file_name),
                                                                 file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
@@ -105,11 +96,22 @@ class Main(commands.Cog):
                                                                 ephemeral=True)
                             self.lock.release()
                             return
-                    open(f"{self.language_directory}/{file_name}", "wb").write(response.content)
-                else:
-                    await context.response.send_message(strings["language_file_exists"].replace("%{language_file}", file_name))
-                    self.lock.release()
-                    return
+                        for string in yaml.safe_load(open("LanguageStringNames.yaml", "r"))["names"]:
+                            try:
+                                if content["strings"][string]: pass
+                            except:
+                                await context.response.send_message(strings["invalid_language_file"].replace("%{language_file}", file_name),
+                                                                    file=discord.File(open(f"{self.language_directory}/{current_language_file}", "r"),
+                                                                                      filename=current_language_file),
+                                                                    ephemeral=True)
+                                self.lock.release()
+                                return
+                        open(f"{self.language_directory}/{file_name}", "w").write(await response.text("utf-8"))
+                    else:
+                        await context.response.send_message(strings["language_file_exists"].replace("%{language_file}", file_name))
+                        self.lock.release()
+                        return
+                    await session.close()
                 # ensure that the attached language file is fully transferred before the language is changed to it
                 while not os.path.exists(f"{self.language_directory}/{file_name}"): await asyncio.sleep(.1)
 
