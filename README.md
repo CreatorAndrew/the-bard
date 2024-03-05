@@ -2,7 +2,7 @@
 A music Discord bot that plays from file attachments and custom download URLs instead of YouTube links.
 
 ## Setup
-Make sure that FFmpeg and MediaInfo are installed and in the path.
+Make sure that FFmpeg and MediaInfo (not needed for Windows) are installed and in the path.
 
 ### For Arch-based Linux distributions:
 ```
@@ -31,17 +31,16 @@ port install ffmpeg mediainfo
 
 ### For Windows (Chocolatey):
 ```
-choco install ffmpeg mediainfo-cli
+choco install ffmpeg
 ```
 
 ### For Windows (Scoop):
 ```
-scoop install ffmpeg mediainfo
+scoop install ffmpeg
 ```
 
 ### For Windows (Manual):
-+ Download FFmpeg from https://ffmpeg.org/download.html#build-windows and add the `bin` subfolder to your `PATH` environment variable.
-+ Download MediaInfo (CLI version) from https://mediaarea.net/en/MediaInfo/Download/Windows and add the folder to your `PATH` environment variable.
++ Download FFmpeg from https://ffmpeg.org/download.html#build-windows and copy the contents of the `bin` folder into the project's directory.
 
 ---
 
