@@ -7,7 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from io import BytesIO
-from subprocess import check_output
+from pymediainfo import MediaInfo
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -28,15 +28,13 @@ class Music(commands.Cog):
         except: return file[file.rindex("/") + 1:]
 
     async def get_metadata(self, file):
-        for track in yaml.safe_load(check_output(["mediainfo", "--output=JSON", file]).decode("utf-8"))["media"]["track"]:
-            try: name = track["Title"]
+        for track in MediaInfo.parse(file).tracks:
+            try:
+                if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
             except:
-                try: name = track["Track"]
-                except:
-                    name = await self.get_file_name(file)
-                    try: name = name[:name.rindex(".")].replace("_", " ")
-                    except: name = name.replace("_", " ")
-            try: duration = float(track["Duration"])
+                try: name = track.to_data()["track_name"]
+                except: name = track.to_data()["file_name"].replace("_", " ")
+            try: duration = float(track.to_data()["duration"]) / 1000
             except: duration = .0
             return {"name": name, "duration": duration}
 
@@ -193,12 +191,12 @@ class Music(commands.Cog):
                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                 await context.followup.send(strings["invalid_command"], ephemeral=True)
                 return
-            try: metadata = await self.get_metadata(url)
+            response = requests.get(url, stream=True)
+            try: metadata = await self.get_metadata(BytesIO(response.content))
             except:
                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                 await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": url}), ephemeral=True)
                 return
-            response = requests.get(url, stream=True)
             # verify that the URL file is a media container
             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
@@ -947,21 +945,21 @@ class Music(commands.Cog):
         playlist = []
         urls = []
         for url in message_regarded.attachments:
-            try: song = await self.get_metadata(str(url))
+            response = requests.get(str(url), stream=True)
+            try: metadata = await self.get_metadata(BytesIO(response.content))
             except:
                 await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": str(url)}), ephemeral=True)
                 return
-            response = requests.get(str(url), stream=True)
             # verify that the URL file is a media container
             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
-                await context.followup.send(await self.polished_message(strings["invalid_song"], {"song": await self.polished_song_name(str(url), song["name"])}),
+                await context.followup.send(await self.polished_message(strings["invalid_song"], {"song": await self.polished_song_name(str(url), metadata["name"])}),
                                             ephemeral=True)
                 return
 
             urls.append(str(url))
-            playlist.append({"name": song["name"],
+            playlist.append({"name": metadata["name"],
                              "file": None,
-                             "duration": song["duration"],
+                             "duration": metadata["duration"],
                              "guild_id": message_regarded.guild.id,
                              "channel_id": message_regarded.channel.id,
                              "message_id": message_regarded.id,
@@ -1047,13 +1045,14 @@ class Music(commands.Cog):
                         # add the track to the queue
                         guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silent": False})
                 else:
-                    try: metadata = await self.get_metadata(url)
+                    response = requests.get(url, stream=True)
+                    try: metadata = await self.get_metadata(BytesIO(response.content))
                     except:
                         await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                         await context.followup.send(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}), ephemeral=True)
                         return
                     if name is None: name = metadata["name"]
-                    response = requests.get(url, stream=True)
+                    
                     # verify that the URL file is a media container
                     if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                         await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
@@ -1112,15 +1111,15 @@ class Music(commands.Cog):
         except: voice_channel = None
         if voice_channel is None: await context.response.send_message(await self.polished_message(guild["strings"]["not_in_voice"], {"user": context.user.mention}))
         elif 0 < index < len(guild["queue"]) + 2:
+            response = requests.get(url, stream=True)
             try:
                 if name is None or duration is None:
-                    metadata = await self.get_metadata(url)
+                    metadata = await self.get_metadata(BytesIO(response.content))
                     if name is None: name = metadata["name"]
                     if duration is None: duration = metadata["duration"]
             except:
                 await context.response.send_message(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}))
                 return
-            response = requests.get(url, stream=True)
             # verify that the URL file is a media container
             if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                 await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song"], {"song": await self.polished_song_name(url, name)}))
