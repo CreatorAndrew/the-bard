@@ -1,3 +1,4 @@
+import sys
 import os
 import asyncio
 import typing
@@ -450,4 +451,5 @@ async def main():
         await bot.load_extension("Music")
         await bot.start(variables["token"])
 
+if sys.platform == "win32": asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 asyncio.run(main())
