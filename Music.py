@@ -1578,7 +1578,7 @@ class Music(commands.Cog):
         try:
             if message.author.id == self.bot.user.id:
                 content = yaml.safe_load(message.content)
-                if str(content["message_id"]):
+                if str(content["song_id"]):
                     if self.cursor is None:
                         for guild in self.data["guilds"]:
                             if guild["id"] == message.guild.id:
