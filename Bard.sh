@@ -1,3 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 cd "${0%/*}"
-python Main.py
+source .venv/bin/activate
+pypy3 Main.py

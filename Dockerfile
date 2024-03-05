@@ -1,5 +1,9 @@
 FROM python:3.8-slim-bullseye
+SHELL ["/bin/bash", "-c"]
 RUN apt update
-RUN apt install -y ffmpeg mediainfo
-RUN pip install discord.py[voice] PyYAML requests
-CMD ["/bin/sh", "/Bard/Bard.sh"]
+RUN apt install -y build-essential ffmpeg libpq5 mediainfo postgresql
+COPY requirements.txt /tmp
+RUN python -m venv /Bard/.venv
+RUN source /Bard/.venv/bin/activate
+RUN python -m pip install -r /tmp/requirements.txt
+CMD ["/bin/bash", "/Bard/Bard.sh"]
