@@ -1,12 +1,12 @@
+import asyncio
+import random
+import typing
+from io import BytesIO
 import requests
 import yaml
-import asyncio
-import typing
-import random
 import discord
 from discord import app_commands
 from discord.ext import commands
-from io import BytesIO
 from pymediainfo import MediaInfo
 
 class Music(commands.Cog):

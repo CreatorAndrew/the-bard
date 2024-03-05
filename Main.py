@@ -1,8 +1,8 @@
 import os
-import requests
-import yaml
 import asyncio
 import typing
+import requests
+import yaml
 import discord
 from discord import app_commands
 from discord.ext import commands
