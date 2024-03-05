@@ -329,7 +329,7 @@ class Music(commands.Cog):
                                                                                          "index": song["index"]}))
                                 if file is not None:
                                     self.lock.release()
-                                    await self.renew_attachment(guild["id"], select - 1, song["index"] - 1, url)
+                                    await self.renew_attachment(guild["id"], context.channel.id, select - 1, song["index"] - 1, url)
                                     return
                             # change the position of a track within the playlist
                             elif action == "move":
@@ -667,7 +667,7 @@ class Music(commands.Cog):
                             await self.cursor.execute("select max(song_id) from songs")
                             song_id = (await self.cursor.fetchone())[0]
                             self.lock.release()
-                            await self.renew_attachment(context.guild.id, select - 1, new_index - 1, url, song_id)
+                            await self.renew_attachment(context.guild.id, context.channel.id, select - 1, new_index - 1, url, song_id)
                             return
                     # change the position of a track within the playlist
                     elif action == "move":
@@ -1554,24 +1554,25 @@ class Music(commands.Cog):
             if (current == "" or current.lower() in thread.name.lower()) and len(threads) < 25: threads.append(app_commands.Choice(name=thread.name, value=thread.name))
         return threads
 
-    async def renew_attachment(self, guild_id, playlist_index, song_index, url, song_id=None):
+    async def renew_attachment(self, guild_id, channel_id, playlist_index, song_index, url, song_id=None):
         if self.cursor is None:
             for guild in self.data["guilds"]:
                 if guild["id"] == guild_id:
-                    try: await self.bot.get_guild(guild_id).get_thread(guild["working_thread_id"]).send(yaml.safe_dump({"playlist_index": playlist_index,
-                                                                                                                        "song_index": song_index}),
-                                                                                                        file=discord.File(BytesIO(requests.get(url).content),
-                                                                                                                          await self.get_file_name(url)))
-                    except: pass
+                    try: working_thread_id = guild["working_thread_id"]
+                    except: working_thread_id = channel_id
+                    await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"playlist_index": playlist_index,
+                                                                                                          "song_index": song_index}),
+                                                                                          file=discord.File(BytesIO(requests.get(url).content),
+                                                                                                            await self.get_file_name(url)))
                     break
         else:
             await self.lock.acquire()
             await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (guild_id,))
-            working_thread_id = (await self.cursor.fetchone())[0]
+            try: working_thread_id = (await self.cursor.fetchone())[0]
+            except: working_thread_id = channel_id
             self.lock.release()
-            try: await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}),
-                                                                                       file=discord.File(BytesIO(requests.get(url).content), await self.get_file_name(url)))
-            except: pass
+            await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_id": song_id}),
+                                                                                  file=discord.File(BytesIO(requests.get(url).content), await self.get_file_name(url)))
 
     @commands.Cog.listener("on_message")
     async def renew_attachment_from_message(self, message: discord.Message):
@@ -1582,15 +1583,14 @@ class Music(commands.Cog):
                     if self.cursor is None:
                         for guild in self.data["guilds"]:
                             if guild["id"] == message.guild.id:
-                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["channel_id"] = guild["working_thread_id"]
+                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["channel_id"] = message.channel.id
                                 guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["message_id"] = message.id
                                 break
                         yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
                     else:
                         await self.lock.acquire()
                         await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (message.guild.id,))
-                        working_thread_id = (await self.cursor.fetchone())[0]
-                        await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (working_thread_id, content["song_id"]))
+                        await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (message.channel.id, content["song_id"]))
                         await self.cursor.execute("update songs set message_id = ? where song_id = ?", (message.id, content["song_id"]))
                         await self.connection.commit()
                         self.lock.release()
