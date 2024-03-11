@@ -925,7 +925,7 @@ class Music(commands.Cog):
             for playlist in playlists:
                 playlist_options.append(discord.SelectOption(label=await self.polished_message(strings["playlist"],
                                                                                                {"playlist": playlist[0], "playlist_index": index}),
-                                                                value=str(index)))
+                                                             value=str(index)))
                 index += 1
         playlist_menu = discord.ui.Select(placeholder=strings["playlist_select_menu_placeholder"], options=playlist_options)
         chosen = []
@@ -1128,7 +1128,7 @@ class Music(commands.Cog):
             guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
             if index - 1 <= guild["index"]: guild["index"] += 1
             if not silent: await context.response.send_message(await self.polished_message(guild["strings"]["queue_insert_song"],
-                                                                                            {"song": await self.polished_song_name(url, name), "index": index}))
+                                                                                           {"song": await self.polished_song_name(url, name), "index": index}))
         else: await context.response.send_message(await self.polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
     @app_commands.command(description="move_command_desc")
