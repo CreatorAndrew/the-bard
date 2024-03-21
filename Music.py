@@ -33,7 +33,10 @@ class Music(commands.Cog):
                 if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
             except:
                 try: name = track.to_data()["track_name"]
-                except: name = (await self.get_file_name(url)).replace("_", " ")
+                except:
+                    name = (await self.get_file_name(url)).replace("_", " ")
+                    try: name = name[:name.rindex(".")]
+                    except: pass
             try: duration = float(track.to_data()["duration"]) / 1000
             except: duration = .0
             return {"name": name, "duration": duration}
