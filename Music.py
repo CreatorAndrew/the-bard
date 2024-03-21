@@ -27,13 +27,13 @@ class Music(commands.Cog):
         try: return file[file.rindex("/") + 1:file.rindex("?")]
         except: return file[file.rindex("/") + 1:]
 
-    async def get_metadata(self, file):
+    async def get_metadata(self, file, url):
         for track in MediaInfo.parse(file).tracks:
             try:
                 if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
             except:
                 try: name = track.to_data()["track_name"]
-                except: name = track.to_data()["file_name"].replace("_", " ")
+                except: name = (await self.get_file_name(url)).replace("_", " ")
             try: duration = float(track.to_data()["duration"]) / 1000
             except: duration = .0
             return {"name": name, "duration": duration}
@@ -192,7 +192,7 @@ class Music(commands.Cog):
                 await context.followup.send(strings["invalid_command"], ephemeral=True)
                 return
             response = requests.get(url, stream=True)
-            try: metadata = await self.get_metadata(BytesIO(response.content))
+            try: metadata = await self.get_metadata(BytesIO(response.content), url)
             except:
                 await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                 await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": url}), ephemeral=True)
@@ -926,7 +926,7 @@ class Music(commands.Cog):
         urls = []
         for url in message_regarded.attachments:
             response = requests.get(str(url), stream=True)
-            try: metadata = await self.get_metadata(BytesIO(response.content))
+            try: metadata = await self.get_metadata(BytesIO(response.content), str(url))
             except:
                 await context.followup.send(await self.polished_message(strings["invalid_url"], {"url": str(url)}), ephemeral=True)
                 return
@@ -1026,7 +1026,7 @@ class Music(commands.Cog):
                         guild["queue"].append({"file": song["file"], "name": song["name"], "time": "0", "duration": song["duration"], "silent": False})
                 else:
                     response = requests.get(url, stream=True)
-                    try: metadata = await self.get_metadata(BytesIO(response.content))
+                    try: metadata = await self.get_metadata(BytesIO(response.content), url)
                     except:
                         await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
                         await context.followup.send(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}), ephemeral=True)
@@ -1094,7 +1094,7 @@ class Music(commands.Cog):
             response = requests.get(url, stream=True)
             try:
                 if name is None or duration is None:
-                    metadata = await self.get_metadata(BytesIO(response.content))
+                    metadata = await self.get_metadata(BytesIO(response.content), url)
                     if name is None: name = metadata["name"]
                     if duration is None: duration = metadata["duration"]
             except:
