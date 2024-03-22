@@ -16,7 +16,7 @@ class Music(commands.Cog):
         self.cursor = bot.cursor
         self.data = bot.data
         self.flat_file = bot.flat_file
-        self.guilds = bot.guilds_list
+        self.guilds = bot.guilds_
         self.language_directory = bot.language_directory
         self.lock = bot.lock
         self.messages = {}

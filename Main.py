@@ -40,7 +40,7 @@ class Main(commands.Cog):
         self.flat_file = bot.flat_file
         self.language_directory = bot.language_directory
         self.lock = bot.lock
-        self.guilds = bot.guilds_list
+        self.guilds = bot.guilds_
         self.default_language = "american_english"
         self.init_guilds(bot.init_guilds)
         self.set_language_options()
@@ -351,9 +351,7 @@ bot.remove_command("help")
 
 variables = yaml.safe_load(open("Variables.yaml", "r"))
 
-guilds = {}
 language_directory = "Languages"
-lock = asyncio.Lock()
 
 @bot.event
 async def on_ready(): print(f"Logged in as {bot.user}")
@@ -443,10 +441,10 @@ async def main():
         bot.cursor = cursor
         bot.data = data
         bot.flat_file = flat_file
-        bot.guilds_list = guilds
+        bot.guilds_ = {}
         bot.init_guilds = init_guilds
         bot.language_directory = language_directory
-        bot.lock = lock
+        bot.lock = asyncio.Lock()
         await bot.add_cog(Main(bot))
         await bot.load_extension("Music")
         await bot.start(variables["token"])
