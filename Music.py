@@ -28,6 +28,7 @@ class Music(commands.Cog):
         except: return file[file.rindex("/") + 1:]
 
     async def get_metadata(self, file, url):
+        duration = .0
         for track in MediaInfo.parse(file).tracks:
             try:
                 if track.to_data()["track_type"] == "General": name = track.to_data()["title"]
@@ -39,7 +40,7 @@ class Music(commands.Cog):
                     except: pass
             try: duration = float(track.to_data()["duration"]) / 1000
             except: duration = .0
-            return {"name": name, "duration": duration}
+        return {"name": name, "duration": duration}
 
     async def polished_song_name(self, file, name): return f"[{name}](<{file}>)"
 
