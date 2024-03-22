@@ -39,7 +39,7 @@ class Music(commands.Cog):
                     try: name = name[:name.rindex(".")]
                     except: pass
             try: duration = float(track.to_data()["duration"]) / 1000
-            except: duration = .0
+            except: pass
         return {"name": name, "duration": duration}
 
     async def polished_song_name(self, file, name): return f"[{name}](<{file}>)"
