@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import random
 import typing
 from io import BytesIO
@@ -295,11 +296,14 @@ class Music(commands.Cog):
                             songs = []
                             for song in guild["playlists"][load - 1]["songs"]:
                                 if song["file"] is None:
-                                    try: song_message = self.messages[str(song["message_id"])]
+                                    try:
+                                        song_message = self.messages[str(song["message_id"])]
+                                        if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                                     except:
-                                        song_message = await get_song_message(song)
+                                        song_message = {"message": get_song_message(song),
+                                                        "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                         self.messages[str(song["message_id"])] = song_message
-                                    song_file = str(song_message.attachments[song["attachment_index"]])
+                                    song_file = str(song_message["message"].attachments[song["attachment_index"]])
                                 else: song_file = song["file"]
                                 songs.append({"name": song["name"], "file": song_file, "duration": song["duration"]})
                             await context.followup.send(await self.polished_message(strings["load_playlist"],
@@ -400,11 +404,14 @@ class Music(commands.Cog):
                                 for song in guild["playlists"][select - 1]["songs"]:
                                     previous_message = message
                                     if song["file"] is None:
-                                        try: song_message = self.messages[str(song["message_id"])]
+                                        try:
+                                            song_message = self.messages[str(song["message_id"])]
+                                            if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                                         except:
-                                            song_message = await get_song_message(song)
+                                            song_message = {"message": get_song_message(song),
+                                                            "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                             self.messages[str(song["message_id"])] = song_message
-                                        song_file = str(song_message.attachments[song["attachment_index"]])
+                                        song_file = str(song_message["message"].attachments[song["attachment_index"]])
                                     else: song_file = song["file"]
                                     new_message = await self.polished_message(strings["song"] + "\n", {"song": await self.polished_song_name(song_file, song["name"]),
                                                                                                        "index": index + 1})
@@ -603,11 +610,14 @@ class Music(commands.Cog):
                     proper_songs = []
                     for song in songs:
                         if song[6] is None:
-                            try: song_message = self.messages[str(song[4])]
+                            try:
+                                song_message = self.messages[str(song[4])]
+                                if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                             except:
-                                song_message = await self.bot.get_guild(song[2]).get_channel_or_thread(song[3]).fetch_message(song[4])
+                                song_message = {"message": await self.bot.get_guild(song[2]).get_channel_or_thread(song[3]).fetch_message(song[4]),
+                                                "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                 self.messages[str(song[4])] = song_message
-                            song_file = str(song_message.attachments[song[5]])
+                            song_file = str(song_message["message"].attachments[song[5]])
                         else: song_file = song[6]
                         proper_songs.append({"name": song[1], "duration": song[0], "file": song_file})
                     await self.lock.acquire()
@@ -742,11 +752,14 @@ class Music(commands.Cog):
                         for song in songs:
                             previous_message = message
                             if song[6] is None:
-                                try: song_message = self.messages[str(song[4])]
+                                try:
+                                    song_message = self.messages[str(song[4])]
+                                    if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                                 except:
-                                    song_message = await self.bot.get_guild(song[2]).get_channel_or_thread(song[3]).fetch_message(song[4])
+                                    song_message = {"message": await self.bot.get_guild(song[2]).get_channel_or_thread(song[3]).fetch_message(song[4]),
+                                                    "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                     self.messages[str(song[4])] = song_message
-                                song_file = str(song_message.attachments[song[5]])
+                                song_file = str(song_message["message"].attachments[song[5]])
                             else: song_file = song[6]
                             new_message = await self.polished_message(strings["song"] + "\n",
                                                                       {"song": await self.polished_song_name(song_file, song[1]), "index": index + 1})
