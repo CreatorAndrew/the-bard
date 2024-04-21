@@ -1,4 +1,4 @@
-# The-Bard
+# The Bard
 <p align="center"><img src="https://github.com/CreatorAndrew/The-Bard/blob/main/Bard.png" width="200"/></p>
 A music Discord bot that plays from file attachments and custom download URLs instead of YouTube links.
 
