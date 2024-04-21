@@ -59,5 +59,3 @@ Make sure to add the bot token and ID of the host user to `Variables.yaml`. The 
 
 Also make sure to type `+sync_guilds` and `+sync_users` after launching so that any guilds that added or removed this bot
 and/or any users that joined or left any guilds with this bot during downtime can be properly added to or removed from storage.
-
-<iframe width="1280" height="720" src="https://www.youtube.com/embed/5fFW8cCbjbc" title="The Bard Commands Demo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
