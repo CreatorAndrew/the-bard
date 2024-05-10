@@ -727,7 +727,7 @@ class Music(commands.Cog):
                         if song_file is None:
                             song_file = str((await self.bot.get_guild(guild_id).get_channel_or_thread(channel_id).fetch_message(message_id))
                                             .attachments[attachment_index])
-                        await self.cursor.execute("delete from pl_songs where song_id = ?", (song_id,))
+                        await self.cursor.execute("delete from pl_songs where pl_song_id = ? and pl_id = ?", (song_index - 1, global_playlist_id))
                         await self.cursor.execute("delete from songs where song_id not in (select song_id from pl_songs)")
                         await self.cursor.execute("update pl_songs set pl_song_id = pl_song_id - 1 where pl_song_id >= ? and pl_id = ?",
                                                   (song_index - 1, global_playlist_id))
