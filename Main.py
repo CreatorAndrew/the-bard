@@ -368,7 +368,7 @@ async def main():
         if variables["storage"] == "yaml":
             connection = None
             cursor = None
-            flat_file = "Guilds.yaml"
+            flat_file = "Bard.yaml"
             if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
             data = yaml.safe_load(open(flat_file, "r"))
         else:
@@ -392,7 +392,7 @@ async def main():
                 cursor = CursorHandler(connection.cursor(), connection.cursor(), "bigint", "%s")
             elif variables["storage"] == "sqlite":
                 import aiosqlite
-                database = "Guilds.db"
+                database = "Bard.db"
                 database_exists = os.path.exists(database)
                 connection = await aiosqlite.connect(database)
                 cursor = CursorHandler(connection, None, "integer", "?")
