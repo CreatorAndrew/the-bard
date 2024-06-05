@@ -354,7 +354,15 @@ variables = yaml.safe_load(open("Variables.yaml", "r"))
 language_directory = "Languages"
 
 @bot.event
-async def on_ready(): print(f"Logged in as {bot.user}")
+async def on_ready():
+    if variables["lavalink_credentials"]["host"] is None: variables["lavalink_credentials"]["host"] = "127.0.0.1"
+    if variables["lavalink_credentials"]["port"] is None: variables["lavalink_credentials"]["port"] = 2333
+    if bot.use_lavalink:
+        import wavelink
+        await wavelink.Pool.connect(nodes=[wavelink.Node(uri=f"http://{variables['lavalink_credentials']['host']}:{variables['lavalink_credentials']['port']}",
+                                                         password=variables["lavalink_credentials"]["password"])],
+                                    client=bot)
+    print(f"Logged in as {bot.user}")
 
 @bot.command()
 async def sync_commands(context):
@@ -445,6 +453,7 @@ async def main():
         bot.init_guilds = init_guilds
         bot.language_directory = language_directory
         bot.lock = asyncio.Lock()
+        bot.use_lavalink = variables["audio_backend"] == "lavalink"
         await bot.add_cog(Main(bot))
         await bot.load_extension("Music")
         await bot.start(variables["token"])

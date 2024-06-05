@@ -9,6 +9,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from pymediainfo import MediaInfo
+if yaml.safe_load(open("Variables.yaml", "r"))["audio_backend"] == "lavalink":
+    import wavelink
 
 class Music(commands.Cog):
     def __init__(self, bot):
@@ -22,6 +24,7 @@ class Music(commands.Cog):
         self.lock = bot.lock
         self.messages = {}
         self.playlist_add_files_context_menu = app_commands.ContextMenu(name="playlist_add_files_context_menu", callback=self.playlist_add_files)
+        self.use_lavalink = bot.use_lavalink
         bot.tree.add_command(self.playlist_add_files_context_menu)
 
     async def get_file_name(self, file):
@@ -1062,10 +1065,10 @@ class Music(commands.Cog):
                     guild["queue"].append({"file": url, "name": name, "time": "0", "duration": metadata["duration"], "silent": False})
                 if guild["connected"]: voice = context.guild.voice_client
                 else:
-                    voice = await voice_channel.connect()
+                    voice = (await voice_channel.connect(cls=wavelink.Player)) if self.use_lavalink else await voice_channel.connect()
                     guild["connected"] = True
                     await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
-                if not voice.is_playing():
+                if not (voice.playing if self.use_lavalink else voice.is_playing()):
                     while guild["index"] < len(guild["queue"]):
                         if guild["connected"]:
                             if guild["queue"][guild["index"]]["silent"]: guild["queue"][guild["index"]]["silent"] = False
@@ -1075,20 +1078,19 @@ class Music(commands.Cog):
                                                                                                                               guild["queue"][guild["index"]]["name"]),
                                                                                         "index": guild["index"] + 1,
                                                                                         "max": len(guild["queue"])}))
-                                guild["time"] = .0
                         # play the track
-                        if not voice.is_playing():
-                            source = discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
-                                                            before_options=f"-re -ss {guild['queue'][guild['index']]['time']}")
-                            source.read()
-                            voice.play(source)
-                            guild["queue"][guild["index"]]["time"] = "0"
-                            voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
-                            voice.source.volume = guild["volume"]
+                        if self.use_lavalink and not voice.playing:
+                            await voice.play((await wavelink.Playable.search(guild["queue"][guild["index"]]["file"]))[0], volume=int(guild["volume"] * 100))
+                        elif not voice.is_playing():
+                                voice.play(discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
+                                                                  before_options=f"-re -ss {guild['queue'][guild['index']]['time']}"))
+                                guild["queue"][guild["index"]]["time"] = "0"
+                                voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
+                                voice.source.volume = guild["volume"]
                         # ensure that the track plays completely or is skipped by command before proceeding
-                        while voice.is_playing() or voice.is_paused():
+                        while (voice.playing or voice.paused) if self.use_lavalink else (voice.is_playing() or voice.is_paused()):
                             await asyncio.sleep(.1)
-                            if voice.is_playing(): await add_time(guild, .1)
+                            if not self.use_lavalink and voice.is_playing(): await add_time(guild, .1)
 
                         guild["index"] += 1
                         if guild["index"] == len(guild["queue"]):
@@ -1212,8 +1214,10 @@ class Music(commands.Cog):
                                                                              "index": guild["index"] + 2,
                                                                              "max": len(guild["queue"])}))
             guild["queue"][guild["index"] + 1]["silent"] = True
-            guild["time"] = .0
-            context.guild.voice_client.stop()
+            if self.use_lavalink: await context.guild.voice_client.skip(force=True)
+            else:
+                guild["time"] = .0
+                context.guild.voice_client.stop()
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
     @app_commands.command(description="previous_command_desc")
@@ -1230,8 +1234,10 @@ class Music(commands.Cog):
                                                                              "index": guild["index"] + 2,
                                                                              "max": len(guild["queue"])}))
             guild["queue"][guild["index"] + 1]["silent"] = True
-            guild["time"] = .0
-            context.guild.voice_client.stop()
+            if self.use_lavalink: await context.guild.voice_client.skip(force=True)
+            else:
+                guild["time"] = .0
+                context.guild.voice_client.stop()
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
     @app_commands.command(description="stop_command_desc")
@@ -1245,9 +1251,10 @@ class Music(commands.Cog):
         guild = self.guilds[str(id)]
         guild["queue"] = []
         try:
-            if context.guild.voice_client.is_playing():
+            if context.guild.voice_client.playing if self.use_lavalink else context.guild.voice_client.is_playing():
                 guild["index"] = -1
-                context.guild.voice_client.stop()
+                if self.use_lavalink: await context.guild.voice_client.skip(force=True)
+                else: context.guild.voice_client.stop()
             else: guild["index"] = 0
             if leave or not guild["keep"]:
                 guild["connected"] = False
@@ -1261,12 +1268,13 @@ class Music(commands.Cog):
     async def pause_command(self, context: discord.Interaction):
         guild = self.guilds[str(context.guild.id)]
         if guild["queue"]:
-            if context.guild.voice_client.is_paused():
-                context.guild.voice_client.resume()
-                now_or_no_longer = guild["strings"]["no_longer"]
+            if self.use_lavalink: await context.guild.voice_client.pause(not context.guild.voice_client.paused)
             else:
-                context.guild.voice_client.pause()
-                now_or_no_longer = guild["strings"]["now"]
+                if context.guild.voice_client.is_paused(): context.guild.voice_client.resume()
+                else: context.guild.voice_client.pause()
+            now_or_no_longer = (guild["strings"]["now"]
+                                if (context.guild.voice_client.paused if self.use_lavalink else context.guild.voice_client.is_paused())
+                                else guild["strings"]["no_longer"])
             await context.response.send_message(await self.polished_message(guild["strings"]["pause"], {"now_or_no_longer": now_or_no_longer}))
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
@@ -1283,31 +1291,36 @@ class Music(commands.Cog):
                                                                                                                    guild["queue"][guild["index"]]["name"]),
                                                                              "index": guild["index"] + 1,
                                                                              "max": len(guild["queue"])}))
-            guild["time"] = seconds
-            await self.insert_song(context,
-                                   guild["queue"][guild["index"]]["file"],
-                                   guild["queue"][guild["index"]]["name"],
-                                   guild["index"] + 2,
-                                   seconds,
-                                   guild["queue"][guild["index"]]["duration"],
-                                   True)
-            await self.remove_song(context, guild["index"] + 1, True)
+            if self.use_lavalink: await context.guild.voice_client.seek(int(seconds * 1000))
+            else:
+                guild["time"] = seconds
+                await self.insert_song(context,
+                                       guild["queue"][guild["index"]]["file"],
+                                       guild["queue"][guild["index"]]["name"],
+                                       guild["index"] + 2,
+                                       seconds,
+                                       guild["queue"][guild["index"]]["duration"],
+                                       True)
+                await self.remove_song(context, guild["index"] + 1, True)
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
     @app_commands.command(description="forward_command_desc")
     async def forward_command(self, context: discord.Interaction, time: str):
-        await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) + await self.convert_to_seconds(time)))
+        if self.use_lavalink: await self.jump_to(context, str(context.guild.voice_client.position / 1000 + await self.convert_to_seconds(time)))
+        else: await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) + await self.convert_to_seconds(time)))
 
     @app_commands.command(description="rewind_command_desc")
     async def rewind_command(self, context: discord.Interaction, time: str):
-        await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) - await self.convert_to_seconds(time)))
+        if self.use_lavalink: await self.jump_to(context, str(context.guild.voice_client.position / 1000 - await self.convert_to_seconds(time)))
+        else: await self.jump_to(context, str(float(self.guilds[str(context.guild.id)]["time"]) - await self.convert_to_seconds(time)))
 
     @app_commands.command(description="when_command_desc")
     async def when_command(self, context: discord.Interaction):
         guild = self.guilds[str(context.guild.id)]
-        if guild["queue"]: await context.response.send_message("".join([await self.convert_to_time(guild["time"]),
-                                                                        " / ",
-                                                                        await self.convert_to_time(guild["queue"][guild["index"]]["duration"])]),
+        if guild["queue"]: await context.response.send_message(" / ".join([await self.convert_to_time((context.guild.voice_client.position / 1000)
+                                                                                                      if self.use_lavalink
+                                                                                                      else guild["time"]),
+                                                                           await self.convert_to_time(guild["queue"][guild["index"]]["duration"])]),
                                                                ephemeral=True)
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
@@ -1355,7 +1368,8 @@ class Music(commands.Cog):
             await context.response.send_message(guild["strings"]["shuffle"])
             if bool(restart):
                 guild["index"] = -1
-                context.guild.voice_client.stop()
+                if self.use_lavalink: await context.guild.voice_client.skip(force=True)
+                else: context.guild.voice_client.stop()
         else: await context.response.send_message(guild["strings"]["queue_no_songs"], ephemeral=True)
 
     @app_commands.command(description="queue_command_desc")
@@ -1399,12 +1413,14 @@ class Music(commands.Cog):
         if set is not None:
             if set.endswith("%"): guild["volume"] = float(set.replace("%", "")) / 100
             else: guild["volume"] = float(set)
-            if context.guild.voice_client is not None and context.guild.voice_client.is_playing(): context.guild.voice_client.source.volume = guild["volume"]
-        volume_percent = guild["volume"] * 100
-        if volume_percent == float(int(volume_percent)): volume_percent = int(volume_percent)
-        if set is None: await context.response.send_message(await self.polished_message(guild["strings"]["volume"], {"volume": str(volume_percent) + "%"}),
+            if context.guild.voice_client is not None and (context.guild.voice_client.playing if self.use_lavalink else context.guild.voice_client.is_playing()):
+                if self.use_lavalink: await context.guild.voice_client.set_volume(int(guild["volume"] * 100))
+                else: context.guild.voice_client.source.volume = guild["volume"]
+        volume = guild["volume"] * 100
+        if volume == float(int(volume)): volume = int(volume)
+        if set is None: await context.response.send_message(await self.polished_message(guild["strings"]["volume"], {"volume": str(volume) + "%"}),
                                                             ephemeral=True)
-        else: await context.response.send_message(await self.polished_message(guild["strings"]["volume_change"], {"volume": str(volume_percent) + "%"}))
+        else: await context.response.send_message(await self.polished_message(guild["strings"]["volume_change"], {"volume": str(volume) + "%"}))
 
     @app_commands.command(description="keep_command_desc")
     async def keep_command(self, context: discord.Interaction, set: typing.Literal[0, 1]=None):
@@ -1457,7 +1473,7 @@ class Music(commands.Cog):
                                                                             {"bot": self.bot.user.mention,
                                                                              "voice": voice_channel.jump_url,
                                                                              "now_or_no_longer": guild["strings"]["now"]}))
-            await voice_channel.connect()
+            (await voice_channel.connect(cls=wavelink.Player)) if self.use_lavalink else await voice_channel.connect()
             guild["connected"] = True
             await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
 
@@ -1481,7 +1497,7 @@ class Music(commands.Cog):
     async def on_voice_state_update(self, member, before, after):
         try:
             # ensure that this bot disconnects from any empty voice channel it is in
-            if member.guild.voice_client.is_connected():
+            if member.guild.voice_client.connected if self.use_lavalink else member.guild.voice_client.is_connected():
                 for voice_channel in member.guild.voice_channels:
                     if voice_channel.voice_states and list(voice_channel.voice_states)[0] == self.bot.user.id and len(list(voice_channel.voice_states)) == 1:
                         await self.stop_music(member, True, member.guild)

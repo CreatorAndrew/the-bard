@@ -11,3 +11,10 @@ postgresql_credentials:
     password:
     host: # Optional
     port: # Optional
+# Set the audio backend for playing audio a (possible values: ffmpeg, lavalink).
+audio_backend: ffmpeg
+# Set the credentials for Lavalink (used for playing audio).
+lavalink_credentials:
+    password:
+    host: # Optional
+    port: # Optional
