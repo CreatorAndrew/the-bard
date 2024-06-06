@@ -303,7 +303,7 @@ class Music(commands.Cog):
                                         song_message = self.messages[str(song["message_id"])]
                                         if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                                     except:
-                                        song_message = {"message": get_song_message(song),
+                                        song_message = {"message": await get_song_message(song),
                                                         "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                         self.messages[str(song["message_id"])] = song_message
                                     song_file = str(song_message["message"].attachments[song["attachment_index"]])
@@ -328,7 +328,7 @@ class Music(commands.Cog):
                                     return
                                 song = {"name": new_name, "index": new_index, "duration": metadata["duration"]}
                                 guild["playlists"][select - 1]["songs"].insert(song["index"] - 1, {"name": song["name"],
-                                                                                                   "file": url if file is None else None,
+                                                                                                   "file": url,
                                                                                                    "duration": song["duration"],
                                                                                                    "guild_id": context.guild.id,
                                                                                                    "channel_id": 0,
@@ -341,7 +341,7 @@ class Music(commands.Cog):
                                                                                          "index": song["index"]}))
                                 if file is not None:
                                     self.lock.release()
-                                    await self.renew_attachment(guild["id"], context.channel.id, select - 1, song["index"] - 1, url)
+                                    await self.renew_attachment(guild["id"], context.channel.id, url)
                                     return
                             # change the position of a track within the playlist
                             elif action == "move":
@@ -411,7 +411,7 @@ class Music(commands.Cog):
                                             song_message = self.messages[str(song["message_id"])]
                                             if int(datetime.timestamp(datetime.now())) > song_message["expiration"]: raise Exception
                                         except:
-                                            song_message = {"message": get_song_message(song),
+                                            song_message = {"message": await get_song_message(song),
                                                             "expiration": int(datetime.timestamp(datetime.now())) + 1209600}
                                             self.messages[str(song["message_id"])] = song_message
                                         song_file = str(song_message["message"].attachments[song["attachment_index"]])
@@ -678,7 +678,7 @@ class Music(commands.Cog):
                             await self.cursor.execute("select max(song_id) from songs")
                             song_id = (await self.cursor.fetchone())[0]
                             self.lock.release()
-                            await self.renew_attachment(context.guild.id, context.channel.id, select - 1, new_index - 1, url, song_id)
+                            await self.renew_attachment(context.guild.id, context.channel.id, url, song_id)
                             return
                     # change the position of a track within the playlist
                     elif action == "move":
@@ -1570,13 +1570,13 @@ class Music(commands.Cog):
             if (current == "" or current.lower() in thread.name.lower()) and len(threads) < 25: threads.append(app_commands.Choice(name=thread.name, value=thread.name))
         return threads
 
-    async def renew_attachment(self, guild_id, channel_id, playlist_index, song_index, url, song_id=None):
+    async def renew_attachment(self, guild_id, channel_id, url, song_id=None):
         if self.cursor is None:
             for guild in self.data["guilds"]:
                 if guild["id"] == guild_id:
                     try: working_thread_id = guild["working_thread_id"]
                     except: working_thread_id = channel_id
-                    await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"playlist_index": playlist_index, "song_index": song_index}),
+                    await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(yaml.safe_dump({"song_url": url}),
                                                                                           file=discord.File(BytesIO(requests.get(url).content),
                                                                                                             await self.get_file_name(url)))
                     break
@@ -1591,24 +1591,24 @@ class Music(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def renew_attachment_from_message(self, message: discord.Message):
-        try:
-            if message.author.id == self.bot.user.id:
+        await self.lock.acquire()
+        if message.author.id == self.bot.user.id:
+            try:
                 content = yaml.safe_load(message.content)
-                if str(content["song_id"]):
-                    if self.cursor is None:
-                        for guild in self.data["guilds"]:
-                            if guild["id"] == message.guild.id:
-                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["channel_id"] = message.channel.id
-                                guild["playlists"][content["playlist_index"]]["songs"][content["song_index"]]["message_id"] = message.id
-                                break
-                        yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
-                    else:
-                        await self.lock.acquire()
-                        await self.cursor.execute("select working_thread_id from guilds where guild_id = ?", (message.guild.id,))
-                        await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (message.channel.id, content["song_id"]))
-                        await self.cursor.execute("update songs set message_id = ? where song_id = ?", (message.id, content["song_id"]))
-                        await self.connection.commit()
-                        self.lock.release()
-        except: pass
+                if self.cursor is None and str(content["song_url"]):
+                    for guild in self.data["guilds"]:
+                        for playlist in guild["playlists"]:
+                            for song in playlist["songs"]:
+                                if song["file"] == content["song_url"]:
+                                    song["channel_id"] = message.channel.id
+                                    song["message_id"] = message.id
+                                    song["file"] = None
+                    yaml.safe_dump(self.data, open(self.flat_file, "w"), indent=4)
+                elif str(content["song_id"]):
+                    await self.cursor.execute("update songs set channel_id = ? where song_id = ?", (message.channel.id, content["song_id"]))
+                    await self.cursor.execute("update songs set message_id = ? where song_id = ?", (message.id, content["song_id"]))
+                    await self.connection.commit()
+            except: pass
+        self.lock.release()
 
 async def setup(bot): await bot.add_cog(Music(bot))
