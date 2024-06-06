@@ -1,4 +1,4 @@
-FROM python:3.8-slim-bullseye
+FROM python:3.11-slim-bullseye
 SHELL ["/bin/bash", "-c"]
 RUN apt update
 RUN apt install -y build-essential ffmpeg libpq5 mediainfo postgresql
