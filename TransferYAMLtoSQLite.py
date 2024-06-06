@@ -2,9 +2,9 @@ import os
 import sqlite3
 import yaml
 
-data = yaml.safe_load(open("Guilds.yaml", "r"))
+data = yaml.safe_load(open("Bard.yaml", "r"))
 
-database = "Guilds.db"
+database = "Bard.db"
 database_exists = os.path.exists(database)
 connection = sqlite3.connect(database)
 cursor = connection.cursor()

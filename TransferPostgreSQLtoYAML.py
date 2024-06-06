@@ -10,7 +10,7 @@ credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
                   {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
                   {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}"""
 
-flat_file = "Guilds.yaml"
+flat_file = "Bard.yaml"
 if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
 data = yaml.safe_load(open(flat_file, "r"))
 

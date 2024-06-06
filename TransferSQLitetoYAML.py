@@ -2,11 +2,11 @@ import os
 import sqlite3
 import yaml
 
-flat_file = "Guilds.yaml"
+flat_file = "Bard.yaml"
 if not os.path.exists(flat_file): yaml.safe_dump({"guilds": []}, open(flat_file, "w"), indent=4)
 data = yaml.safe_load(open(flat_file, "r"))
 
-connection = sqlite3.connect("Guilds.db")
+connection = sqlite3.connect("Bard.db")
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds")

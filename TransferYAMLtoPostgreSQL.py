@@ -10,7 +10,7 @@ credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
                   {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
                   {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}"""
 
-data = yaml.safe_load(open("Guilds.yaml", "r"))
+data = yaml.safe_load(open("Bard.yaml", "r"))
 
 subprocess.run(["psql", "-c", f"create database \"{variables['postgresql_credentials']['database']}\"", credentials],
                stdout=subprocess.DEVNULL,
