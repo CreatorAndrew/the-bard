@@ -4,7 +4,7 @@ token:
 master_id:
 # Set the storage medium for storing guild and user data (possible values: postgresql, sqlite, yaml).
 storage: sqlite
-# Set the credentials for the PostgreSQL database if it is selected storage medium.
+# Set the credentials for the PostgreSQL database if it is the selected storage medium.
 postgresql_credentials:
     database:
     user:
@@ -13,7 +13,7 @@ postgresql_credentials:
     port: # Optional
 # Set the audio backend for playing audio (possible values: ffmpeg, lavalink).
 audio_backend: ffmpeg
-# Set the credentials for Lavalink (used for playing audio).
+# Set the credentials for Lavalink if it is the selected audio backend.
 lavalink_credentials:
     password:
     host: # Optional
