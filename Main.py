@@ -453,7 +453,7 @@ async def main():
         bot.init_guilds = init_guilds
         bot.language_directory = language_directory
         bot.lock = asyncio.Lock()
-        bot.use_lavalink = variables["audio_backend"] == "lavalink"
+        bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
         await bot.add_cog(Main(bot))
         await bot.load_extension("Music")
         await bot.start(variables["token"])

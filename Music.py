@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from pymediainfo import MediaInfo
-if yaml.safe_load(open("Variables.yaml", "r"))["audio_backend"] == "lavalink":
+if yaml.safe_load(open("Variables.yaml", "r"))["multimedia_backend"] == "lavalink":
     import wavelink
 
 class Music(commands.Cog):
