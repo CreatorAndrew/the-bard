@@ -1082,11 +1082,11 @@ class Music(commands.Cog):
                         if self.use_lavalink and not voice.playing:
                             await voice.play((await wavelink.Playable.search(guild["queue"][guild["index"]]["file"]))[0], volume=int(guild["volume"] * 100))
                         elif not voice.is_playing():
-                                voice.play(discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
-                                                                  before_options=f"-re -ss {guild['queue'][guild['index']]['time']}"))
-                                guild["queue"][guild["index"]]["time"] = "0"
-                                voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
-                                voice.source.volume = guild["volume"]
+                            voice.play(discord.FFmpegPCMAudio(source=guild["queue"][guild["index"]]["file"],
+                                                              before_options=f"-re -ss {guild['queue'][guild['index']]['time']}"))
+                            guild["queue"][guild["index"]]["time"] = "0"
+                            voice.source = discord.PCMVolumeTransformer(voice.source, volume=1.0)
+                            voice.source.volume = guild["volume"]
                         # ensure that the track plays completely or is skipped by command before proceeding
                         while (voice.playing or voice.paused) if self.use_lavalink else (voice.is_playing() or voice.is_paused()):
                             await asyncio.sleep(.1)
