@@ -1052,7 +1052,7 @@ class Music(commands.Cog):
                         await context.followup.send(await self.polished_message(guild["strings"]["invalid_url"], {"url": url}), ephemeral=True)
                         return
                     if name is None: name = metadata["name"]
-                    
+
                     # verify that the URL file is a media container
                     if "audio" not in response.headers.get("Content-Type", "") and "video" not in response.headers.get("Content-Type", ""):
                         await context.followup.delete_message((await context.followup.send("...", silent=True)).id)
