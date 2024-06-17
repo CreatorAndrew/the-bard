@@ -646,7 +646,7 @@ class Music(commands.Cog):
                             song_file = str(song_message["message"].attachments[song[attachment_index]])
                         else: song_file = song[song_file_entry]
                         new_message = await self.polished_message(strings["song"] + "\n",
-                                                                    {"song": await self.polished_song_name(song_file, song[name]), "index": index + 1})
+                                                                  {"song": await self.polished_song_name(song_file, song[name]), "index": index + 1})
                         message += new_message
                         if len(message) > 2000:
                             pages.append(previous_message)
