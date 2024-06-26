@@ -365,7 +365,7 @@ class Music(commands.Cog):
                                                                  (new_index - 1, move - 1, context.guild.id))
                 await self.cursor.execute("update playlists set guild_pl_id = ? where pl_id = ?", (new_index - 1, playlist_copies[move - 1][0]))
             await context.followup.send(await polished_message(strings["move_playlist"],
-                                                               {"playlist": playlist_copies[move - 1]["name" if self.cursor is None else 1],
+                                                               {"playlist": playlist_copies[move - 1][name],
                                                                 "playlist_index": new_index}))
         # rename a playlist
         elif rename is not None and 0 < rename <= playlist_count:
