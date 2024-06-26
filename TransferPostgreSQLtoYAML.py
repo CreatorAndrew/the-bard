@@ -1,8 +1,7 @@
 import os
 import psycopg
 import yaml
-
-variables = yaml.safe_load(open("Variables.yaml", "r"))
+from Utils import variables
 
 credentials = f"""dbname={variables["postgresql_credentials"]["user"]}
                   user={variables["postgresql_credentials"]["user"]}
