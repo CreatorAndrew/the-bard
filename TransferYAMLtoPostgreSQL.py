@@ -1,5 +1,5 @@
-import psycopg
 import subprocess
+import psycopg
 from yaml import safe_load as load
 from Utils import variables
 
@@ -23,14 +23,14 @@ subprocess.run(
     stdout=subprocess.DEVNULL,
     stderr=subprocess.STDOUT,
 )
-connection = psycopg.connect(
+CONNECTION = psycopg.connect(
     credentials.replace(
         f"dbname={variables['postgresql_credentials']['user']}",
         f"dbname={variables['postgresql_credentials']['database']}",
     ),
     autocommit=True,
 )
-cursor = connection.cursor()
+cursor = CONNECTION.cursor()
 try:
     cursor.execute(
         """
@@ -101,15 +101,15 @@ except:
 
 for guild in data["guilds"]:
     try:
-        working_thread_id = guild["working_thread_id"]
+        WORKING_THREAD_ID = guild["working_thread_id"]
     except:
-        working_thread_id = None
+        WORKING_THREAD_ID = None
     cursor.execute(
         "insert into guilds values(%s, %s, %s, %s, %s)",
         (
             guild["id"],
             guild["language"],
-            working_thread_id,
+            WORKING_THREAD_ID,
             guild["keep"],
             guild["repeat"],
         ),
@@ -169,4 +169,4 @@ for guild in data["guilds"]:
             "insert into guild_users values(%s, %s)", (guild["id"], user["id"])
         )
 
-connection.close()
+CONNECTION.close()

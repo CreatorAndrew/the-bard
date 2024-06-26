@@ -16,13 +16,13 @@ if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-connection = psycopg.connect(
+CONNECTION = psycopg.connect(
     credentials.replace(
         f"dbname={variables['postgresql_credentials']['user']}",
         f"dbname={variables['postgresql_credentials']['database']}",
     )
 )
-cursor = connection.cursor()
+cursor = CONNECTION.cursor()
 
 cursor.execute("select * from guilds")
 for guild in cursor.fetchall():
@@ -73,6 +73,6 @@ for guild in cursor.fetchall():
     if guild[2] is not None:
         data["guilds"][len(data["guilds"]) - 1]["working_thread_id"] = guild[2]
 
-connection.close()
+CONNECTION.close()
 
 dump(data, open(FLAT_FILE, "w"), indent=4)

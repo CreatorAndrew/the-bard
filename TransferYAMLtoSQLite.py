@@ -4,11 +4,11 @@ from yaml import safe_load as load
 
 data = load(open("Bard.yaml", "r"))
 
-database = "Bard.db"
-database_exists = exists(database)
-connection = sqlite3.connect(database)
+DATABASE = "Bard.db"
+DATABASE_EXISTS = exists(DATABASE)
+connection = sqlite3.connect(DATABASE)
 cursor = connection.cursor()
-if not database_exists:
+if not DATABASE_EXISTS:
     cursor.execute(
         """
         create table guilds(
@@ -78,15 +78,15 @@ if not database_exists:
 
 for guild in data["guilds"]:
     try:
-        working_thread_id = guild["working_thread_id"]
+        WORKING_THREAD_ID = guild["working_thread_id"]
     except:
-        working_thread_id = None
+        WORKING_THREAD_ID = None
     cursor.execute(
         "insert into guilds values(?, ?, ?, ?, ?)",
         (
             guild["id"],
             guild["language"],
-            working_thread_id,
+            WORKING_THREAD_ID,
             guild["keep"],
             guild["repeat"],
         ),
