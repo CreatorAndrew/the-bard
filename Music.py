@@ -523,11 +523,10 @@ class Music(commands.Cog):
                     if self.cursor is None:
                         guild["playlists"][select - 1]["songs"].remove(song)
                         guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
-                    await context.followup.send(await polished_message(strings["playlist_move_song"],
-                                                                       {"playlist": playlist,
-                                                                        "playlist_index": select,
-                                                                        "song": await polished_url(song_file, song["name" if self.cursor is None else 1]),
-                                                                        "index": new_index}))
+                    await context.followup.send(await polished_message(strings["playlist_move_song"], {"playlist": playlist,
+                                                                                                       "playlist_index": select,
+                                                                                                       "song": await polished_url(song_file, song[name]),
+                                                                                                       "index": new_index}))
                 # rename a track in the playlist
                 elif action == "rename":
                     if song_index is None or song_index < 1 or song_index > song_count or new_name is None:
