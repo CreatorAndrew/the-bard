@@ -974,7 +974,7 @@ class Music(commands.Cog):
                 guild["queue"].insert(new_index - 1, queue[song_index - 1])
                 await context.response.send_message(await polished_message(guild["strings"]["queue_move_song"],
                                                                                 {"song": await polished_url(queue[song_index - 1]["file"],
-                                                                                                                       queue[song_index - 1]["name"]),
+                                                                                                            queue[song_index - 1]["name"]),
                                                                                  "index": new_index}))
             if song_index - 1 < guild["index"] and new_index - 1 >= guild["index"]: guild["index"] -= 1
             elif song_index - 1 > guild["index"] and new_index - 1 <= guild["index"]: guild["index"] += 1
