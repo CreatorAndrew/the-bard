@@ -1299,7 +1299,8 @@ class Music(commands.Cog):
             await context.response.send_message(await polished_message(guild["strings"]["recruit_or_dismiss"], {"bot": self.bot.user.mention,
                                                                                                                 "voice": voice_channel.jump_url,
                                                                                                                 "now_or_no_longer": guild["strings"]["now"]}))
-            (await voice_channel.connect(cls=wavelink.Player)) if self.use_lavalink else await voice_channel.connect()
+            if self.use_lavalink: await voice_channel.connect(cls=wavelink.Player)
+            else: await voice_channel.connect()
             guild["connected"] = True
             await context.guild.change_voice_state(channel=voice_channel, self_mute=False, self_deaf=True)
 
