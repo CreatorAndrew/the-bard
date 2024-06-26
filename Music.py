@@ -961,7 +961,7 @@ class Music(commands.Cog):
             guild["queue"].insert(index - 1, {"file": url, "name": name, "time": time, "duration": duration, "silent": silent})
             if index - 1 <= guild["index"]: guild["index"] += 1
             if not silent: await context.response.send_message(await polished_message(guild["strings"]["queue_insert_song"],
-                                                                                           {"song": await polished_url(url, name), "index": index}))
+                                                                                      {"song": await polished_url(url, name), "index": index}))
         else: await context.response.send_message(await polished_message(guild["strings"]["invalid_song_number"], {"index": index}))
 
     @app_commands.command(description="move_command_desc")
