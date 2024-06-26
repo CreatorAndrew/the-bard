@@ -1046,7 +1046,7 @@ class Music(commands.Cog):
                     return
             await context.response.send_message(await polished_message(guild["strings"]["now_playing"],
                                                                             {"song": await polished_url(guild["queue"][guild["index"] + 1]["file"],
-                                                                                                                   guild["queue"][guild["index"] + 1]["name"]),
+                                                                                                        guild["queue"][guild["index"] + 1]["name"]),
                                                                              "index": guild["index"] + 2,
                                                                              "max": len(guild["queue"])}))
             guild["queue"][guild["index"] + 1]["silent"] = True
