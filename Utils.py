@@ -1,16 +1,17 @@
-import os
-import yaml
-import discord
-from discord import app_commands
+from os.path import exists
+from yaml import safe_load as load
+from discord import ButtonStyle, Locale
+from discord.ui import Button, Modal, TextInput, View
+from discord.app_commands import locale_str, TranslationContext, Translator
 
-language_directory = "Languages"
-variables = yaml.safe_load(open("Variables.yaml", "r"))
+LANGUAGE_DIRECTORY = "Languages"
+variables = load(open("Variables.yaml", "r"))
 
-class CommandTranslator(app_commands.Translator):
-    async def translate(self, string: app_commands.locale_str, locale: discord.Locale, context: app_commands.TranslationContext) -> "str | None":
+class CommandTranslator(Translator):
+    async def translate(self, string: locale_str, locale: Locale, context: TranslationContext) -> "str | None":
         try:
-            if os.path.exists(f"{language_directory}/{locale.name}.yaml"):
-                return yaml.safe_load(open(f"{language_directory}/{locale.name}.yaml", "r"))["strings"][str(string)]
+            if exists(f"{LANGUAGE_DIRECTORY}/{locale.name}.yaml"):
+                return load(open(f"{LANGUAGE_DIRECTORY}/{locale.name}.yaml", "r"))["strings"][str(string)]
             return None
         except: return None
 
@@ -34,15 +35,15 @@ async def get_file_name(file):
     except: return file[file.rindex("/") + 1:]
 
 async def page_selector(context, strings, pages, index, message=None):
-    previous_button = discord.ui.Button(label="<", disabled=index == 0, style=discord.ButtonStyle.primary)
-    page_input_button = discord.ui.Button(label=f"{str(index + 1)}/{len(pages)}", disabled=len(pages) == 1)
-    next_button = discord.ui.Button(label=">", disabled=index == len(pages) - 1, style=discord.ButtonStyle.primary)
+    previous_button = Button(label="<", disabled=index == 0, style=ButtonStyle.primary)
+    page_input_button = Button(label=f"{str(index + 1)}/{len(pages)}", disabled=len(pages) == 1)
+    next_button = Button(label=">", disabled=index == len(pages) - 1, style=ButtonStyle.primary)
     async def previous_callback(context):
         await context.response.defer()
         await page_selector(context, strings, pages, index - 1, message)
     async def page_input_callback(context):
-        page_input = discord.ui.TextInput(label=strings["page"])
-        modal = discord.ui.Modal(title=strings["page_selector_title"])
+        page_input = TextInput(label=strings["page"])
+        modal = Modal(title=strings["page_selector_title"])
         modal.add_item(page_input)
         async def submit(context):
             await context.response.defer()
@@ -59,7 +60,7 @@ async def page_selector(context, strings, pages, index, message=None):
     next_button.callback = next_callback
     page_input_button.callback = page_input_callback
     previous_button.callback = previous_callback
-    view = discord.ui.View()
+    view = View()
     view.add_item(previous_button)
     view.add_item(page_input_button)
     view.add_item(next_button)
