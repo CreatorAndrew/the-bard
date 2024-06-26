@@ -15,7 +15,7 @@ from discord import (
     SelectOption,
 )
 from discord.app_commands import Choice, command, ContextMenu, describe
-from discord.ext import commands
+from discord.ext.commands import Cog
 from discord.ui import View, Select
 from pymediainfo import MediaInfo
 from Utils import (
@@ -30,7 +30,7 @@ if variables["multimedia_backend"] == "lavalink":
     import wavelink
 
 
-class Music(commands.Cog):
+class Music(Cog):
     def __init__(self, bot):
         self.bot = bot
         self.connection = bot.connection
@@ -2550,7 +2550,7 @@ class Music(commands.Cog):
             await context.response.send_message("...", ephemeral=True)
             await context.delete_original_response()
 
-    @commands.Cog.listener()
+    @Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         try:
             # ensure that this bot disconnects from any empty voice channel it is in
@@ -2718,7 +2718,7 @@ class Music(commands.Cog):
                 file=File(BytesIO(requests.get(url).content), await get_file_name(url)),
             )
 
-    @commands.Cog.listener("on_message")
+    @Cog.listener("on_message")
     async def renew_attachment_from_message(self, message: Message):
         await self.lock.acquire()
         if message.author.id == self.bot.user.id:
