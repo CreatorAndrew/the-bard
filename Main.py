@@ -6,7 +6,6 @@ from asyncio import (
     run,
     set_event_loop_policy,
     sleep,
-    WindowsSelectorEventLoopPolicy,
 )
 from typing import List
 import requests
@@ -645,5 +644,7 @@ async def main():
 
 
 if platform == "win32":
+    from asyncio import WindowsSelectorEventLoopPolicy
+
     set_event_loop_policy(WindowsSelectorEventLoopPolicy())
 run(main())
