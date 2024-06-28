@@ -452,12 +452,12 @@ class Main(commands.Cog):
                 guild["users"].append({"id": user.id})
         else:
             try:
-                await self.cursor.execute("insert into users values (?)", (user.id,))
+                await self.cursor.execute("insert into users values(?)", (user.id,))
             except:
                 pass
             try:
                 await self.cursor.execute(
-                    "insert into guild_users values (?, ?)", (guild.id, user.id)
+                    "insert into guild_users values(?, ?)", (guild.id, user.id)
                 )
             except:
                 pass
