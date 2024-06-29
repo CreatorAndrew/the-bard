@@ -16,7 +16,7 @@ from discord import (
 )
 from discord.app_commands import Choice, command, ContextMenu, describe
 from discord.ext.commands import Cog
-from discord.ui import View, Select
+from discord.ui import Select, View
 from pymediainfo import MediaInfo
 from Utils import (
     get_file_name,
