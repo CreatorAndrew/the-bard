@@ -478,16 +478,14 @@ async def on_ready():
     if variables["lavalink_credentials"]["port"] is None:
         variables["lavalink_credentials"]["port"] = 2333
     if bot.use_lavalink:
-        import wavelink
+        import pomice
 
-        await wavelink.Pool.connect(
-            nodes=[
-                wavelink.Node(
-                    uri=f"http://{variables['lavalink_credentials']['host']}:{variables['lavalink_credentials']['port']}",
-                    password=variables["lavalink_credentials"]["password"],
-                )
-            ],
-            client=bot,
+        await pomice.NodePool.create_node(
+            bot=bot,
+            host=variables["lavalink_credentials"]["host"],
+            port=variables["lavalink_credentials"]["port"],
+            password=variables["lavalink_credentials"]["password"],
+            identifier="main",
         )
     print(f"Logged in as {bot.user}")
 

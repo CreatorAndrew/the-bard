@@ -27,7 +27,7 @@ from Utils import (
 )
 
 if variables["multimedia_backend"] == "lavalink":
-    import wavelink
+    import pomice
 
 
 class Music(Cog):
@@ -1744,7 +1744,7 @@ class Music(Cog):
                     voice = context.guild.voice_client
                 else:
                     voice = (
-                        (await voice_channel.connect(cls=wavelink.Player))
+                        (await voice_channel.connect(cls=pomice.Player))
                         if self.use_lavalink
                         else await voice_channel.connect()
                     )
@@ -1752,7 +1752,7 @@ class Music(Cog):
                     await context.guild.change_voice_state(
                         channel=voice_channel, self_mute=False, self_deaf=True
                     )
-                if not (voice.playing if self.use_lavalink else voice.is_playing()):
+                if not (voice.is_playing if self.use_lavalink else voice.is_playing()):
                     while guild["index"] < len(guild["queue"]):
                         if guild["connected"]:
                             if guild["queue"][guild["index"]]["silent"]:
@@ -1772,15 +1772,15 @@ class Music(Cog):
                                     )
                                 )
                         # play the track
-                        if self.use_lavalink and not voice.playing:
+                        if self.use_lavalink and not voice.is_playing:
                             await voice.play(
                                 (
-                                    await wavelink.Playable.search(
+                                    await voice.get_tracks(
                                         guild["queue"][guild["index"]]["file"]
                                     )
                                 )[0],
-                                volume=int(guild["volume"] * 100),
                             )
+                            await voice.set_volume(int(guild["volume"] * 100))
                         elif not voice.is_playing():
                             voice.play(
                                 FFmpegPCMAudio(
@@ -1795,7 +1795,7 @@ class Music(Cog):
                             voice.source.volume = guild["volume"]
                         # ensure that the track plays completely or is skipped by command before proceeding
                         while (
-                            (voice.playing or voice.paused)
+                            (voice.is_playing or voice.is_paused)
                             if self.use_lavalink
                             else (voice.is_playing() or voice.is_paused())
                         ):
@@ -1808,8 +1808,7 @@ class Music(Cog):
                             if not guild["repeat"]:
                                 await self.stop_music(context)
                             guild["index"] = 0
-        except:
-            pass
+        except: pass
 
     @command(description="insert_command_desc")
     async def insert_command(
@@ -1984,7 +1983,10 @@ class Music(Cog):
             # if the removed track is the current track, play the new track in its place in the queue
             elif index - 1 == guild["index"]:
                 guild["index"] -= 1
-                context.guild.voice_client.stop()
+                if self.use_lavalink:
+                    await context.guild.voice_client.stop()
+                else:
+                    context.guild.voice_client.stop()
         else:
             await context.response.send_message(
                 await polished_message(
@@ -2051,10 +2053,10 @@ class Music(Cog):
                 )
             )
             guild["queue"][guild["index"] + 1]["silent"] = True
+            guild["time"] = 0.0
             if self.use_lavalink:
-                await context.guild.voice_client.skip(force=True)
+                await context.guild.voice_client.stop()
             else:
-                guild["time"] = 0.0
                 context.guild.voice_client.stop()
         else:
             await context.response.send_message(
@@ -2086,10 +2088,10 @@ class Music(Cog):
                 )
             )
             guild["queue"][guild["index"] + 1]["silent"] = True
+            guild["time"] = 0.0
             if self.use_lavalink:
-                await context.guild.voice_client.skip(force=True)
+                await context.guild.voice_client.stop()
             else:
-                guild["time"] = 0.0
                 context.guild.voice_client.stop()
         else:
             await context.response.send_message(
@@ -2112,13 +2114,13 @@ class Music(Cog):
         guild["queue"] = []
         try:
             if (
-                context.guild.voice_client.playing
+                context.guild.voice_client.is_playing
                 if self.use_lavalink
                 else context.guild.voice_client.is_playing()
             ):
                 guild["index"] = -1
                 if self.use_lavalink:
-                    await context.guild.voice_client.skip(force=True)
+                    await context.guild.voice_client.stop()
                 else:
                     context.guild.voice_client.stop()
             else:
@@ -2136,8 +2138,8 @@ class Music(Cog):
         guild = self.guilds[str(context.guild.id)]
         if guild["queue"]:
             if self.use_lavalink:
-                await context.guild.voice_client.pause(
-                    not context.guild.voice_client.paused
+                await context.guild.voice_client.set_pause(
+                    not context.guild.voice_client.is_paused
                 )
             else:
                 if context.guild.voice_client.is_paused():
@@ -2147,7 +2149,7 @@ class Music(Cog):
             now_or_no_longer = (
                 guild["strings"]["now"]
                 if (
-                    context.guild.voice_client.paused
+                    context.guild.voice_client.is_paused
                     if self.use_lavalink
                     else context.guild.voice_client.is_paused()
                 )
@@ -2333,7 +2335,7 @@ class Music(Cog):
             if bool(restart):
                 guild["index"] = -1
                 if self.use_lavalink:
-                    await context.guild.voice_client.skip(force=True)
+                    await context.guild.voice_client.stop()
                 else:
                     context.guild.voice_client.stop()
         else:
@@ -2402,7 +2404,7 @@ class Music(Cog):
             else:
                 guild["volume"] = float(set)
             if context.guild.voice_client is not None and (
-                context.guild.voice_client.playing
+                context.guild.voice_client.is_playing
                 if self.use_lavalink
                 else context.guild.voice_client.is_playing()
             ):
@@ -2514,7 +2516,7 @@ class Music(Cog):
                 )
             )
             if self.use_lavalink:
-                await voice_channel.connect(cls=wavelink.Player)
+                await voice_channel.connect(cls=pomice.Player)
             else:
                 await voice_channel.connect()
             guild["connected"] = True
@@ -2555,7 +2557,7 @@ class Music(Cog):
         try:
             # ensure that this bot disconnects from any empty voice channel it is in
             if (
-                member.guild.voice_client.connected
+                member.guild.voice_client.is_connected
                 if self.use_lavalink
                 else member.guild.voice_client.is_connected()
             ):
