@@ -1,12 +1,7 @@
 from sys import platform
 from os import listdir
 from os.path import exists
-from asyncio import (
-    Lock,
-    run,
-    set_event_loop_policy,
-    sleep,
-)
+from asyncio import Lock, run, set_event_loop_policy, sleep
 from typing import List
 import requests
 from yaml import safe_dump as dump, safe_load as load
