@@ -1,5 +1,5 @@
 from sys import platform
-from os.path import isfile
+from os.path import exists
 from asyncio import Lock, run
 from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
@@ -36,7 +36,7 @@ async def main():
             connection = None
             cursor = None
             flat_file = "Bard.yaml"
-            if not isfile(flat_file):
+            if not exists(flat_file):
                 dump({"guilds": []}, open(flat_file, "w"), indent=4)
             data = load(open(flat_file, "r"))
         else:
@@ -78,14 +78,14 @@ async def main():
                 import aiosqlite
 
                 database = "Bard.db"
-                database_exists = isfile(database)
+                database_exists = exists(database)
                 connection = await aiosqlite.connect(database)
                 cursor = Cursor(connection, None, "integer", "?")
             if not database_exists:
                 try:
                     for item in load_order:
                         tables_file = f"tables/{item}.yaml"
-                        if isfile(tables_file):
+                        if exists(tables_file):
                             for statement in load(open(tables_file, "r")):
                                 await cursor.execute(statement)
                 except:
@@ -98,7 +98,7 @@ async def main():
         bot.lock = Lock()
         bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
         for item in load_order:
-            if isfile(f"plugins/{item}.py"):
+            if exists(f"plugins/{item}.py"):
                 await bot.load_extension(f"plugins.{item}")
         await bot.start(variables["token"])
 
