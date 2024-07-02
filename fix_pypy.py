@@ -1,7 +1,7 @@
 import platform
-import requests
 
 if platform.python_implementation() == "PyPy":
+    import requests
     from os.path import abspath, dirname
 
     module_path = f"{dirname(abspath(requests.__file__))}/../pomice"

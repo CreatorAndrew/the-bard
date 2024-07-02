@@ -1,7 +1,7 @@
 from os.path import exists
 import psycopg
 from yaml import safe_dump as dump, safe_load as load
-from Utils import variables
+from utils import variables
 
 credentials = f"""
     dbname={variables["postgresql_credentials"]["user"]}

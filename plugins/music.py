@@ -1,8 +1,9 @@
 from typing import List, Literal
+from yaml import safe_dump as dump
 from discord import Attachment, Interaction, Message
 from discord.app_commands import Choice, command, ContextMenu, describe
 from discord.ext.commands import Cog
-from Playback import (
+from playback import (
     disconnect_when_alone,
     dismiss_command,
     forward_command,
@@ -32,7 +33,7 @@ from Playback import (
     what_command,
     when_command,
 )
-from Playlists import (
+from playlists import (
     playlist_action_autocompletion,
     playlist_add_files,
     playlist_autocompletion,
@@ -45,6 +46,7 @@ from Playlists import (
     working_thread_autocompletion,
     working_thread_command,
 )
+from utils import variables
 
 
 class Music(Cog):
@@ -55,6 +57,7 @@ class Music(Cog):
         self.data = bot.data
         self.flat_file = bot.flat_file
         self.guilds = bot.guilds_
+        self.init_guilds(bot.music_init_guilds)
         self.lock = bot.lock
         self.messages = {}
         self.playlist_add_files_context_menu = ContextMenu(
@@ -62,6 +65,84 @@ class Music(Cog):
         )
         self.use_lavalink = bot.use_lavalink
         bot.tree.add_command(self.playlist_add_files_context_menu)
+
+    def init_guilds(self, guilds=None):
+        if self.cursor is None:
+            guilds = self.data["guilds"]
+            id = "id"
+            keep = "keep"
+            repeat = "repeat"
+        else:
+            id = 0
+            keep = 1
+            repeat = 2
+        for guild in guilds:
+            self.guilds[str(guild[id])]["keep"] = guild[keep]
+            self.guilds[str(guild[id])]["repeat"] = guild[repeat]
+            self.guilds[str(guild[id])]["queue"] = []
+            self.guilds[str(guild[id])]["index"] = 0
+            self.guilds[str(guild[id])]["time"] = 0.0
+            self.guilds[str(guild[id])]["volume"] = 1.0
+            self.guilds[str(guild[id])]["connected"] = False
+
+    @Cog.listener("on_ready")
+    async def create_node(self):
+        if self.use_lavalink:
+            import pomice
+
+            if variables["lavalink_credentials"]["host"] is None:
+                variables["lavalink_credentials"]["host"] = "127.0.0.1"
+            if variables["lavalink_credentials"]["port"] is None:
+                variables["lavalink_credentials"]["port"] = 2333
+
+            await pomice.NodePool.create_node(
+                bot=self.bot,
+                host=variables["lavalink_credentials"]["host"],
+                port=variables["lavalink_credentials"]["port"],
+                password=variables["lavalink_credentials"]["password"],
+                identifier="main",
+            )
+
+    @Cog.listener("on_bard_add_guild")
+    async def add_guild(self, guild):
+        await self.lock.acquire()
+        init_guild = False
+        keep = False
+        repeat = False
+        if self.cursor is None:
+            for guild_searched in self.data["guilds"]:
+                if guild_searched["id"] == guild.id:
+                    guild_searched["keep"] = keep
+                    guild_searched["repeat"] = repeat
+                    guild_searched["playlists"] = []
+                    dump(self.data, open(self.flat_file, "w"), indent=4)
+                    init_guild = True
+                    break
+        else:
+            try:
+                await self.cursor.execute(
+                    "insert into guilds_music values(?, ?, ?, ?)",
+                    (guild.id, None, keep, repeat),
+                )
+                await self.connection.commit()
+                init_guild = True
+            except:
+                pass
+        if init_guild:
+            self.guilds[str(guild.id)]["keep"] = keep
+            self.guilds[str(guild.id)]["repeat"] = repeat
+            self.guilds[str(guild.id)]["queue"] = []
+            self.guilds[str(guild.id)]["index"] = 0
+            self.guilds[str(guild.id)]["time"] = 0.0
+            self.guilds[str(guild.id)]["volume"] = 1.0
+            self.guilds[str(guild.id)]["connected"] = False
+        self.lock.release()
+
+    @Cog.listener("on_bard_remove_guild_from_database")
+    async def remove_songs_not_in_playlists(self):
+        await self.cursor.execute(
+            "delete from songs where song_id not in (select song_id from pl_songs)"
+        )
 
     @command(description="playlists_command_desc")
     async def playlists_command(self, context: Interaction):
@@ -306,4 +387,10 @@ class Music(Cog):
 
 
 async def setup(bot):
+    bot.music_init_guilds = None
+    if bot.cursor is not None:
+        await bot.cursor.execute(
+            "select guild_id, keep_in_voice, repeat_queue from guilds_music"
+        )
+        bot.music_init_guilds = await bot.cursor.fetchall()
     await bot.add_cog(Music(bot))

@@ -1,4 +1,4 @@
 #!/bin/bash
 cd "${0%/*}"
-./DockerStart.sh
+./start_docker.sh
 screen -dmS the-bard docker attach the-bard

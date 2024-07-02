@@ -6,7 +6,7 @@ from io import BytesIO
 import requests
 from discord import Attachment, FFmpegPCMAudio, Interaction, PCMVolumeTransformer
 from discord.app_commands import Choice
-from Utils import (
+from utils import (
     convert_to_seconds,
     convert_to_time_marker,
     get_metadata,

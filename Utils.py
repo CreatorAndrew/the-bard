@@ -5,8 +5,8 @@ from discord.app_commands import locale_str, TranslationContext, Translator
 from discord.ui import Button, Modal, TextInput, View
 from pymediainfo import MediaInfo
 
-LANGUAGE_DIRECTORY = "Languages"
-variables = load(open("Variables.yaml", "r"))
+LANGUAGE_DIRECTORY = "languages"
+variables = load(open("variables.yaml", "r"))
 
 
 class CommandTranslator(Translator):
