@@ -7,7 +7,13 @@ from yaml import safe_dump as dump, safe_load as load
 from discord import Attachment, File, Interaction, Message, SelectOption
 from discord.app_commands import Choice
 from discord.ui import Select, View
-from utils import get_file_name, page_selector, polished_message, polished_url
+from utils import (
+    get_file_name,
+    get_metadata,
+    page_selector,
+    polished_message,
+    polished_url,
+)
 
 
 # return a list of playlists for the calling guild
@@ -105,7 +111,7 @@ async def playlist_command(
             return
         response = requests.get(url, stream=True)
         try:
-            metadata = await self.get_metadata(BytesIO(response.content), url)
+            metadata = await get_metadata(BytesIO(response.content), url)
         except:
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
