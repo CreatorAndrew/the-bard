@@ -10,11 +10,9 @@ data = load(open(FLAT_FILE, "r"))
 connection = sqlite3.connect("Bard.db")
 cursor = connection.cursor()
 
-cursor.execute("select * from guilds")
-guilds = cursor.fetchall()
 cursor.execute("select * from guilds_music")
 guilds_music = cursor.fetchall()
-for index, guild in enumerate(guilds):
+for index, guild in enumerate(guilds_music):
     playlists = []
     cursor.execute(
         "select guild_pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id",
@@ -45,24 +43,11 @@ for index, guild in enumerate(guilds):
                 }
             )
         playlists.append({"name": playlist[1], "songs": songs})
-    users = []
-    cursor.execute("select user_id from guild_users where guild_id = ?", (guild[0],))
-    for user in cursor.fetchall():
-        users.append({"id": user[1]})
-    data["guilds"].append(
-        {
-            "id": guild[0],
-            "language": guild[1],
-            "keep": bool(guilds_music[index][2]),
-            "repeat": bool(guilds_music[index][3]),
-            "playlists": playlists,
-            "users": users,
-        }
-    )
-    if guilds_music[index][1] is not None:
-        data["guilds"][len(data["guilds"]) - 1]["working_thread_id"] = guilds_music[
-            index
-        ][1]
+    if guild[1] is not None:
+        data["guilds"][index]["working_thread_id"] = guild[1]
+    data["guilds"][index]["keep"] = bool(guild[2])
+    data["guilds"][index]["repeat"] = bool(guild[3])
+    data["guilds"][index]["playlists"] = playlists
 
 connection.close()
 

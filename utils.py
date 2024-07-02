@@ -3,7 +3,6 @@ from yaml import safe_load as load
 from discord import ButtonStyle, Locale
 from discord.app_commands import locale_str, TranslationContext, Translator
 from discord.ui import Button, Modal, TextInput, View
-from pymediainfo import MediaInfo
 
 LANGUAGE_DIRECTORY = "languages"
 load_order = list(
@@ -53,74 +52,11 @@ class Cursor:
         return await self.cursor.fetchone()
 
 
-async def convert_to_seconds(time):
-    segments = []
-    if ":" in time:
-        segments = time.split(":")
-    if len(segments) == 2:
-        seconds = float(segments[0]) * 60 + float(segments[1])
-    elif len(segments) == 3:
-        seconds = (
-            float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
-        )
-    else:
-        seconds = float(time)
-    return seconds
-
-
-async def convert_to_time_marker(number):
-    segments = []
-    temp_number = number
-    if temp_number >= 3600:
-        segments.append(str(int(temp_number / 3600)))
-        temp_number %= 3600
-    else:
-        segments.append("00")
-    if temp_number >= 60:
-        segments.append(str(int(temp_number / 60)))
-        temp_number %= 60
-    else:
-        segments.append("00")
-    segments.append(str(int(temp_number)))
-    marker = ""
-    index = 0
-    for segment in segments:
-        if len(segment) == 1:
-            segment = "0" + segment
-        marker += segment
-        if index < len(segments) - 1:
-            marker += ":"
-        index += 1
-    return marker
-
-
 async def get_file_name(file):
     try:
         return file[file.rindex("/") + 1 : file.rindex("?")]
     except:
         return file[file.rindex("/") + 1 :]
-
-
-async def get_metadata(file, url):
-    duration = 0.0
-    for track in MediaInfo.parse(file).tracks:
-        try:
-            if track.to_data()["track_type"] == "General":
-                name = track.to_data()["title"]
-        except:
-            try:
-                name = track.to_data()["track_name"]
-            except:
-                name = (await get_file_name(url)).replace("_", " ")
-                try:
-                    name = name[: name.rindex(".")]
-                except:
-                    pass
-        try:
-            duration = float(track.to_data()["duration"]) / 1000
-        except:
-            pass
-    return {"name": name, "duration": duration}
 
 
 async def page_selector(context, strings, pages, index, message=None):

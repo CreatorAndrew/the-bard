@@ -6,18 +6,51 @@ from io import BytesIO
 import requests
 from discord import Attachment, FFmpegPCMAudio, Interaction, PCMVolumeTransformer
 from discord.app_commands import Choice
-from utils import (
-    convert_to_seconds,
-    convert_to_time_marker,
-    get_metadata,
-    page_selector,
-    polished_message,
-    polished_url,
-    variables,
-)
+from utils import page_selector, polished_message, polished_url, variables
 
 if variables["multimedia_backend"] == "lavalink":
     import pomice
+
+
+async def convert_to_seconds(time):
+    segments = []
+    if ":" in time:
+        segments = time.split(":")
+    if len(segments) == 2:
+        seconds = float(segments[0]) * 60 + float(segments[1])
+    elif len(segments) == 3:
+        seconds = (
+            float(segments[0]) * 3600 + float(segments[1]) * 60 + float(segments[2])
+        )
+    else:
+        seconds = float(time)
+    return seconds
+
+
+async def convert_to_time_marker(number):
+    segments = []
+    temp_number = number
+    if temp_number >= 3600:
+        segments.append(str(int(temp_number / 3600)))
+        temp_number %= 3600
+    else:
+        segments.append("00")
+    if temp_number >= 60:
+        segments.append(str(int(temp_number / 60)))
+        temp_number %= 60
+    else:
+        segments.append("00")
+    segments.append(str(int(temp_number)))
+    marker = ""
+    index = 0
+    for segment in segments:
+        if len(segment) == 1:
+            segment = "0" + segment
+        marker += segment
+        if index < len(segments) - 1:
+            marker += ":"
+        index += 1
+    return marker
 
 
 async def play_command(
@@ -81,7 +114,7 @@ async def play_song(self, context, url=None, name=None, playlist=None):
             else:
                 response = requests.get(url, stream=True)
                 try:
-                    metadata = await get_metadata(BytesIO(response.content), url)
+                    metadata = await self.get_metadata(BytesIO(response.content), url)
                 except:
                     await context.followup.delete_message(
                         (await context.followup.send("...", silent=True)).id
@@ -236,7 +269,7 @@ async def insert_song(
         response = requests.get(url, stream=True)
         try:
             if name is None or duration is None:
-                metadata = await get_metadata(BytesIO(response.content), url)
+                metadata = await self.get_metadata(BytesIO(response.content), url)
                 if name is None:
                     name = metadata["name"]
                 if duration is None:

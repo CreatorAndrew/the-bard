@@ -3,6 +3,7 @@ from yaml import safe_dump as dump
 from discord import Attachment, Interaction, Message
 from discord.app_commands import Choice, command, ContextMenu, describe
 from discord.ext.commands import Cog
+from pymediainfo import MediaInfo
 from playback import (
     disconnect_when_alone,
     dismiss_command,
@@ -46,7 +47,7 @@ from playlists import (
     working_thread_autocompletion,
     working_thread_command,
 )
-from utils import variables
+from utils import get_file_name, variables
 
 
 class Music(Cog):
@@ -84,6 +85,27 @@ class Music(Cog):
             self.guilds[str(guild[id])]["time"] = 0.0
             self.guilds[str(guild[id])]["volume"] = 1.0
             self.guilds[str(guild[id])]["connected"] = False
+
+    async def get_metadata(self, file, url):
+        duration = 0.0
+        for track in MediaInfo.parse(file).tracks:
+            try:
+                if track.to_data()["track_type"] == "General":
+                    name = track.to_data()["title"]
+            except:
+                try:
+                    name = track.to_data()["track_name"]
+                except:
+                    name = (await get_file_name(url)).replace("_", " ")
+                    try:
+                        name = name[: name.rindex(".")]
+                    except:
+                        pass
+            try:
+                duration = float(track.to_data()["duration"]) / 1000
+            except:
+                pass
+        return {"name": name, "duration": duration}
 
     @Cog.listener("on_ready")
     async def create_node(self):
