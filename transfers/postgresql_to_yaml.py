@@ -67,14 +67,16 @@ for index, guild in enumerate(guilds):
         {
             "id": guild[0],
             "language": guild[1],
-            "keep": bool(guilds_music[index][1]),
-            "repeat": bool(guilds_music[index][2]),
+            "keep": bool(guilds_music[index][2]),
+            "repeat": bool(guilds_music[index][3]),
             "playlists": playlists,
             "users": users,
         }
     )
-    if guild[2] is not None:
-        data["guilds"][len(data["guilds"]) - 1]["working_thread_id"] = guild[2]
+    if guilds_music[index][1] is not None:
+        data["guilds"][len(data["guilds"]) - 1]["working_thread_id"] = guilds_music[
+            index
+        ][1]
 
 CONNECTION.close()
 
