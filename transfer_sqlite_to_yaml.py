@@ -11,7 +11,10 @@ connection = sqlite3.connect("Bard.db")
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds")
-for guild in cursor.fetchall():
+guilds = cursor.fetchall()
+cursor.execute("select * from guilds_music")
+guilds_music = cursor.fetchall()
+for index, guild in enumerate(guilds):
     playlists = []
     cursor.execute(
         "select guild_pl_id, pl_name from playlists where guild_id = ? order by guild_pl_id",
@@ -50,8 +53,8 @@ for guild in cursor.fetchall():
         {
             "id": guild[0],
             "language": guild[1],
-            "keep": bool(guild[3]),
-            "repeat": bool(guild[4]),
+            "keep": bool(guilds_music[index][1]),
+            "repeat": bool(guilds_music[index][2]),
             "playlists": playlists,
             "users": users,
         }

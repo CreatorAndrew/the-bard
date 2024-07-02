@@ -37,10 +37,19 @@ try:
         create table guilds(
             guild_id bigint not null,
             guild_lang text not null,
+            primary key (guild_id)
+        )
+        """
+    )
+    cursor.execute(
+        """
+        create table guilds_music(
+            guild_id bigint not null,
             working_thread_id bigint null,
             keep_in_voice boolean not null,
             repeat_queue boolean not null,
-            primary key (guild_id)
+            primary key (guild_id),
+            foreign key (guild_id) references guilds(guild_id) on delete cascade
         )
         """
     )
@@ -52,7 +61,7 @@ try:
             guild_id bigint not null,
             guild_pl_id bigint not null,
             primary key (pl_id),
-            foreign key (guild_id) references guilds(guild_id)
+            foreign key (guild_id) references guilds_music(guild_id) on delete cascade
         )
         """
     )
@@ -80,7 +89,7 @@ try:
             pl_song_id bigint not null,
             primary key (song_id, pl_id),
             foreign key (song_id) references songs(song_id),
-            foreign key (pl_id) references playlists(pl_id)
+            foreign key (pl_id) references playlists(pl_id) on delete cascade
         )
         """
     )
@@ -91,8 +100,8 @@ try:
             guild_id bigint not null,
             user_id bigint not null,
             primary key (guild_id, user_id),
-            foreign key (guild_id) references guilds(guild_id),
-            foreign key (user_id) references users(user_id)
+            foreign key (guild_id) references guilds(guild_id) on delete cascade,
+            foreign key (user_id) references users(user_id) on delete cascade
         )
         """
     )
@@ -105,10 +114,16 @@ for guild in data["guilds"]:
     except:
         WORKING_THREAD_ID = None
     cursor.execute(
-        "insert into guilds values(%s, %s, %s, %s, %s)",
+        "insert into guilds values(%s, %s)",
         (
             guild["id"],
             guild["language"],
+        ),
+    )
+    cursor.execute(
+        "insert into guilds_music values(%s, %s, %s, %s)",
+        (
+            guild["id"],
             WORKING_THREAD_ID,
             guild["keep"],
             guild["repeat"],
