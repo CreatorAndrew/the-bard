@@ -402,8 +402,8 @@ class Main(Cog):
             }
         try:
             self.bot.dispatch("bard_add_guild", guild)
-        except Exception as e:
-            print(e)
+        except:
+            pass
 
     async def remove_guild_from_database(self, id):
         await self.cursor.execute("delete from guilds where guild_id = ?", (id,))
