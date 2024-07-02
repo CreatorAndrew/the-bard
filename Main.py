@@ -84,8 +84,8 @@ async def main():
                 cursor = Cursor(connection, None, "integer", "?")
             if not database_exists:
                 try:
-                    for index in range(len(load_order)):
-                        tables_file = f"tables/{load_order[index]}.yaml"
+                    for item in load_order:
+                        tables_file = f"tables/{item}.yaml"
                         if isfile(tables_file):
                             for statement in load(open(tables_file, "r")):
                                 await cursor.execute(statement)
@@ -98,9 +98,9 @@ async def main():
         bot.guilds_ = {}
         bot.lock = Lock()
         bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
-        for index in range(len(load_order)):
-            if isfile(f"plugins/{load_order[index]}.py"):
-                await bot.load_extension(f"plugins.{load_order[index]}")
+        for item in load_order:
+            if isfile(f"plugins/{item}.py"):
+                await bot.load_extension(f"plugins.{item}")
         await bot.start(variables["token"])
 
 
