@@ -103,7 +103,7 @@ class Music(Cog):
                 identifier="main",
             )
 
-    @Cog.listener("on_bard_add_guild")
+    @Cog.listener("on_main_add_guild")
     async def add_guild(self, guild):
         await self.lock.acquire()
         init_guild = False
@@ -138,7 +138,7 @@ class Music(Cog):
             self.guilds[str(guild.id)]["connected"] = False
         self.lock.release()
 
-    @Cog.listener("on_bard_remove_guild_from_database")
+    @Cog.listener("on_main_remove_guild_from_database")
     async def remove_songs_not_in_playlists(self):
         await self.cursor.execute(
             "delete from songs where song_id not in (select song_id from pl_songs)"

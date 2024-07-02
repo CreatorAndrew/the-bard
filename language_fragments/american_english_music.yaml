@@ -1,20 +1,19 @@
 # Do not modify the variable names. Only modify their values.
 # Also do not modify whatever is in %{}. Those are placeholders.
 
-name: British English
+name: American English
 strings:
     action: action
     action_desc: Specify an action for the selected playlist (use together with `select`)
-    add: add
     add_desc: Add a playlist
-    add_playlist: Playlist '%{playlist}' has been created (#%{playlist_index}).
+    add_playlist: Playlist "%{playlist}" has been created (#%{playlist_index}).
     by: by
     cancel_option: Cancel
     clone: clone
     clone_desc: Clone a playlist or copy its tracks into another playlist (for the
         latter, use together with `into`)
-    clone_playlist: The tracks belonging to playlist '%{playlist}' (#%{playlist_index})
-        have been copied into playlist '%{into_playlist}' (#%{into_playlist_index}).
+    clone_playlist: The tracks belonging to playlist "%{playlist}" (#%{playlist_index})
+        have been copied into playlist "%{into_playlist}" (#%{into_playlist_index}).
     dismiss_command: dismiss
     dismiss_command_desc: Disconnect me from a voice channel
     do_not: ' do not'
@@ -29,15 +28,10 @@ strings:
     into: into
     into_desc: Specify a playlist to copy another playlist's tracks into (use together
         with `clone`)
-    invalid_command: Invalid command usage
-    invalid_language: '%{language} is not yet a language that %{bot} can translate
-        to. Here is a template for localisation:'
-    invalid_language_file: 'The file ''%{language_file}'' does not have sufficient
-        data for a full translation. Here is a template for localisation:'
     invalid_playlist_number: 'Playlist #%{playlist_index} does not exist.'
     invalid_song: '%{song} is not an audio or video file.'
     invalid_song_number: '%{index} was not a track number in the queue.'
-    invalid_url: URL '%{url}' could not be read. Check if the URL is valid and try
+    invalid_url: URL "%{url}" could not be read. Check if the URL is valid and try
         again.
     jump: Jumped to %{time} in %{song} (%{index}/%{max})
     jump_command: jump
@@ -48,17 +42,11 @@ strings:
     keep_command: keep
     keep_command_desc: Show or set whether to stay in a voice channel after all audio
         stops playing
-    language: The current language is %{language}.
-    language_change: The language has been changed to %{language}.
-    language_command: language
-    language_command_desc: Show or set the language for this server
-    language_file_exists: A language file of the name, '%{language_file}', already
-        exists.
     leave: leave
     list: list
     load: load
     load_desc: Load a playlist
-    load_playlist: The tracks belonging to playlist '%{playlist}' (#%{playlist_index})
+    load_playlist: The tracks belonging to playlist "%{playlist}" (#%{playlist_index})
         have been loaded into the queue.
     loop_command: loop
     loop_command_desc: Show or set whether playlists will repeat
@@ -66,8 +54,8 @@ strings:
     move_command: move
     move_command_desc: Change a track's position within the queue
     move_desc: Change a playlist's position in the order of playlists for this server
-    move_playlist: 'Playlist ''%{playlist}'' is now #%{playlist_index} in the list
-        of playlists.'
+    move_playlist: 'Playlist "%{playlist}" is now #%{playlist_index} in the list of
+        playlists.'
     new_index: index
     new_index_desc: Specify an index to move a playlist at or move or insert a track
         at within a playlist
@@ -78,8 +66,6 @@ strings:
     not_in_voice: '%{user} is not in a voice channel.'
     now: now
     now_playing: 'Now playing: %{song} (%{index}/%{max})'
-    page: Page
-    page_selector_title: Specify a page
     pause: Playback is %{now_or_no_longer} paused.
     pause_command: pause
     pause_command_desc: Pause or unpause the current track
@@ -87,19 +73,19 @@ strings:
     play_command_desc: Play or add a track to the queue
     playlist: '#%{playlist_index}: %{playlist}'
     playlist_add_files_context_menu: Add files to a playlist
-    playlist_add_song: '%{song} has been added to playlist ''%{playlist}'' (#%{playlist_index})
+    playlist_add_song: '%{song} has been added to playlist "%{playlist}" (#%{playlist_index})
         (#%{index}).'
     playlist_command: playlist
     playlist_command_desc: Interact with playlists
     playlist_move_song: '%{song} has been moved to position #%{index} in playlist
-        ''%{playlist}'' (#%{playlist_index}).'
-    playlist_no_songs: Playlist '%{playlist}' (#%{playlist_index}) has no tracks.
-    playlist_remove_song: '%{song} (#%{index}) has been removed from playlist ''%{playlist}''
+        "%{playlist}" (#%{playlist_index}).'
+    playlist_no_songs: Playlist "%{playlist}" (#%{playlist_index}) has no tracks.
+    playlist_remove_song: '%{song} (#%{index}) has been removed from playlist "%{playlist}"
         (#%{playlist_index}).'
-    playlist_rename_song: '%{song} (#%{index}) has been renamed to ''%{name}'' in
-        playlist ''%{playlist}'' (#%{playlist_index}).'
+    playlist_rename_song: '%{song} (#%{index}) has been renamed to "%{name}" in playlist
+        "%{playlist}" (#%{playlist_index}).'
     playlist_select_menu_placeholder: Select a playlist
-    playlist_songs_header: 'List of tracks in playlist ''%{playlist}'' (#%{playlist_index}):'
+    playlist_songs_header: 'List of tracks in playlist "%{playlist}" (#%{playlist_index}):'
     playlists_command: playlists
     playlists_command_desc: Show the list of playlists for this server
     playlists_header: 'Playlists for this server:'
@@ -112,8 +98,7 @@ strings:
     queue_move_song: '%{song} has been moved to position #%{index} in the queue.'
     queue_no_songs: There are no tracks in the queue.
     queue_remove_song: '%{song} (#%{index}) has been removed from the queue.'
-    queue_rename_song: '%{song} (#%{index}) has been renamed to ''%{name}'' in the
-        queue.'
+    queue_rename_song: '%{song} (#%{index}) has been renamed to "%{name}" in the queue.'
     queue_songs_header: 'List of tracks in the queue:'
     recruit_command: recruit
     recruit_command_desc: Connect me to a voice channel
@@ -122,13 +107,13 @@ strings:
     remove_command: remove
     remove_command_desc: Remove a track from the queue
     remove_desc: Remove a playlist
-    remove_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been deleted.
+    remove_playlist: Playlist "%{playlist}" (#%{playlist_index}) has been deleted.
     rename: rename
     rename_command: rename
     rename_command_desc: Rename a track in the queue
     rename_desc: Rename a playlist
-    rename_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been renamed
-        to '%{name}'.
+    rename_playlist: Playlist "%{playlist}" (#%{playlist_index}) has been renamed
+        to "%{name}."
     repeat: Playlists currently%{do_not} repeat.
     repeat_change: Playlists will %{now_or_no_longer} repeat.
     restart: restart
@@ -136,10 +121,9 @@ strings:
     rewind_command_desc: Rewind the track
     select: select
     select_desc: Select a playlist (use together with `action`)
-    set: set
     shuffle: The queue has been shuffled.
     shuffle_command: shuffle
-    shuffle_command_desc: Randomise the order of the tracks in the queue
+    shuffle_command_desc: Randomize the order of the tracks in the queue
     skip_command: skip
     skip_command_desc: Skip to the next track in the queue
     song: '#%{index}: %{song}'

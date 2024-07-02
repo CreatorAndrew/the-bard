@@ -198,7 +198,7 @@ class Main(Cog):
     async def on_guild_join(self, guild):
         await self.lock.acquire()
         await self.add_guild(guild)
-        self.bot.dispatch("bard_guild_join")
+        self.bot.dispatch("main_guild_join")
         self.lock.release()
 
     # remove a guild that removed this bot from the database or flat file for guilds
@@ -215,7 +215,7 @@ class Main(Cog):
         else:
             await self.remove_guild_from_database(guild.id)
         del self.guilds[str(guild.id)]
-        self.bot.dispatch("bard_guild_remove")
+        self.bot.dispatch("main_guild_remove")
         self.lock.release()
 
     # add a user that joined a guild with this bot to the database or flat file for guilds
@@ -232,7 +232,7 @@ class Main(Cog):
             else:
                 await self.add_user(member.guild, member)
                 await self.connection.commit()
-            self.bot.dispatch("bard_member_join")
+            self.bot.dispatch("main_member_join")
             self.lock.release()
 
     # remove a user that left a guild with this bot from the database or flat file for guilds
@@ -259,7 +259,7 @@ class Main(Cog):
                     "delete from users where user_id not in (select user_id from guild_users)"
                 )
                 await self.connection.commit()
-            self.bot.dispatch("bard_member_remove")
+            self.bot.dispatch("main_member_remove")
             self.lock.release()
 
     @message_command()
@@ -405,10 +405,7 @@ class Main(Cog):
                     open(f"{LANGUAGE_DIRECTORY}/{self.default_language}.yaml", "r")
                 )["strings"],
             }
-        try:
-            self.bot.dispatch("bard_add_guild", guild)
-        except:
-            pass
+        self.bot.dispatch("main_add_guild", guild)
 
     async def remove_guild_from_database(self, id):
         await self.cursor.execute("delete from guilds where guild_id = ?", (id,))
@@ -416,7 +413,7 @@ class Main(Cog):
             "delete from users where user_id not in (select user_id from guild_users)"
         )
         await self.connection.commit()
-        self.bot.dispatch("bard_remove_guild_from_database")
+        self.bot.dispatch("main_remove_guild_from_database")
 
     async def add_user(self, guild, user):
         if self.cursor is None:
@@ -436,7 +433,7 @@ class Main(Cog):
                 )
             except:
                 pass
-        self.bot.dispatch("bard_add_user", guild, user)
+        self.bot.dispatch("main_add_user", guild, user)
 
 
 async def setup(bot):

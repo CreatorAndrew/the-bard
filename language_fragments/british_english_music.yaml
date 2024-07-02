@@ -5,7 +5,6 @@ name: British English
 strings:
     action: action
     action_desc: Specify an action for the selected playlist (use together with `select`)
-    add: add
     add_desc: Add a playlist
     add_playlist: Playlist '%{playlist}' has been created (#%{playlist_index}).
     by: by
@@ -29,11 +28,6 @@ strings:
     into: into
     into_desc: Specify a playlist to copy another playlist's tracks into (use together
         with `clone`)
-    invalid_command: Invalid command usage
-    invalid_language: '%{language} is not yet a language that %{bot} can translate
-        to. Here is a template for localisation:'
-    invalid_language_file: 'The file ''%{language_file}'' does not have sufficient
-        data for a full translation. Here is a template for localisation:'
     invalid_playlist_number: 'Playlist #%{playlist_index} does not exist.'
     invalid_song: '%{song} is not an audio or video file.'
     invalid_song_number: '%{index} was not a track number in the queue.'
@@ -48,12 +42,6 @@ strings:
     keep_command: keep
     keep_command_desc: Show or set whether to stay in a voice channel after all audio
         stops playing
-    language: The current language is %{language}.
-    language_change: The language has been changed to %{language}.
-    language_command: language
-    language_command_desc: Show or set the language for this server
-    language_file_exists: A language file of the name, '%{language_file}', already
-        exists.
     leave: leave
     list: list
     load: load
@@ -78,8 +66,6 @@ strings:
     not_in_voice: '%{user} is not in a voice channel.'
     now: now
     now_playing: 'Now playing: %{song} (%{index}/%{max})'
-    page: Page
-    page_selector_title: Specify a page
     pause: Playback is %{now_or_no_longer} paused.
     pause_command: pause
     pause_command_desc: Pause or unpause the current track
@@ -136,7 +122,6 @@ strings:
     rewind_command_desc: Rewind the track
     select: select
     select_desc: Select a playlist (use together with `action`)
-    set: set
     shuffle: The queue has been shuffled.
     shuffle_command: shuffle
     shuffle_command_desc: Randomise the order of the tracks in the queue

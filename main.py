@@ -4,7 +4,7 @@ from asyncio import Lock, run
 from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
 from discord.ext import commands
-from utils import CommandTranslator, Cursor, variables
+from utils import CommandTranslator, Cursor, load_order, variables
 
 intents = Intents.default()
 intents.guilds = True
@@ -32,12 +32,6 @@ async def sync_commands(context):
 
 async def main():
     async with bot:
-        load_order = list(
-            map(
-                lambda line: line.replace("\r\n", "").replace("\n", ""),
-                open("load_order.txt", "r").readlines(),
-            )
-        )
         if variables["storage"] == "yaml":
             connection = None
             cursor = None

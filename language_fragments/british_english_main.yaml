@@ -1,0 +1,20 @@
+# Do not modify the variable names. Only modify their values.
+# Also do not modify whatever is in %{}. Those are placeholders.
+
+name: British English
+strings:
+    add: add
+    invalid_command: Invalid command usage
+    invalid_language: '%{language} is not yet a language that %{bot} can translate
+        to. Here is a template for localisation:'
+    invalid_language_file: 'The file ''%{language_file}'' does not have sufficient
+        data for a full translation. Here is a template for localisation:'
+    language: The current language is %{language}.
+    language_change: The language has been changed to %{language}.
+    language_command: language
+    language_command_desc: Show or set the language for this server
+    language_file_exists: A language file of the name, '%{language_file}', already
+        exists.
+    page: Page
+    page_selector_title: Specify a page
+    set: set

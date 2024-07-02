@@ -6,6 +6,12 @@ from discord.ui import Button, Modal, TextInput, View
 from pymediainfo import MediaInfo
 
 LANGUAGE_DIRECTORY = "languages"
+load_order = list(
+    map(
+        lambda line: line.replace("\r\n", "").replace("\n", ""),
+        open("load_order.txt", "r").readlines(),
+    )
+)
 variables = load(open("variables.yaml", "r"))
 
 
