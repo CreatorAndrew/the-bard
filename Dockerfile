@@ -6,4 +6,4 @@ COPY requirements.txt /tmp
 RUN python -m venv /Bard/.venv
 RUN source /Bard/.venv/bin/activate
 RUN python -m pip install -r /tmp/requirements.txt
-CMD ["/bin/bash", "/Bard/bard.sh"]
+CMD ["/bin/bash", "/Bard/start.sh"]
