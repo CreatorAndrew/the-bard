@@ -63,17 +63,7 @@ if not DATABASE_EXISTS:
     )
 
 for guild in data["guilds"]:
-    try:
-        WORKING_THREAD_ID = guild["working_thread_id"]
-    except:
-        WORKING_THREAD_ID = None
-    cursor.execute(
-        "insert into guilds values(?, ?)",
-        (
-            guild["id"],
-            guild["language"],
-        ),
-    )
+    WORKING_THREAD_ID = guild.get("working_thread_id")
     cursor.execute(
         "insert into guilds_music values(?, ?, ?, ?)",
         (
