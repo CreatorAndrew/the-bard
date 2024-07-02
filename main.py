@@ -32,7 +32,12 @@ async def sync_commands(context):
 
 async def main():
     async with bot:
-        load_order = load(open("plugins/_load_order.yaml", "r"))
+        load_order = list(
+            map(
+                lambda line: line.replace("\r\n", "").replace("\n", ""),
+                open("load_order.txt", "r").readlines(),
+            )
+        )
         if variables["storage"] == "yaml":
             connection = None
             cursor = None

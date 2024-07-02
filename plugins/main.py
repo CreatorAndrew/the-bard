@@ -82,7 +82,12 @@ class Main(Cog):
                         )
                         self.lock.release()
                         return
-                    for string in load(open("language_string_names.yaml", "r")):
+                    for string in list(
+                        map(
+                            lambda line: line.replace("\r\n", "").replace("\n", ""),
+                            open("language_strings_names.txt", "r").readlines(),
+                        )
+                    ):
                         try:
                             if content["strings"][string]:
                                 pass
