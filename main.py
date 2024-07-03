@@ -71,16 +71,14 @@ async def main():
                     ),
                     autocommit=True,
                 )
-                cursor = Cursor(
-                    connection.cursor(), connection.cursor(), "bigint", "%s"
-                )
+                cursor = Cursor(connection.cursor(), connection.cursor(), "%s")
             elif variables["storage"] == "sqlite":
                 import aiosqlite
 
                 database = "Bard.db"
                 database_exists = exists(database)
                 connection = await aiosqlite.connect(database)
-                cursor = Cursor(connection, None, "integer", "?")
+                cursor = Cursor(connection, None, "?")
             if not database_exists:
                 try:
                     for item in load_order:

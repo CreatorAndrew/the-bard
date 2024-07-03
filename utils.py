@@ -29,17 +29,14 @@ class CommandTranslator(Translator):
 
 
 class Cursor:
-    def __init__(self, connection, cursor, integer_data_type, placeholder):
+    def __init__(self, connection, cursor, placeholder):
         self.connection = connection
         self.cursor = cursor
-        self.integer_data_type = integer_data_type
         self.placeholder = placeholder
 
     async def execute(self, statement, args=tuple()):
         cursor = await self.connection.execute(
-            statement.replace("integer", self.integer_data_type).replace(
-                "?", self.placeholder
-            ),
+            statement.replace("?", self.placeholder),
             args,
         )
         if self.connection != self.cursor:
