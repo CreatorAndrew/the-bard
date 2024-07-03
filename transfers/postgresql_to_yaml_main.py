@@ -30,7 +30,7 @@ for guild in cursor.fetchall():
     users = []
     cursor.execute("select user_id from guild_users where guild_id = %s", (guild[0],))
     for user in cursor.fetchall():
-        users.append({"id": user[1]})
+        users.append({"id": user[0]})
     data["guilds"].append(
         {
             "id": guild[0],
