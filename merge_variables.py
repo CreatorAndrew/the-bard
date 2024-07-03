@@ -1,11 +1,5 @@
 from yaml import safe_load as load
-
-load_order = list(
-    map(
-        lambda line: line.replace("\r\n", "").replace("\n", ""),
-        open("load_order.txt", "r").readlines(),
-    )
-)
+from utils import load_order
 
 try:
     lines = open("variables.yaml", "r").readlines()

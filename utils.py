@@ -11,7 +11,10 @@ load_order = list(
         open("load_order.txt", "r").readlines(),
     )
 )
-variables = load(open("variables.yaml", "r"))
+try:
+    variables = load(open("variables.yaml", "r"))
+except:
+    variables = {}
 
 
 class CommandTranslator(Translator):
