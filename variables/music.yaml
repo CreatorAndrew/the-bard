@@ -1,0 +1,7 @@
+# Set the multimedia backend for playing audio (possible values: ffmpeg, lavalink).
+multimedia_backend: ffmpeg
+# Set the credentials for Lavalink if it is the selected multimedia backend.
+lavalink_credentials:
+    password:
+    host: # Optional
+    port: # Optional

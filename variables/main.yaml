@@ -1,0 +1,13 @@
+# Set the token of the bot.
+token:
+# Set the ID of the user who manages the bot.
+master_id:
+# Set the storage medium for storing guild and user data (possible values: postgresql, sqlite, yaml).
+storage: sqlite
+# Set the credentials for the PostgreSQL database if it is the selected storage medium.
+postgresql_credentials:
+    database:
+    user:
+    password:
+    host: # Optional
+    port: # Optional
