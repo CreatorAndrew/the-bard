@@ -1,14 +1,12 @@
-from os.path import exists
 import sqlite3
 from yaml import safe_load as load
 
 data = load(open("Bard.yaml", "r"))
 
 DATABASE = "Bard.db"
-DATABASE_EXISTS = exists(DATABASE)
 connection = sqlite3.connect(DATABASE)
 cursor = connection.cursor()
-if not DATABASE_EXISTS:
+try:
     cursor.execute(
         """
         create table guilds(
@@ -30,6 +28,8 @@ if not DATABASE_EXISTS:
         )
         """
     )
+except:
+    pass
 
 for guild in data["guilds"]:
     cursor.execute(
