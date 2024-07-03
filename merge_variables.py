@@ -13,8 +13,8 @@ except:
     lines = []
 
 try:
-    variables_file = load(open("variables.yaml", "r"))
-    variables = variables_file if variables_file.items() else {}
+    variables_data = load(open("variables.yaml", "r"))
+    variables = variables_data if variables_data.items() else {}
 except:
     variables = {}
 
@@ -22,7 +22,7 @@ for plugin in load_order:
     append_variables = True
     for key, value in load(open(f"variables/{plugin}.yaml", "r")).items():
         if key in list(map(lambda item: item[0], variables.items())):
-            print(f'Variables for "{plugin}" were already appended.')
+            print(f'Variables for "{plugin}" were already added.')
             append_variables = False
             break
     if append_variables:
