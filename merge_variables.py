@@ -1,13 +1,15 @@
 from yaml import safe_load as load
 from utils import load_order
 
+VARIABLES_FILE = "variables.yaml"
+
 try:
-    lines = open("variables.yaml", "r").readlines()
+    lines = open(VARIABLES_FILE, "r").readlines()
 except:
     lines = []
 
 try:
-    variables_data = load(open("variables.yaml", "r"))
+    variables_data = load(open(VARIABLES_FILE, "r"))
     variables = variables_data if variables_data.items() else {}
 except:
     variables = {}
@@ -22,4 +24,4 @@ for plugin in load_order:
     if append_variables:
         lines += open(f"variables/{plugin}.yaml", "r").readlines()
 
-open("variables.yaml", "w").writelines(lines)
+open(VARIABLES_FILE, "w").writelines(lines)
