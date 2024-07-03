@@ -1,8 +1,31 @@
-from utils import load_order
+from yaml import safe_load as load
 
-lines = []
+load_order = list(
+    map(
+        lambda line: line.replace("\r\n", "").replace("\n", ""),
+        open("load_order.txt", "r").readlines(),
+    )
+)
+
+try:
+    lines = open("variables.yaml", "r").readlines()
+except:
+    lines = []
+
+try:
+    variables_file = load(open("variables.yaml", "r"))
+    variables = variables_file if variables_file.items() else {}
+except:
+    variables = {}
 
 for plugin in load_order:
-    lines += open(f"variables/{plugin}.yaml", "r").readlines()
+    append_variables = True
+    for key, value in load(open(f"variables/{plugin}.yaml", "r")).items():
+        if key in list(map(lambda item: item[0], variables.items())):
+            print(f'Variables for "{plugin}" were already appended.')
+            append_variables = False
+            break
+    if append_variables:
+        lines += open(f"variables/{plugin}.yaml", "r").readlines()
 
 open("variables.yaml", "w").writelines(lines)
