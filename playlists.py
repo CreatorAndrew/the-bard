@@ -1503,7 +1503,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
     else:
         await self.lock.acquire()
         await self.cursor.execute(
-            "select working_thread_id from guilds where guild_id = ?", (guild_id,)
+            "select working_thread_id from guilds_music where guild_id = ?", (guild_id,)
         )
         try:
             working_thread_id = (await self.cursor.fetchone())[0]
@@ -1596,7 +1596,7 @@ async def working_thread_command(self, context, set):
     else:
         if set is None:
             await self.cursor.execute(
-                "select working_thread_id from guilds where guild_id = ?",
+                "select working_thread_id from guilds_music where guild_id = ?",
                 (context.guild.id,),
             )
             working_thread_id = (await self.cursor.fetchone())[0]
@@ -1624,7 +1624,7 @@ async def working_thread_command(self, context, set):
         for thread in context.guild.threads:
             if set == thread.name:
                 await self.cursor.execute(
-                    "update guilds set working_thread_id = ? where guild_id = ?",
+                    "update guilds_music set working_thread_id = ? where guild_id = ?",
                     (thread.id, context.guild.id),
                 )
                 await self.connection.commit()
