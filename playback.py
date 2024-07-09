@@ -773,14 +773,14 @@ async def volume_command(self, context, set):
     if set is None:
         await context.response.send_message(
             await polished_message(
-                guild["strings"]["volume"], {"volume"(volume) + "%"}
+                guild["strings"]["volume"], {"volume": str(volume) + "%"}
             ),
             ephemeral=True,
         )
     else:
         await context.response.send_message(
             await polished_message(
-                guild["strings"]["volume_change"], {"volume"(volume) + "%"}
+                guild["strings"]["volume_change"], {"volume": str(volume) + "%"}
             )
         )
 
