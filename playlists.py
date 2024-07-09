@@ -1,22 +1,16 @@
 from asyncio import sleep
 from datetime import datetime
-from typing import List
 from io import BytesIO
 import requests
 from yaml import safe_dump as dump, safe_load as load
-from discord import Attachment, File, Interaction, Message, SelectOption
+from discord import File, SelectOption
 from discord.app_commands import Choice
 from discord.ui import Select, View
-from utils import (
-    get_file_name,
-    page_selector,
-    polished_message,
-    polished_url,
-)
+from utils import get_file_name, page_selector, polished_message, polished_url
 
 
 # return a list of playlists for the calling guild
-async def playlists_command(self, context: Interaction):
+async def playlists_command(self, context):
     await context.response.defer(ephemeral=True)
     guild = self.guilds[str(context.guild.id)]
     if self.cursor is None:
@@ -70,23 +64,23 @@ async def playlists_command(self, context: Interaction):
 
 async def playlist_command(
     self,
-    context: Interaction,
-    from_guild: str = None,
-    transfer: int = None,
-    add: str = None,
-    clone: int = None,
-    into: int = None,
-    move: int = None,
-    rename: int = None,
-    remove: int = None,
-    load: int = None,
-    select: int = None,
-    action: str = None,
-    file: Attachment = None,
-    song_url: str = None,
-    song_index: int = None,
-    new_name: str = None,
-    new_index: int = None,
+    context,
+    from_guild,
+    transfer,
+    add,
+    clone,
+    into,
+    move,
+    rename,
+    remove,
+    load,
+    select,
+    action,
+    file,
+    song_url,
+    song_index,
+    new_name,
+    new_index,
 ):
     async def declare_command_invalid():
         await context.followup.delete_message(
@@ -1091,9 +1085,7 @@ async def playlist_command(
     self.lock.release()
 
 
-async def playlist_guild_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[str]]:
+async def playlist_guild_autocompletion(self, context, current):
     guild_names = []
     if self.cursor is None:
         guild_ids = []
@@ -1122,9 +1114,7 @@ async def playlist_guild_autocompletion(
     return guild_names
 
 
-async def playlist_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[int]]:
+async def playlist_autocompletion(self, context, current):
     strings = self.guilds[str(context.guild.id)]["strings"]
     playlists = []
     if self.cursor is None:
@@ -1194,9 +1184,7 @@ async def playlist_autocompletion(
     return playlists
 
 
-async def playlist_action_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[str]]:
+async def playlist_action_autocompletion(self, context, current):
     strings = self.guilds[str(context.guild.id)]["strings"]
     action_options = [
         Choice(name=strings["add"], value="add"),
@@ -1212,9 +1200,7 @@ async def playlist_action_autocompletion(
     return actions
 
 
-async def playlist_song_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[int]]:
+async def playlist_song_autocompletion(self, context, current):
     strings = self.guilds[str(context.guild.id)]["strings"]
     songs = []
     if self.cursor is None:
@@ -1281,7 +1267,7 @@ async def playlist_song_autocompletion(
     return songs
 
 
-async def playlist_add_files(self, context: Interaction, message_regarded: Message):
+async def playlist_add_files(self, context, message_regarded):
     await context.response.defer()
     guild = self.guilds[str(context.guild.id)]
     strings = guild["strings"]
@@ -1499,7 +1485,7 @@ async def playlist_add_files(self, context: Interaction, message_regarded: Messa
     self.lock.release()
 
 
-async def renew_attachment(self, guild_id, channel_id, url, song_id=None):
+async def renew_attachment(self, guild_id, channel_id, url, song_id):
     if self.cursor is None:
         for guild in self.data["guilds"]:
             if guild["id"] == guild_id:
@@ -1530,7 +1516,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id=None):
         )
 
 
-async def renew_attachment_from_message(self, message: Message):
+async def renew_attachment_from_message(self, message):
     if message.author.id == self.bot.user.id:
         await self.lock.acquire()
         try:
@@ -1559,7 +1545,7 @@ async def renew_attachment_from_message(self, message: Message):
         self.lock.release()
 
 
-async def working_thread_command(self, context: Interaction, set: str = None):
+async def working_thread_command(self, context, set):
     await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     if self.cursor is None:
@@ -1655,9 +1641,7 @@ async def working_thread_command(self, context: Interaction, set: str = None):
     self.lock.release()
 
 
-async def working_thread_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[str]]:
+async def working_thread_autocompletion(context, current):
     threads = []
     for thread in context.guild.threads:
         if (current == "" or current.lower() in thread.name.lower()) and len(

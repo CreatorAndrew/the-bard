@@ -277,7 +277,7 @@ class Music(Cog):
     async def working_thread_autocompletion(
         self, context: Interaction, current: str
     ) -> List[Choice[str]]:
-        return await working_thread_autocompletion(self, context, current)
+        return await working_thread_autocompletion(context, current)
 
     @command(description="play_command_desc")
     async def play_command(

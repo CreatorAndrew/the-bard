@@ -1,10 +1,9 @@
 from asyncio import sleep
 import random
-from typing import List, Literal
 from yaml import safe_dump as dump
 from io import BytesIO
 import requests
-from discord import Attachment, FFmpegPCMAudio, Interaction, PCMVolumeTransformer
+from discord import FFmpegPCMAudio, PCMVolumeTransformer
 from discord.app_commands import Choice
 from utils import page_selector, polished_message, polished_url, variables
 
@@ -53,13 +52,7 @@ async def convert_to_time_marker(number):
     return marker
 
 
-async def play_command(
-    self,
-    context: Interaction,
-    file: Attachment = None,
-    song_url: str = None,
-    new_name: str = None,
-):
+async def play_command(self, context, file, song_url, new_name):
     await context.response.defer()
     if file is None and song_url is not None:
         await self.play_song(context, song_url, new_name)
@@ -75,7 +68,7 @@ async def play_command(
         )
 
 
-async def play_song(self, context, url=None, name=None, playlist=None):
+async def play_song(self, context, url, name, playlist):
     try:
 
         async def add_time(guild, time):
@@ -233,14 +226,7 @@ async def play_song(self, context, url=None, name=None, playlist=None):
         pass
 
 
-async def insert_command(
-    self,
-    context: Interaction,
-    file: Attachment = None,
-    song_url: str = None,
-    new_name: str = None,
-    new_index: int = None,
-):
+async def insert_command(self, context, file, song_url, new_name, new_index):
     if file is None and new_index is not None and song_url is not None:
         await self.insert_song(context, song_url, new_name, new_index)
     elif file is not None and new_index is not None and song_url is None:
@@ -251,9 +237,7 @@ async def insert_command(
         )
 
 
-async def insert_song(
-    self, context, url, name, index, time="0", duration=None, silent=False
-):
+async def insert_song(self, context, url, name, index, time, duration, silent):
     guild = self.guilds[str(context.guild.id)]
     try:
         voice_channel = context.user.voice.channel
@@ -318,7 +302,7 @@ async def insert_song(
         )
 
 
-async def move_command(self, context: Interaction, song_index: int, new_index: int):
+async def move_command(self, context, song_index, new_index):
     guild = self.guilds[str(context.guild.id)]
     if 0 < song_index < len(guild["queue"]) + 1:
         if 0 < new_index < len(guild["queue"]) + 1:
@@ -357,7 +341,7 @@ async def move_command(self, context: Interaction, song_index: int, new_index: i
         )
 
 
-async def rename_command(self, context: Interaction, song_index: int, new_name: str):
+async def rename_command(self, context, song_index, new_name):
     guild = self.guilds[str(context.guild.id)]
     await context.response.send_message(
         await polished_message(
@@ -375,11 +359,11 @@ async def rename_command(self, context: Interaction, song_index: int, new_name: 
     guild["queue"][song_index - 1]["name"] = new_name
 
 
-async def remove_command(self, context: Interaction, song_index: int):
+async def remove_command(self, context, song_index):
     await self.remove_song(context, song_index)
 
 
-async def remove_song(self, context, index, silent=False):
+async def remove_song(self, context, index, silent):
     guild = self.guilds[str(context.guild.id)]
     if 0 < index < len(guild["queue"]) + 1:
         if not silent:
@@ -415,9 +399,7 @@ async def remove_song(self, context, index, silent=False):
         )
 
 
-async def song_autocompletion(
-    self, context: Interaction, current: str
-) -> List[Choice[int]]:
+async def song_autocompletion(self, context, current):
     guild = self.guilds[str(context.guild.id)]
     songs = []
     index = 1
@@ -438,7 +420,7 @@ async def song_autocompletion(
     return songs
 
 
-async def skip_command(self, context: Interaction, by: int = 1, to: int = None):
+async def skip_command(self, context, by, to):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         if to is None:
@@ -482,7 +464,7 @@ async def skip_command(self, context: Interaction, by: int = 1, to: int = None):
         )
 
 
-async def previous_command(self, context: Interaction, by: int = 1):
+async def previous_command(self, context, by):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         if guild["index"] - by >= 0 and by > 0:
@@ -517,14 +499,14 @@ async def previous_command(self, context: Interaction, by: int = 1):
         )
 
 
-async def stop_command(self, context: Interaction):
+async def stop_command(self, context):
     await context.response.send_message(
         self.guilds[str(context.guild.id)]["strings"]["stop"]
     )
     await self.stop_music(context)
 
 
-async def stop_music(self, context, leave=False, guild=None):
+async def stop_music(self, context, leave, guild):
     if guild is None:
         id = context.guild.id
     else:
@@ -556,7 +538,7 @@ async def stop_music(self, context, leave=False, guild=None):
             await context.guild.voice_client.cleanup()
 
 
-async def pause_command(self, context: Interaction):
+async def pause_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         if self.use_lavalink:
@@ -588,7 +570,7 @@ async def pause_command(self, context: Interaction):
         )
 
 
-async def jump_command(self, context: Interaction, time: str):
+async def jump_command(self, context, time):
     await self.jump_to(context, time)
 
 
@@ -630,7 +612,7 @@ async def jump_to(self, context, time):
         )
 
 
-async def forward_command(self, context: Interaction, time: str):
+async def forward_command(self, context, time):
     if self.use_lavalink:
         await self.jump_to(
             context,
@@ -649,7 +631,7 @@ async def forward_command(self, context: Interaction, time: str):
         )
 
 
-async def rewind_command(self, context: Interaction, time: str):
+async def rewind_command(self, context, time):
     if self.use_lavalink:
         await self.jump_to(
             context,
@@ -668,7 +650,7 @@ async def rewind_command(self, context: Interaction, time: str):
         )
 
 
-async def when_command(self, context: Interaction):
+async def when_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         await context.response.send_message(
@@ -692,7 +674,7 @@ async def when_command(self, context: Interaction):
         )
 
 
-async def shuffle_command(self, context: Interaction, restart: Literal[0, 1] = 1):
+async def shuffle_command(self, context, restart):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         index = 0
@@ -717,7 +699,7 @@ async def shuffle_command(self, context: Interaction, restart: Literal[0, 1] = 1
         )
 
 
-async def queue_command(self, context: Interaction):
+async def queue_command(self, context):
     await context.response.defer(ephemeral=True)
     guild = self.guilds[str(context.guild.id)]
     message = guild["strings"]["queue_songs_header"] + "\n"
@@ -746,7 +728,7 @@ async def queue_command(self, context: Interaction):
     await page_selector(context, guild["strings"], pages, 0)
 
 
-async def what_command(self, context: Interaction):
+async def what_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         await context.response.send_message(
@@ -769,7 +751,7 @@ async def what_command(self, context: Interaction):
         )
 
 
-async def volume_command(self, context: Interaction, set: str = None):
+async def volume_command(self, context, set):
     guild = self.guilds[str(context.guild.id)]
     if set is not None:
         if set.endswith("%"):
@@ -791,19 +773,19 @@ async def volume_command(self, context: Interaction, set: str = None):
     if set is None:
         await context.response.send_message(
             await polished_message(
-                guild["strings"]["volume"], {"volume": str(volume) + "%"}
+                guild["strings"]["volume"], {"volume"(volume) + "%"}
             ),
             ephemeral=True,
         )
     else:
         await context.response.send_message(
             await polished_message(
-                guild["strings"]["volume_change"], {"volume": str(volume) + "%"}
+                guild["strings"]["volume_change"], {"volume"(volume) + "%"}
             )
         )
 
 
-async def recruit_command(self, context: Interaction):
+async def recruit_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     try:
         voice_channel = context.user.voice.channel
@@ -838,7 +820,7 @@ async def recruit_command(self, context: Interaction):
         )
 
 
-async def dismiss_command(self, context: Interaction):
+async def dismiss_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     try:
         voice_channel = context.user.voice.channel
@@ -897,7 +879,7 @@ async def disconnect_when_alone(self, member, before, after):
         pass
 
 
-async def keep_command(self, context: Interaction, set: Literal[0, 1] = None):
+async def keep_command(self, context, set):
     await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     try:
@@ -953,7 +935,7 @@ async def keep_command(self, context: Interaction, set: Literal[0, 1] = None):
     self.lock.release()
 
 
-async def loop_command(self, context: Interaction, set: Literal[0, 1] = None):
+async def loop_command(self, context, set):
     await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     if set is None:
