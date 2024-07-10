@@ -136,14 +136,13 @@ async def playlist_command(
                 guild = guild_searched
                 break
         playlist_count = len(guild["playlists"])
-        song_id = None
-        duration = "duration"
-        name = "name"
-        guild_id = "guild_id"
-        channel_id = "channel_id"
-        message_id = "message_id"
-        attachment_index = "attachment_index"
-        song_file_entry = "file"
+        song_duration_entry = "duration"
+        song_name_entry = "name"
+        guild_id_entry = "guild_id"
+        channel_id_entry = "channel_id"
+        message_id_entry = "message_id"
+        attachment_index_entry = "attachment_index"
+        song_url_entry = "file"
     else:
         get_songs_statement = """
             select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id, message_id, attachment_index, song_url from pl_songs
@@ -156,14 +155,13 @@ async def playlist_command(
             (context.guild.id,),
         )
         playlist_count = (await self.cursor.fetchone())[0]
-        song_id = 0
-        duration = 0
-        name = 1
-        guild_id = 2
-        channel_id = 3
-        message_id = 4
-        attachment_index = 5
-        song_file_entry = 6
+        song_duration_entry = 0
+        song_name_entry = 1
+        guild_id_entry = 2
+        channel_id_entry = 3
+        message_id_entry = 4
+        attachment_index_entry = 5
+        song_url_entry = 6
     # import a playlist
     if from_guild is not None:
         if self.cursor is None:
@@ -499,7 +497,7 @@ async def playlist_command(
             await polished_message(
                 strings["move_playlist"],
                 {
-                    "playlist": playlist_copies[move - 1][name],
+                    "playlist": playlist_copies[move - 1][song_name_entry],
                     "playlist_index": new_index,
                 },
             )
@@ -598,9 +596,9 @@ async def playlist_command(
         if songs:
             proper_songs = []
             for song in songs:
-                if song[song_file_entry] is None:
+                if song[song_url_entry] is None:
                     try:
-                        song_message = self.messages[str(song[message_id])]
+                        song_message = self.messages[str(song[message_id_entry])]
                         if (
                             int(datetime.timestamp(datetime.now()))
                             > song_message["expiration"]
@@ -608,23 +606,25 @@ async def playlist_command(
                             raise Exception
                     except:
                         song_message = {
-                            "message": await self.bot.get_guild(song[guild_id])
-                            .get_channel_or_thread(song[channel_id])
-                            .fetch_message(song[message_id]),
+                            "message": await self.bot.get_guild(song[guild_id_entry])
+                            .get_channel_or_thread(song[channel_id_entry])
+                            .fetch_message(song[message_id_entry]),
                             "expiration": int(datetime.timestamp(datetime.now()))
                             + 1209600,
                         }
-                        self.messages[str(song[message_id])] = song_message
+                        self.messages[str(song[message_id_entry])] = song_message
                     song_file = str(
-                        song_message["message"].attachments[song[attachment_index]]
+                        song_message["message"].attachments[
+                            song[attachment_index_entry]
+                        ]
                     )
                 else:
-                    song_file = song[song_file_entry]
+                    song_file = song[song_url_entry]
                 proper_songs.append(
                     {
-                        "name": song[name],
+                        "name": song[song_name_entry],
                         "file": song_file,
-                        "duration": song[duration],
+                        "duration": song[song_duration_entry],
                     }
                 )
             if self.cursor is None:
@@ -840,16 +840,16 @@ async def playlist_command(
                         "update pl_songs set pl_song_id = ? where song_id = ?",
                         (new_index - 1, song[0]),
                     )
-                if song[song_file_entry] is None:
+                if song[song_url_entry] is None:
                     song_file = str(
                         (
-                            await self.bot.get_guild(song[guild_id])
-                            .get_channel_or_thread(song[channel_id])
-                            .fetch_message(song[message_id])
-                        ).attachments[song[attachment_index]]
+                            await self.bot.get_guild(song[guild_id_entry])
+                            .get_channel_or_thread(song[channel_id_entry])
+                            .fetch_message(song[message_id_entry])
+                        ).attachments[song[attachment_index_entry]]
                     )
                 else:
-                    song_file = song[song_file_entry]
+                    song_file = song[song_url_entry]
                 if self.cursor is None:
                     guild["playlists"][select - 1]["songs"].remove(song)
                     guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
@@ -859,7 +859,9 @@ async def playlist_command(
                         {
                             "playlist": playlist,
                             "playlist_index": select,
-                            "song": await polished_url(song_file, song[name]),
+                            "song": await polished_url(
+                                song_file, song[song_name_entry]
+                            ),
                             "index": new_index,
                         },
                     )
@@ -1012,7 +1014,7 @@ async def playlist_command(
                 index = 0
                 for song in songs:
                     previous_message = message
-                    if song[song_file_entry] is None:
+                    if song[song_url_entry] is None:
                         try:
                             song_message = self.messages[str(song[message_id])]
                             if (
@@ -1022,22 +1024,28 @@ async def playlist_command(
                                 raise Exception
                         except:
                             song_message = {
-                                "message": await self.bot.get_guild(song[guild_id])
-                                .get_channel_or_thread(song[channel_id])
-                                .fetch_message(song[message_id]),
+                                "message": await self.bot.get_guild(
+                                    song[guild_id_entry]
+                                )
+                                .get_channel_or_thread(song[channel_id_entry])
+                                .fetch_message(song[message_id_entry]),
                                 "expiration": int(datetime.timestamp(datetime.now()))
                                 + 1209600,
                             }
-                            self.messages[str(song[message_id])] = song_message
+                            self.messages[str(song[message_id_entry])] = song_message
                         song_file = str(
-                            song_message["message"].attachments[song[attachment_index]]
+                            song_message["message"].attachments[
+                                song[attachment_index_entry]
+                            ]
                         )
                     else:
-                        song_file = song[song_file_entry]
+                        song_file = song[song_url_entry]
                     new_message = await polished_message(
                         strings["song"] + "\n",
                         {
-                            "song": await polished_url(song_file, song[name]),
+                            "song": await polished_url(
+                                song_file, song[song_name_entry]
+                            ),
                             "index": index + 1,
                         },
                     )
