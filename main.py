@@ -3,14 +3,14 @@ from os.path import exists
 from asyncio import Lock, run
 from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
-from discord.ext import commands
+from discord.ext.commands import Bot
 from utils import CommandTranslator, Cursor, load_order, variables
 
 intents = Intents.default()
 intents.members = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="+", intents=intents)
+bot = Bot(command_prefix="+", intents=intents)
 bot.remove_command("help")
 
 
