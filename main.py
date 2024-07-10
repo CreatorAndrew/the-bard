@@ -7,7 +7,6 @@ from discord.ext import commands
 from utils import CommandTranslator, Cursor, load_order, variables
 
 intents = Intents.default()
-intents.guilds = True
 intents.members = True
 intents.message_content = True
 
