@@ -1,16 +1,11 @@
+from sys import path
+from os.path import dirname
+
+path.insert(0, dirname(path[0]))
 import subprocess
 import psycopg
 from yaml import safe_load as load
-
-variables = load(open("variables.yaml", "r"))
-
-credentials = f"""
-    dbname={variables["postgresql_credentials"]["user"]}
-    user={variables["postgresql_credentials"]["user"]}
-    password={variables["postgresql_credentials"]["password"]}
-    {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
-    {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}
-"""
+from utils import credentials, variables
 
 data = load(open("Bard.yaml", "r"))
 

@@ -410,6 +410,7 @@ class Music(Cog):
 
 async def setup(bot):
     bot.music_init_guilds = None
+    bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
     if bot.cursor is not None:
         await bot.cursor.execute(
             "select guild_id, keep_in_voice, repeat_queue from guilds_music"

@@ -1,16 +1,10 @@
-from os.path import exists
+from sys import path
+from os.path import dirname, exists
+
+path.insert(0, dirname(path[0]))
 import psycopg
 from yaml import safe_dump as dump, safe_load as load
-
-variables = load(open("variables.yaml", "r"))
-
-credentials = f"""
-    dbname={variables["postgresql_credentials"]["user"]}
-    user={variables["postgresql_credentials"]["user"]}
-    password={variables["postgresql_credentials"]["password"]}
-    {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
-    {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}
-"""
+from utils import credentials, variables
 
 FLAT_FILE = "Bard.yaml"
 if not exists(FLAT_FILE):

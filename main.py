@@ -4,7 +4,7 @@ from asyncio import Lock, run
 from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
 from discord.ext.commands import Bot
-from utils import CommandTranslator, Cursor, load_order, variables
+from utils import CommandTranslator, credentials, Cursor, load_order, variables
 
 intents = Intents.default()
 intents.members = True
@@ -45,13 +45,6 @@ async def main():
                 import subprocess
                 import psycopg
 
-                credentials = f"""
-                    dbname={variables["postgresql_credentials"]["user"]}
-                    user={variables["postgresql_credentials"]["user"]}
-                    password={variables["postgresql_credentials"]["password"]}
-                    {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
-                    {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}
-                """
                 subprocess.run(
                     [
                         "psql",
@@ -93,7 +86,6 @@ async def main():
         bot.flat_file = flat_file
         bot.guilds_ = {}
         bot.lock = Lock()
-        bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
         for item in load_order:
             if exists(f"plugins/{item}.py"):
                 await bot.load_extension(f"plugins.{item}")
