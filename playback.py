@@ -917,7 +917,7 @@ async def keep_command(self, context, set):
                     break
         else:
             await self.cursor.execute(
-                "update guilds set keep_in_voice = ? where guild_id = ?",
+                "update guilds_music set keep_in_voice = ? where guild_id = ?",
                 (keep, context.guild.id),
             )
             await self.connection.commit()
@@ -967,7 +967,7 @@ async def loop_command(self, context, set):
                     break
         else:
             await self.cursor.execute(
-                "update guilds set repeat_queue = ? where guild_id = ?",
+                "update guilds_music set repeat_queue = ? where guild_id = ?",
                 (repeat, context.guild.id),
             )
             await self.connection.commit()
