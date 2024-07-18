@@ -60,7 +60,7 @@ class Cursor:
         return await self.cursor.fetchone()
 
 
-async def get_file_name(file):
+def get_file_name(file):
     try:
         return file[file.rindex("/") + 1 : file.rindex("?")]
     except:
@@ -118,11 +118,11 @@ async def page_selector(context, strings, pages, index, message=None):
     await context.followup.edit_message(message.id, content=pages[index], view=view)
 
 
-async def polished_message(message, replacements):
+def polished_message(message, replacements):
     for placeholder, replacement in replacements.items():
         message = message.replace("%{" + placeholder + "}", str(replacement))
     return message
 
 
-async def polished_url(file, name):
+def polished_url(file, name):
     return f"[{name}](<{file}>)"

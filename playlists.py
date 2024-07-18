@@ -35,14 +35,15 @@ async def playlists_command(self, context):
         await context.followup.send(guild["strings"]["no_playlists"])
         return
     pages = []
-    index = 0
-    while index < len(
-        self.data["guilds"][guild_index]["playlists"]
-        if self.cursor is None
-        else playlists
+    for index in range(
+        len(
+            self.data["guilds"][guild_index]["playlists"]
+            if self.cursor is None
+            else playlists
+        )
     ):
         previous_message = message
-        new_message = await polished_message(
+        new_message = polished_message(
             guild["strings"]["playlist"] + "\n",
             {
                 "playlist": (
@@ -57,7 +58,6 @@ async def playlists_command(self, context):
         if len(message) > 2000:
             pages.append(previous_message)
             message = guild["strings"]["playlists_header"] + "\n" + new_message
-        index += 1
     pages.append(message)
     await page_selector(context, guild["strings"], pages, 0)
 
@@ -104,27 +104,28 @@ async def playlist_command(
             return
         response = requests.get(url, stream=True)
         try:
-            metadata = await self.get_metadata(BytesIO(response.content), url)
+            metadata = self.get_metadata(BytesIO(response.content), url)
         except:
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
             )
             await context.followup.send(
-                await polished_message(strings["invalid_url"], {"url": url}),
+                polished_message(strings["invalid_url"], {"url": url}),
                 ephemeral=True,
             )
             return
         # verify that the URL file is a media container
-        if "audio" not in response.headers.get(
-            "Content-Type", ""
-        ) and "video" not in response.headers.get("Content-Type", ""):
+        if not any(
+            content_type in response.headers.get("Content-Type", "")
+            for content_type in ["audio", "video"]
+        ):
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
             )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["invalid_song"],
-                    {"song": await polished_url(url, metadata["name"])},
+                    {"song": polished_url(url, metadata["name"])},
                 ),
                 ephemeral=True,
             )
@@ -256,7 +257,7 @@ async def playlist_command(
                 (int(from_guild), transfer - 1),
             )
         await context.followup.send(
-            await polished_message(
+            polished_message(
                 strings["clone_playlist"],
                 {
                     "playlist": (
@@ -316,7 +317,7 @@ async def playlist_command(
                     (new_index - 1,),
                 )
         await context.followup.send(
-            await polished_message(
+            polished_message(
                 strings["add_playlist"],
                 {"playlist": add, "playlist_index": new_index},
             )
@@ -399,7 +400,7 @@ async def playlist_command(
                         (new_index - 1,),
                     )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["clone_playlist"],
                     {
                         "playlist": playlist,
@@ -454,7 +455,7 @@ async def playlist_command(
                 )
                 into_playlist = (await self.cursor.fetchone())[0]
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["clone_playlist"],
                     {
                         "playlist": playlist,
@@ -494,7 +495,7 @@ async def playlist_command(
                 (new_index - 1, playlist_copies[move - 1][0]),
             )
         await context.followup.send(
-            await polished_message(
+            polished_message(
                 strings["move_playlist"],
                 {
                     "playlist": playlist_copies[move - 1][song_name_entry],
@@ -509,7 +510,7 @@ async def playlist_command(
             return
         if self.cursor is None:
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["rename_playlist"],
                     {
                         "playlist": guild["playlists"][rename - 1]["name"],
@@ -525,7 +526,7 @@ async def playlist_command(
                 (context.guild.id, rename - 1),
             )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["rename_playlist"],
                     {
                         "playlist": (await self.cursor.fetchone())[0],
@@ -542,7 +543,7 @@ async def playlist_command(
     elif remove is not None and 0 < remove <= playlist_count:
         if self.cursor is None:
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["remove_playlist"],
                     {
                         "playlist": guild["playlists"][remove - 1]["name"],
@@ -557,7 +558,7 @@ async def playlist_command(
                 (context.guild.id, remove - 1),
             )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["remove_playlist"],
                     {
                         "playlist": (await self.cursor.fetchone())[0],
@@ -629,7 +630,7 @@ async def playlist_command(
                 )
             if self.cursor is None:
                 await context.followup.send(
-                    await polished_message(
+                    polished_message(
                         strings["load_playlist"],
                         {
                             "playlist": guild["playlists"][load - 1]["name"],
@@ -646,7 +647,7 @@ async def playlist_command(
                 try:
                     if context.user.voice.channel is not None:
                         await context.followup.send(
-                            await polished_message(
+                            polished_message(
                                 strings["load_playlist"],
                                 {
                                     "playlist": (await self.cursor.fetchone())[0],
@@ -668,7 +669,7 @@ async def playlist_command(
                     (context.guild.id, load - 1),
                 )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["playlist_no_songs"],
                     {
                         "playlist": (
@@ -786,12 +787,12 @@ async def playlist_command(
                             (new_index - 1,),
                         )
                 await context.followup.send(
-                    await polished_message(
+                    polished_message(
                         strings["playlist_add_song"],
                         {
                             "playlist": playlist,
                             "playlist_index": select,
-                            "song": await polished_url(url, new_name),
+                            "song": polished_url(url, new_name),
                             "index": new_index,
                         },
                     )
@@ -854,14 +855,12 @@ async def playlist_command(
                     guild["playlists"][select - 1]["songs"].remove(song)
                     guild["playlists"][select - 1]["songs"].insert(new_index - 1, song)
                 await context.followup.send(
-                    await polished_message(
+                    polished_message(
                         strings["playlist_move_song"],
                         {
                             "playlist": playlist,
                             "playlist_index": select,
-                            "song": await polished_url(
-                                song_file, song[song_name_entry]
-                            ),
+                            "song": polished_url(song_file, song[song_name_entry]),
                             "index": new_index,
                         },
                     )
@@ -903,12 +902,12 @@ async def playlist_command(
                 elif self.cursor is None:
                     song_file = song["file"]
                 await context.followup.send(
-                    await polished_message(
+                    polished_message(
                         strings["playlist_rename_song"],
                         {
                             "playlist": playlist,
                             "playlist_index": select,
-                            "song": await polished_url(
+                            "song": polished_url(
                                 song_file,
                                 song["name"] if self.cursor is None else song_name,
                             ),
@@ -970,12 +969,12 @@ async def playlist_command(
                         (song_index - 1, global_playlist_id),
                     )
                 await context.followup.send(
-                    await polished_message(
+                    polished_message(
                         strings["playlist_remove_song"],
                         {
                             "playlist": playlist,
                             "playlist_index": select,
-                            "song": await polished_url(
+                            "song": polished_url(
                                 song_file,
                                 song["name"] if self.cursor is None else song_name,
                             ),
@@ -988,7 +987,7 @@ async def playlist_command(
                 await context.followup.delete_message(
                     (await context.followup.send("...", silent=True)).id
                 )
-                message = await polished_message(
+                message = polished_message(
                     strings["playlist_songs_header"] + "\n",
                     {"playlist": playlist, "playlist_index": select},
                 )
@@ -1003,7 +1002,7 @@ async def playlist_command(
                 self.lock.release()
                 if not songs:
                     await context.followup.send(
-                        await polished_message(
+                        polished_message(
                             strings["playlist_no_songs"],
                             {"playlist": playlist, "playlist_index": select},
                         ),
@@ -1011,8 +1010,7 @@ async def playlist_command(
                     )
                     return
                 pages = []
-                index = 0
-                for song in songs:
+                for index, song in enumerate(songs):
                     previous_message = message
                     if song[song_url_entry] is None:
                         try:
@@ -1040,12 +1038,10 @@ async def playlist_command(
                         )
                     else:
                         song_file = song[song_url_entry]
-                    new_message = await polished_message(
+                    new_message = polished_message(
                         strings["song"] + "\n",
                         {
-                            "song": await polished_url(
-                                song_file, song[song_name_entry]
-                            ),
+                            "song": polished_url(song_file, song[song_name_entry]),
                             "index": index + 1,
                         },
                     )
@@ -1054,7 +1050,7 @@ async def playlist_command(
                         pages.append(previous_message)
                         message = "".join(
                             [
-                                await polished_message(
+                                polished_message(
                                     strings["playlist_songs_header"] + "\n",
                                     {
                                         "playlist": playlist,
@@ -1064,7 +1060,6 @@ async def playlist_command(
                                 new_message,
                             ]
                         )
-                    index += 1
                 pages.append(message)
                 await page_selector(context, strings, pages, 0)
                 return
@@ -1076,7 +1071,7 @@ async def playlist_command(
                 (await context.followup.send("...", silent=True)).id
             )
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["invalid_playlist_number"], {"playlist_index": select}
                 ),
                 ephemeral=True,
@@ -1132,11 +1127,10 @@ async def playlist_autocompletion(self, context, current):
                 if context.namespace.from_guild is None
                 else int(context.namespace.from_guild)
             ):
-                index = 1
-                for playlist in guild["playlists"]:
-                    polished_playlist_name = await polished_message(
+                for index, playlist in enumerate(guild["playlists"]):
+                    polished_playlist_name = polished_message(
                         strings["playlist"],
-                        {"playlist": playlist["name"], "playlist_index": index},
+                        {"playlist": playlist["name"], "playlist_index": index + 1},
                     )
                     playlist["name"] = (
                         playlist["name"][
@@ -1151,9 +1145,8 @@ async def playlist_autocompletion(self, context, current):
                         or current.lower() in polished_playlist_name.lower()
                     ) and len(playlists) < 25:
                         playlists.append(
-                            Choice(name=polished_playlist_name, value=index)
+                            Choice(name=polished_playlist_name, value=index + 1)
                         )
-                    index += 1
                 break
     else:
         await self.lock.acquire()
@@ -1169,12 +1162,11 @@ async def playlist_autocompletion(self, context, current):
         )
         playlist_names = list(await self.cursor.fetchall())
         self.lock.release()
-        index = 1
-        for playlist in playlist_names:
+        for index, playlist in enumerate(playlist_names):
             playlist_name = list(playlist)
-            polished_playlist_name = await polished_message(
+            polished_playlist_name = polished_message(
                 strings["playlist"],
-                {"playlist": playlist_name[0], "playlist_index": index},
+                {"playlist": playlist_name[0], "playlist_index": index + 1},
             )
             playlist_name[0] = (
                 playlist_name[0][
@@ -1187,8 +1179,7 @@ async def playlist_autocompletion(self, context, current):
             if (
                 current == "" or current.lower() in polished_playlist_name.lower()
             ) and len(playlists) < 25:
-                playlists.append(Choice(name=polished_playlist_name, value=index))
-            index += 1
+                playlists.append(Choice(name=polished_playlist_name, value=index + 1))
     return playlists
 
 
@@ -1215,12 +1206,11 @@ async def playlist_song_autocompletion(self, context, current):
         for guild in self.data["guilds"]:
             if guild["id"] == context.guild.id:
                 try:
-                    index = 1
-                    for song in guild["playlists"][context.namespace.select - 1][
-                        "songs"
-                    ]:
-                        polished_song_name = await polished_message(
-                            strings["song"], {"song": song["name"], "index": index}
+                    for index, song in enumerate(
+                        guild["playlists"][context.namespace.select - 1]["songs"]
+                    ):
+                        polished_song_name = polished_message(
+                            strings["song"], {"song": song["name"], "index": index + 1}
                         )
                         song["name"] = (
                             song["name"][
@@ -1234,8 +1224,9 @@ async def playlist_song_autocompletion(self, context, current):
                             current == ""
                             or current.lower() in polished_song_name.lower()
                         ) and len(songs) < 25:
-                            songs.append(Choice(name=polished_song_name, value=index))
-                        index += 1
+                            songs.append(
+                                Choice(name=polished_song_name, value=index + 1)
+                            )
                 except:
                     pass
                 break
@@ -1253,11 +1244,10 @@ async def playlist_song_autocompletion(self, context, current):
             )
             song_names = list(await self.cursor.fetchall())
             self.lock.release()
-            index = 1
-            for song in song_names:
+            for index, song in enumerate(song_names):
                 song_name = list(song)
-                polished_song_name = await polished_message(
-                    strings["song"], {"song": song_name[0], "index": index}
+                polished_song_name = polished_message(
+                    strings["song"], {"song": song_name[0], "index": index + 1}
                 )
                 song_name[0] = (
                     song_name[0][: 97 - len(polished_song_name) + len(song_name[0])]
@@ -1268,8 +1258,7 @@ async def playlist_song_autocompletion(self, context, current):
                 if (
                     current == "" or current.lower() in polished_song_name.lower()
                 ) and len(songs) < 25:
-                    songs.append(Choice(name=polished_song_name, value=index))
-                index += 1
+                    songs.append(Choice(name=polished_song_name, value=index + 1))
         except:
             pass
     return songs
@@ -1281,24 +1270,22 @@ async def playlist_add_files(self, context, message_regarded):
     strings = guild["strings"]
     # show a dropdown menu of all the playlists for the calling guild
     playlist_options = [SelectOption(label=strings["cancel_option"])]
-    index = 1
     if self.cursor is None:
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
-                for playlist in guild_searched["playlists"]:
+                for index, playlist in enumerate(guild_searched["playlists"]):
                     playlist_options.append(
                         SelectOption(
-                            label=await polished_message(
+                            label=polished_message(
                                 strings["playlist"],
                                 {
                                     "playlist": playlist["name"],
-                                    "playlist_index": index,
+                                    "playlist_index": index + 1,
                                 },
                             ),
-                            value=str(index),
+                            value=str(index + 1),
                         )
                     )
-                    index += 1
                 break
     else:
         await self.lock.acquire()
@@ -1308,17 +1295,16 @@ async def playlist_add_files(self, context, message_regarded):
         )
         playlists = await self.cursor.fetchall()
         self.lock.release()
-        for playlist in playlists:
+        for index, playlist in enumerate(playlists):
             playlist_options.append(
                 SelectOption(
-                    label=await polished_message(
+                    label=polished_message(
                         strings["playlist"],
-                        {"playlist": playlist[0], "playlist_index": index},
+                        {"playlist": playlist[0], "playlist_index": index + 1},
                     ),
-                    value=str(index),
+                    value=str(index + 1),
                 )
             )
-            index += 1
     playlist_menu = Select(
         placeholder=strings["playlist_select_menu_placeholder"],
         options=playlist_options,
@@ -1348,21 +1334,22 @@ async def playlist_add_files(self, context, message_regarded):
     for url in message_regarded.attachments:
         response = requests.get(str(url), stream=True)
         try:
-            metadata = await self.get_metadata(BytesIO(response.content), str(url))
+            metadata = self.get_metadata(BytesIO(response.content), str(url))
         except:
             await context.followup.send(
-                await polished_message(strings["invalid_url"], {"url": str(url)}),
+                polished_message(strings["invalid_url"], {"url": str(url)}),
                 ephemeral=True,
             )
             return
         # verify that the URL file is a media container
-        if "audio" not in response.headers.get(
-            "Content-Type", ""
-        ) and "video" not in response.headers.get("Content-Type", ""):
+        if not any(
+            content_type in response.headers.get("Content-Type", "")
+            for content_type in ["audio", "video"]
+        ):
             await context.followup.send(
-                await polished_message(
+                polished_message(
                     strings["invalid_song"],
-                    {"song": await polished_url(str(url), metadata["name"])},
+                    {"song": polished_url(str(url), metadata["name"])},
                 ),
                 ephemeral=True,
             )
@@ -1388,12 +1375,12 @@ async def playlist_add_files(self, context, message_regarded):
                 for song in playlist:
                     guild_searched["playlists"][index - 1]["songs"].append(song)
                     previous_message = message
-                    new_message = await polished_message(
+                    new_message = polished_message(
                         strings["playlist_add_song"] + "\n",
                         {
                             "playlist": guild_searched["playlists"][index - 1]["name"],
                             "playlist_index": index,
-                            "song": await polished_url(
+                            "song": polished_url(
                                 urls[playlist.index(song)], song["name"]
                             ),
                             "index": len(
@@ -1473,14 +1460,12 @@ async def playlist_add_files(self, context, message_regarded):
                 (context.guild.id, index - 1),
             )
             song_index = (await self.cursor.fetchone())[0]
-            new_message = await polished_message(
+            new_message = polished_message(
                 strings["playlist_add_song"] + "\n",
                 {
                     "playlist": playlist_name,
                     "playlist_index": index,
-                    "song": await polished_url(
-                        urls[playlist.index(song)], song["name"]
-                    ),
+                    "song": polished_url(urls[playlist.index(song)], song["name"]),
                     "index": song_index,
                 },
             )
@@ -1562,7 +1547,7 @@ async def working_thread_command(self, context, set):
                 if set is None:
                     try:
                         await context.response.send_message(
-                            await polished_message(
+                            polished_message(
                                 strings["working_thread"],
                                 {
                                     "bot": self.bot.user.mention,
@@ -1575,7 +1560,7 @@ async def working_thread_command(self, context, set):
                         )
                     except:
                         await context.response.send_message(
-                            await polished_message(
+                            polished_message(
                                 strings["working_thread_not_assigned"],
                                 {"bot": self.bot.user.mention},
                             ),
@@ -1588,7 +1573,7 @@ async def working_thread_command(self, context, set):
                         guild["working_thread_id"] = thread.id
                         dump(self.data, open(self.flat_file, "w"), indent=4)
                         await context.response.send_message(
-                            await polished_message(
+                            polished_message(
                                 strings["working_thread_change"],
                                 {
                                     "bot": self.bot.user.mention,
@@ -1610,7 +1595,7 @@ async def working_thread_command(self, context, set):
             working_thread_id = (await self.cursor.fetchone())[0]
             try:
                 await context.response.send_message(
-                    await polished_message(
+                    polished_message(
                         strings["working_thread"],
                         {
                             "bot": self.bot.user.mention,
@@ -1623,7 +1608,7 @@ async def working_thread_command(self, context, set):
                 )
             except:
                 await context.response.send_message(
-                    await polished_message(
+                    polished_message(
                         strings["working_thread_not_assigned"],
                         {"bot": self.bot.user.mention},
                     )
@@ -1637,7 +1622,7 @@ async def working_thread_command(self, context, set):
                 )
                 await self.connection.commit()
                 await context.response.send_message(
-                    await polished_message(
+                    polished_message(
                         strings["working_thread_change"],
                         {"bot": self.bot.user.mention, "thread": thread.jump_url},
                     )
