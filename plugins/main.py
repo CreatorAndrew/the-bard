@@ -23,7 +23,7 @@ class Main(Cog):
         self.lock = bot.lock
         self.set_language_options()
 
-    def init_guilds(self, guilds=None):
+    def init_guilds(self, guilds):
         if self.cursor is None:
             guilds = self.data["guilds"]
             id = "id"
