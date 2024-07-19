@@ -1613,6 +1613,8 @@ async def working_thread_command(self, context, set):
                         {"bot": self.bot.user.mention},
                     )
                 )
+            self.lock.release()
+            return
         thread_nonexistent = True
         for thread in context.guild.threads:
             if set == thread.name:
