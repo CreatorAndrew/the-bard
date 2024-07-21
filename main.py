@@ -50,18 +50,17 @@ async def main():
                         "psql",
                         "-c",
                         f"create database \"{variables['postgresql_credentials']['database']}\"",
-                        credentials,
+                        credentials.replace(
+                            f"dbname={variables['postgresql_credentials']['database']}",
+                            f"dbname={variables['postgresql_credentials']['user']}",
+                        ),
                     ],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,
                 )
                 database_exists = False
                 connection = await psycopg.AsyncConnection.connect(
-                    credentials.replace(
-                        f"dbname={variables['postgresql_credentials']['user']}",
-                        f"dbname={variables['postgresql_credentials']['database']}",
-                    ),
-                    autocommit=True,
+                    credentials, autocommit=True
                 )
                 cursor = Cursor(connection.cursor(), connection.cursor(), "%s")
             elif variables["storage"] == "sqlite":

@@ -4,20 +4,15 @@ from os.path import dirname, exists
 path.insert(0, dirname(path[0]))
 import psycopg
 from yaml import safe_dump as dump, safe_load as load
-from utils import credentials, variables
+from utils import credentials
 
 FLAT_FILE = "Bard.yaml"
 if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-CONNECTION = psycopg.connect(
-    credentials.replace(
-        f"dbname={variables['postgresql_credentials']['user']}",
-        f"dbname={variables['postgresql_credentials']['database']}",
-    )
-)
-cursor = CONNECTION.cursor()
+connection = psycopg.connect(credentials)
+cursor = connection.cursor()
 
 cursor.execute("select * from guilds")
 for guild in cursor.fetchall():
@@ -33,6 +28,6 @@ for guild in cursor.fetchall():
         }
     )
 
-CONNECTION.close()
+connection.close()
 
 dump(data, open(FLAT_FILE, "w"), indent=4)

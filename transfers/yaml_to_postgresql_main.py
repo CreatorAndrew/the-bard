@@ -14,19 +14,16 @@ subprocess.run(
         "psql",
         "-c",
         f"create database \"{variables['postgresql_credentials']['database']}\"",
-        credentials,
+        credentials.replace(
+            f"dbname={variables['postgresql_credentials']['database']}",
+            f"dbname={variables['postgresql_credentials']['user']}",
+        ),
     ],
     stdout=subprocess.DEVNULL,
     stderr=subprocess.STDOUT,
 )
-CONNECTION = psycopg.connect(
-    credentials.replace(
-        f"dbname={variables['postgresql_credentials']['user']}",
-        f"dbname={variables['postgresql_credentials']['database']}",
-    ),
-    autocommit=True,
-)
-cursor = CONNECTION.cursor()
+connection = psycopg.connect(credentials, autocommit=True)
+cursor = connection.cursor()
 try:
     cursor.execute(
         """
@@ -69,4 +66,4 @@ for guild in data["guilds"]:
             "insert into guild_users values(%s, %s)", (guild["id"], user["id"])
         )
 
-CONNECTION.close()
+connection.close()

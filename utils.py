@@ -14,7 +14,7 @@ load_order = list(
 try:
     variables = load(open("variables.yaml", "r"))
     credentials = f"""
-        dbname={variables["postgresql_credentials"]["user"]}
+        dbname={variables["postgresql_credentials"]["database"]}
         user={variables["postgresql_credentials"]["user"]}
         password={variables["postgresql_credentials"]["password"]}
         {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
