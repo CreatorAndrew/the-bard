@@ -63,12 +63,11 @@ except:
     pass
 
 for guild in data["guilds"]:
-    WORKING_THREAD_ID = guild.get("working_thread_id")
     cursor.execute(
         "insert into guilds_music values(?, ?, ?, ?)",
         (
             guild["id"],
-            WORKING_THREAD_ID,
+            guild.get("working_thread_id"),
             guild["keep"],
             guild["repeat"],
         ),
