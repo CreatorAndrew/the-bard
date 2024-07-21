@@ -1471,7 +1471,8 @@ async def playlist_add_files(self, context, message_regarded):
             if len(message) > 2000:
                 await context.followup.send(previous_message)
                 message = new_message
-        await context.followup.send(message)
+        if message:
+            await context.followup.send(message)
         await self.connection.commit()
     self.lock.release()
 
