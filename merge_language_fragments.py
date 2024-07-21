@@ -2,19 +2,13 @@ from os import listdir
 from yaml import safe_dump as dump, safe_load as load
 from utils import LANGUAGE_DIRECTORY, load_order
 
-languages = list(
-    map(
-        lambda language: language[: language.index(f"_{load_order[0]}")],
-        list(
-            filter(
-                lambda file: file.endswith(f"_{load_order[0]}.yaml"),
-                listdir("language_fragments"),
-            )
-        ),
-    )
-)
-
-for language in languages:
+for language in map(
+    lambda language: language[: language.index(f"_{load_order[0]}")],
+    filter(
+        lambda file: file.endswith(f"_{load_order[0]}.yaml"),
+        listdir("language_fragments"),
+    ),
+):
     strings = []
     string_names = []
     new_data = {"strings": {}, "name": None}

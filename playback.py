@@ -41,11 +41,11 @@ def convert_to_time_marker(number):
         segments.append("00")
     segments.append(str(int(temp_number)))
     marker = ""
-    for index, segment in enumerate(segments):
+    for index, segment in enumerate(segments, 1):
         if len(segment) == 1:
             segment = "0" + segment
         marker += segment
-        if index < len(segments) - 1:
+        if index < len(segments):
             marker += ":"
     return marker
 
@@ -396,9 +396,9 @@ async def remove_song(self, context, index, silent):
 async def song_autocompletion(self, context, current):
     guild = self.guilds[str(context.guild.id)]
     songs = []
-    for index, song in enumerate(guild["queue"]):
+    for index, song in enumerate(guild["queue"], 1):
         polished_song_name = polished_message(
-            guild["strings"]["song"], {"song": song["name"], "index": index + 1}
+            guild["strings"]["song"], {"song": song["name"], "index": index}
         )
         song["name"] = (
             song["name"][: 97 - len(polished_song_name) + len(song["name"])] + "..."
@@ -408,7 +408,7 @@ async def song_autocompletion(self, context, current):
         if (current == "" or current.lower() in polished_song_name.lower()) and len(
             songs
         ) < 25:
-            songs.append(Choice(name=polished_song_name, value=index + 1))
+            songs.append(Choice(name=polished_song_name, value=index))
     return songs
 
 

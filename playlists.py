@@ -1010,7 +1010,7 @@ async def playlist_command(
                     )
                     return
                 pages = []
-                for index, song in enumerate(songs):
+                for index, song in enumerate(songs, 1):
                     previous_message = message
                     if song[song_url_entry] is None:
                         try:
@@ -1042,7 +1042,7 @@ async def playlist_command(
                         strings["song"] + "\n",
                         {
                             "song": polished_url(song_file, song[song_name_entry]),
-                            "index": index + 1,
+                            "index": index,
                         },
                     )
                     message += new_message
@@ -1127,10 +1127,10 @@ async def playlist_autocompletion(self, context, current):
                 if context.namespace.from_guild is None
                 else int(context.namespace.from_guild)
             ):
-                for index, playlist in enumerate(guild["playlists"]):
+                for index, playlist in enumerate(guild["playlists"], 1):
                     polished_playlist_name = polished_message(
                         strings["playlist"],
-                        {"playlist": playlist["name"], "playlist_index": index + 1},
+                        {"playlist": playlist["name"], "playlist_index": index},
                     )
                     playlist["name"] = (
                         playlist["name"][
@@ -1145,7 +1145,7 @@ async def playlist_autocompletion(self, context, current):
                         or current.lower() in polished_playlist_name.lower()
                     ) and len(playlists) < 25:
                         playlists.append(
-                            Choice(name=polished_playlist_name, value=index + 1)
+                            Choice(name=polished_playlist_name, value=index)
                         )
                 break
     else:
@@ -1162,11 +1162,11 @@ async def playlist_autocompletion(self, context, current):
         )
         playlist_names = list(await self.cursor.fetchall())
         self.lock.release()
-        for index, playlist in enumerate(playlist_names):
+        for index, playlist in enumerate(playlist_names, 1):
             playlist_name = list(playlist)
             polished_playlist_name = polished_message(
                 strings["playlist"],
-                {"playlist": playlist_name[0], "playlist_index": index + 1},
+                {"playlist": playlist_name[0], "playlist_index": index},
             )
             playlist_name[0] = (
                 playlist_name[0][
@@ -1179,7 +1179,7 @@ async def playlist_autocompletion(self, context, current):
             if (
                 current == "" or current.lower() in polished_playlist_name.lower()
             ) and len(playlists) < 25:
-                playlists.append(Choice(name=polished_playlist_name, value=index + 1))
+                playlists.append(Choice(name=polished_playlist_name, value=index))
     return playlists
 
 
@@ -1207,10 +1207,10 @@ async def playlist_song_autocompletion(self, context, current):
             if guild["id"] == context.guild.id:
                 try:
                     for index, song in enumerate(
-                        guild["playlists"][context.namespace.select - 1]["songs"]
+                        guild["playlists"][context.namespace.select - 1]["songs"], 1
                     ):
                         polished_song_name = polished_message(
-                            strings["song"], {"song": song["name"], "index": index + 1}
+                            strings["song"], {"song": song["name"], "index": index}
                         )
                         song["name"] = (
                             song["name"][
@@ -1224,9 +1224,7 @@ async def playlist_song_autocompletion(self, context, current):
                             current == ""
                             or current.lower() in polished_song_name.lower()
                         ) and len(songs) < 25:
-                            songs.append(
-                                Choice(name=polished_song_name, value=index + 1)
-                            )
+                            songs.append(Choice(name=polished_song_name, value=index))
                 except:
                     pass
                 break
@@ -1244,10 +1242,10 @@ async def playlist_song_autocompletion(self, context, current):
             )
             song_names = list(await self.cursor.fetchall())
             self.lock.release()
-            for index, song in enumerate(song_names):
+            for index, song in enumerate(song_names, 1):
                 song_name = list(song)
                 polished_song_name = polished_message(
-                    strings["song"], {"song": song_name[0], "index": index + 1}
+                    strings["song"], {"song": song_name[0], "index": index}
                 )
                 song_name[0] = (
                     song_name[0][: 97 - len(polished_song_name) + len(song_name[0])]
@@ -1258,7 +1256,7 @@ async def playlist_song_autocompletion(self, context, current):
                 if (
                     current == "" or current.lower() in polished_song_name.lower()
                 ) and len(songs) < 25:
-                    songs.append(Choice(name=polished_song_name, value=index + 1))
+                    songs.append(Choice(name=polished_song_name, value=index))
         except:
             pass
     return songs
@@ -1273,17 +1271,17 @@ async def playlist_add_files(self, context, message_regarded):
     if self.cursor is None:
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
-                for index, playlist in enumerate(guild_searched["playlists"]):
+                for index, playlist in enumerate(guild_searched["playlists"], 1):
                     playlist_options.append(
                         SelectOption(
                             label=polished_message(
                                 strings["playlist"],
                                 {
                                     "playlist": playlist["name"],
-                                    "playlist_index": index + 1,
+                                    "playlist_index": index,
                                 },
                             ),
-                            value=str(index + 1),
+                            value=str(index),
                         )
                     )
                 break
@@ -1295,14 +1293,14 @@ async def playlist_add_files(self, context, message_regarded):
         )
         playlists = await self.cursor.fetchall()
         self.lock.release()
-        for index, playlist in enumerate(playlists):
+        for index, playlist in enumerate(playlists, 1):
             playlist_options.append(
                 SelectOption(
                     label=polished_message(
                         strings["playlist"],
-                        {"playlist": playlist[0], "playlist_index": index + 1},
+                        {"playlist": playlist[0], "playlist_index": index},
                     ),
-                    value=str(index + 1),
+                    value=str(index),
                 )
             )
     playlist_menu = Select(

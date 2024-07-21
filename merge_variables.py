@@ -17,7 +17,7 @@ except:
 for plugin in load_order:
     append_variables = True
     for key, value in load(open(f"variables/{plugin}.yaml", "r")).items():
-        if key in list(map(lambda item: item[0], variables.items())):
+        if key in map(lambda item: item[0], variables.items()):
             print(f'Variables for "{plugin}" were already added.')
             append_variables = False
             break
