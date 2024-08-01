@@ -1014,7 +1014,7 @@ async def playlist_command(
                     previous_message = message
                     if song[song_url_entry] is None:
                         try:
-                            song_message = self.messages[str(song[message_id])]
+                            song_message = self.messages[str(song[message_id_entry])]
                             if (
                                 int(datetime.timestamp(datetime.now()))
                                 > song_message["expiration"]
