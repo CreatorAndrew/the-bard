@@ -135,8 +135,8 @@ class Music(Cog):
             for guild_searched in self.data["guilds"]:
                 if guild_searched["id"] == guild.id:
                     guild_searched["keep"] = keep
-                    guild_searched["repeat"] = repeat
                     guild_searched["playlists"] = []
+                    guild_searched["repeat"] = repeat
                     dump(self.data, open(self.flat_file, "w"), indent=4)
                     init_guild = True
                     break
