@@ -6,7 +6,7 @@ from yaml import safe_dump as dump, safe_load as load
 from discord import File, SelectOption
 from discord.app_commands import Choice
 from discord.ui import Select, View
-from utils import get_file_name, page_selector, polished_message, polished_url
+from utils import get_filename, page_selector, polished_message, polished_url
 
 
 # return a list of playlists for the calling guild
@@ -1488,7 +1488,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
                 await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
                     dump({"song_url": url}),
                     file=File(
-                        BytesIO(requests.get(url).content), await get_file_name(url)
+                        BytesIO(requests.get(url).content), await get_filename(url)
                     ),
                 )
                 break
@@ -1504,7 +1504,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
         self.lock.release()
         await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
             dump({"song_id": song_id}),
-            file=File(BytesIO(requests.get(url).content), await get_file_name(url)),
+            file=File(BytesIO(requests.get(url).content), await get_filename(url)),
         )
 
 

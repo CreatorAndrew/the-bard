@@ -59,9 +59,9 @@ class Main(Cog):
         current_language_file = guild["language"] + ".yaml"
         strings = guild["strings"]
         if add is not None and set is None:
-            file_name = str(add)[str(add).rindex("/") + 1 : str(add).index("?")]
-            if file_name.endswith(".yaml"):
-                if not exists(f"{LANGUAGE_DIRECTORY}/{file_name}"):
+            filename = str(add)[str(add).rindex("/") + 1 : str(add).index("?")]
+            if filename.endswith(".yaml"):
+                if not exists(f"{LANGUAGE_DIRECTORY}/{filename}"):
                     response = requests.get(str(add))
                     content = load(response.content.decode("utf-8"))
                     try:
@@ -70,7 +70,7 @@ class Main(Cog):
                     except:
                         await context.response.send_message(
                             strings["invalid_language_file"].replace(
-                                "%{language_file}", file_name
+                                "%{language_file}", filename
                             ),
                             file=File(
                                 open(
@@ -92,7 +92,7 @@ class Main(Cog):
                         except:
                             await context.response.send_message(
                                 strings["invalid_language_file"].replace(
-                                    "%{language_file}", file_name
+                                    "%{language_file}", filename
                                 ),
                                 file=File(
                                     open(
@@ -105,23 +105,23 @@ class Main(Cog):
                             )
                             self.lock.release()
                             return
-                    open(f"{LANGUAGE_DIRECTORY}/{file_name}", "wb").write(
+                    open(f"{LANGUAGE_DIRECTORY}/{filename}", "wb").write(
                         response.content
                     )
                 else:
                     await context.response.send_message(
                         strings["language_file_exists"].replace(
-                            "%{language_file}", file_name
+                            "%{language_file}", filename
                         )
                     )
                     self.lock.release()
                     return
                 # ensure that the attached language file is fully transferred before the language is changed to it
-                while not exists(f"{LANGUAGE_DIRECTORY}/{file_name}"):
+                while not exists(f"{LANGUAGE_DIRECTORY}/{filename}"):
                     await sleep(0.1)
 
                 self.set_language_options()
-                language = file_name.replace(".yaml", "")
+                language = filename.replace(".yaml", "")
         elif add is None and set is not None:
             language = set
             if not exists(f"{LANGUAGE_DIRECTORY}/{language}.yaml"):

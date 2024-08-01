@@ -47,7 +47,7 @@ from playlists import (
     working_thread_autocompletion,
     working_thread_command,
 )
-from utils import get_file_name, variables
+from utils import get_filename, variables
 
 
 class Music(Cog):
@@ -96,7 +96,7 @@ class Music(Cog):
                 try:
                     name = track.to_data()["track_name"]
                 except:
-                    name = get_file_name(url).replace("_", " ")
+                    name = get_filename(url).replace("_", " ")
                     try:
                         name = name[: name.rindex(".")]
                     except:

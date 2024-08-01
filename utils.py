@@ -60,7 +60,7 @@ class Cursor:
         return await self.cursor.fetchone()
 
 
-def get_file_name(file):
+def get_filename(file):
     try:
         return file[file.rindex("/") + 1 : file.rindex("?")]
     except:
