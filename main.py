@@ -49,10 +49,10 @@ async def main():
                     [
                         "psql",
                         "-c",
-                        f"create database \"{VARIABLES['postgresql_CREDENTIALS']['database']}\"",
+                        f"create database \"{VARIABLES['postgresql_credentials']['database']}\"",
                         CREDENTIALS.replace(
-                            f"dbname={VARIABLES['postgresql_CREDENTIALS']['database']}",
-                            f"dbname={VARIABLES['postgresql_CREDENTIALS']['user']}",
+                            f"dbname={VARIABLES['postgresql_credentials']['database']}",
+                            f"dbname={VARIABLES['postgresql_credentials']['user']}",
                         ),
                     ],
                     stdout=subprocess.DEVNULL,
