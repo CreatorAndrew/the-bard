@@ -4,7 +4,7 @@ from asyncio import Lock, run
 from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
 from discord.ext.commands import Bot
-from utils import CommandTranslator, credentials, Cursor, load_order, variables
+from utils import CommandTranslator, CREDENTIALS, Cursor, LOAD_ORDER, VARIABLES
 
 intents = Intents.default()
 intents.members = True
@@ -21,7 +21,7 @@ async def on_ready():
 
 @bot.command()
 async def sync_commands(context):
-    if context.author.id == variables["master_id"]:
+    if context.author.id == VARIABLES["master_id"]:
         await bot.tree.set_translator(CommandTranslator())
         await bot.tree.sync()
         await context.reply(
@@ -31,7 +31,7 @@ async def sync_commands(context):
 
 async def main():
     async with bot:
-        if variables["storage"] == "yaml":
+        if VARIABLES["storage"] == "yaml":
             connection = None
             cursor = None
             flat_file = "Bard.yaml"
@@ -41,7 +41,7 @@ async def main():
         else:
             data = None
             flat_file = None
-            if variables["storage"] == "postgresql":
+            if VARIABLES["storage"] == "postgresql":
                 import subprocess
                 import psycopg
 
@@ -49,10 +49,10 @@ async def main():
                     [
                         "psql",
                         "-c",
-                        f"create database \"{variables['postgresql_credentials']['database']}\"",
-                        credentials.replace(
-                            f"dbname={variables['postgresql_credentials']['database']}",
-                            f"dbname={variables['postgresql_credentials']['user']}",
+                        f"create database \"{VARIABLES['postgresql_CREDENTIALS']['database']}\"",
+                        CREDENTIALS.replace(
+                            f"dbname={VARIABLES['postgresql_CREDENTIALS']['database']}",
+                            f"dbname={VARIABLES['postgresql_CREDENTIALS']['user']}",
                         ),
                     ],
                     stdout=subprocess.DEVNULL,
@@ -60,10 +60,10 @@ async def main():
                 )
                 database_exists = False
                 connection = await psycopg.AsyncConnection.connect(
-                    credentials, autocommit=True
+                    CREDENTIALS, autocommit=True
                 )
                 cursor = Cursor(connection.cursor(), connection.cursor(), "%s")
-            elif variables["storage"] == "sqlite":
+            elif VARIABLES["storage"] == "sqlite":
                 import aiosqlite
 
                 database = "Bard.db"
@@ -72,7 +72,7 @@ async def main():
                 cursor = Cursor(connection, None, "?")
             if not database_exists:
                 try:
-                    for item in load_order:
+                    for item in LOAD_ORDER:
                         tables_file = f"tables/{item}.yaml"
                         if exists(tables_file):
                             for statement in load(open(tables_file, "r")):
@@ -85,10 +85,10 @@ async def main():
         bot.flat_file = flat_file
         bot.guilds_ = {}
         bot.lock = Lock()
-        for item in load_order:
+        for item in LOAD_ORDER:
             if exists(f"plugins/{item}.py"):
                 await bot.load_extension(f"plugins.{item}")
-        await bot.start(variables["token"])
+        await bot.start(VARIABLES["token"])
 
 
 if platform == "win32":

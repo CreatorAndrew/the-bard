@@ -47,7 +47,7 @@ from playlists import (
     working_thread_autocompletion,
     working_thread_command,
 )
-from utils import get_filename, variables
+from utils import get_filename, VARIABLES
 
 
 class Music(Cog):
@@ -112,16 +112,16 @@ class Music(Cog):
         if self.use_lavalink:
             import pomice
 
-            if variables["lavalink_credentials"]["host"] is None:
-                variables["lavalink_credentials"]["host"] = "127.0.0.1"
-            if variables["lavalink_credentials"]["port"] is None:
-                variables["lavalink_credentials"]["port"] = 2333
+            if VARIABLES["lavalink_credentials"]["host"] is None:
+                VARIABLES["lavalink_credentials"]["host"] = "127.0.0.1"
+            if VARIABLES["lavalink_credentials"]["port"] is None:
+                VARIABLES["lavalink_credentials"]["port"] = 2333
 
             await pomice.NodePool.create_node(
                 bot=self.bot,
-                host=variables["lavalink_credentials"]["host"],
-                port=variables["lavalink_credentials"]["port"],
-                password=variables["lavalink_credentials"]["password"],
+                host=VARIABLES["lavalink_credentials"]["host"],
+                port=VARIABLES["lavalink_credentials"]["port"],
+                password=VARIABLES["lavalink_credentials"]["password"],
                 identifier="main",
             )
 
@@ -410,7 +410,7 @@ class Music(Cog):
 
 async def setup(bot):
     bot.music_init_guilds = None
-    bot.use_lavalink = variables["multimedia_backend"] == "lavalink"
+    bot.use_lavalink = VARIABLES["multimedia_backend"] == "lavalink"
     if bot.cursor is not None:
         await bot.cursor.execute(
             "select guild_id, keep_in_voice, repeat_queue from guilds_music"

@@ -5,7 +5,7 @@ path.insert(0, dirname(path[0]))
 import subprocess
 import psycopg
 from yaml import safe_load as load
-from utils import credentials, variables
+from utils import CREDENTIALS, VARIABLES
 
 data = load(open("Bard.yaml", "r"))
 
@@ -13,16 +13,16 @@ subprocess.run(
     [
         "psql",
         "-c",
-        f"create database \"{variables['postgresql_credentials']['database']}\"",
-        credentials.replace(
-            f"dbname={variables['postgresql_credentials']['database']}",
-            f"dbname={variables['postgresql_credentials']['user']}",
+        f"create database \"{VARIABLES['postgresql_credentials']['database']}\"",
+        CREDENTIALS.replace(
+            f"dbname={VARIABLES['postgresql_credentials']['database']}",
+            f"dbname={VARIABLES['postgresql_credentials']['user']}",
         ),
     ],
     stdout=subprocess.DEVNULL,
     stderr=subprocess.STDOUT,
 )
-connection = psycopg.connect(credentials, autocommit=True)
+connection = psycopg.connect(CREDENTIALS, autocommit=True)
 cursor = connection.cursor()
 try:
     cursor.execute(

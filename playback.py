@@ -5,9 +5,9 @@ from io import BytesIO
 import requests
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 from discord.app_commands import Choice
-from utils import page_selector, polished_message, polished_url, variables
+from utils import page_selector, polished_message, polished_url, VARIABLES
 
-if variables["multimedia_backend"] == "lavalink":
+if VARIABLES["multimedia_backend"] == "lavalink":
     import pomice
 
 

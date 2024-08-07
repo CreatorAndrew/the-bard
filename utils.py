@@ -5,24 +5,24 @@ from discord.app_commands import locale_str, TranslationContext, Translator
 from discord.ui import Button, Modal, TextInput, View
 
 LANGUAGE_DIRECTORY = "languages"
-load_order = list(
+LOAD_ORDER = list(
     map(
         lambda line: line.replace("\r\n", "").replace("\n", ""),
         open("load_order.txt", "r").readlines(),
     )
 )
 try:
-    variables = load(open("variables.yaml", "r"))
-    credentials = f"""
-        dbname={variables["postgresql_credentials"]["database"]}
-        user={variables["postgresql_credentials"]["user"]}
-        password={variables["postgresql_credentials"]["password"]}
-        {"" if variables["postgresql_credentials"]["host"] is None else f"host={variables['postgresql_credentials']['host']}"}
-        {"" if variables["postgresql_credentials"]["port"] is None else f"port={variables['postgresql_credentials']['port']}"}
+    VARIABLES = load(open("variables.yaml", "r"))
+    CREDENTIALS = f"""
+        dbname={VARIABLES["postgresql_credentials"]["database"]}
+        user={VARIABLES["postgresql_credentials"]["user"]}
+        password={VARIABLES["postgresql_credentials"]["password"]}
+        {"" if VARIABLES["postgresql_credentials"]["host"] is None else f"host={VARIABLES['postgresql_credentials']['host']}"}
+        {"" if VARIABLES["postgresql_credentials"]["port"] is None else f"port={VARIABLES['postgresql_credentials']['port']}"}
     """
 except:
-    variables = {}
-    credentials = ""
+    VARIABLES = {}
+    CREDENTIALS = ""
 
 
 class CommandTranslator(Translator):

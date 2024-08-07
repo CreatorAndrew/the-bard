@@ -4,14 +4,14 @@ from os.path import dirname, exists
 path.insert(0, dirname(path[0]))
 import psycopg
 from yaml import safe_dump as dump, safe_load as load
-from utils import credentials
+from utils import CREDENTIALS
 
 FLAT_FILE = "Bard.yaml"
 if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-connection = psycopg.connect(credentials)
+connection = psycopg.connect(CREDENTIALS)
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds_music")

@@ -7,7 +7,7 @@ from yaml import safe_dump as dump, safe_load as load
 from discord import Attachment, File, Interaction
 from discord.app_commands import Choice, command
 from discord.ext.commands import Cog, command as message_command
-from utils import LANGUAGE_DIRECTORY, variables
+from utils import LANGUAGE_DIRECTORY, VARIABLES
 
 
 class Main(Cog):
@@ -262,7 +262,7 @@ class Main(Cog):
 
     @message_command()
     async def sync_guilds(self, context):
-        if context.author.id == variables["master_id"]:
+        if context.author.id == VARIABLES["master_id"]:
             await self.lock.acquire()
             if self.cursor is None:
                 guild_count = len(self.data["guilds"])
@@ -296,7 +296,7 @@ class Main(Cog):
 
     @message_command()
     async def sync_users(self, context):
-        if context.author.id == variables["master_id"]:
+        if context.author.id == VARIABLES["master_id"]:
             await self.lock.acquire()
             async for guild in self.bot.fetch_guilds():
                 if self.cursor is None:
