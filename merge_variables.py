@@ -1,5 +1,5 @@
 from yaml import safe_load as load
-from utils import load_order
+from utils import LOAD_ORDER
 
 VARIABLES_FILE = "variables.yaml"
 
@@ -14,7 +14,7 @@ try:
 except:
     variables = {}
 
-for plugin in load_order:
+for plugin in LOAD_ORDER:
     append_variables = True
     for key, value in load(open(f"variables/{plugin}.yaml", "r")).items():
         if key in map(lambda item: item[0], variables.items()):

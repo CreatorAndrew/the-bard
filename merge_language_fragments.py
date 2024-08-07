@@ -1,11 +1,11 @@
 from os import listdir
 from yaml import safe_dump as dump, safe_load as load
-from utils import LANGUAGE_DIRECTORY, load_order
+from utils import LANGUAGE_DIRECTORY, LOAD_ORDER
 
 for language in map(
-    lambda language: language[: language.index(f"_{load_order[0]}")],
+    lambda language: language[: language.index(f"_{LOAD_ORDER[0]}")],
     filter(
-        lambda file: file.endswith(f"_{load_order[0]}.yaml"),
+        lambda file: file.endswith(f"_{LOAD_ORDER[0]}.yaml"),
         listdir("language_fragments"),
     ),
 ):
@@ -13,7 +13,7 @@ for language in map(
     string_names = []
     new_data = {"strings": {}, "name": None}
 
-    for plugin in load_order:
+    for plugin in LOAD_ORDER:
         data = load(open(f"language_fragments/{language}_{plugin}.yaml", "r"))
         if new_data["name"] is None:
             new_data["name"] = data["name"]
