@@ -78,13 +78,15 @@ class Music(Cog):
             keep = 1
             repeat = 2
         for guild in guilds:
-            self.guilds[str(guild[id])]["connected"] = False
-            self.guilds[str(guild[id])]["index"] = 0
-            self.guilds[str(guild[id])]["keep"] = guild[keep]
-            self.guilds[str(guild[id])]["queue"] = []
-            self.guilds[str(guild[id])]["repeat"] = guild[repeat]
-            self.guilds[str(guild[id])]["time"] = 0.0
-            self.guilds[str(guild[id])]["volume"] = 1.0
+            self.guilds[str(guild[id])] |= {
+                "connected": False,
+                "index": 0,
+                "keep": guild[keep],
+                "queue": [],
+                "repeat": guild[repeat],
+                "time": 0.0,
+                "volume": 1.0,
+            }
 
     def get_metadata(self, file, url):
         duration = 0.0
@@ -151,13 +153,15 @@ class Music(Cog):
             except:
                 pass
         if init_guild:
-            self.guilds[str(guild.id)]["connected"] = False
-            self.guilds[str(guild.id)]["index"] = 0
-            self.guilds[str(guild.id)]["keep"] = keep
-            self.guilds[str(guild.id)]["queue"] = []
-            self.guilds[str(guild.id)]["repeat"] = repeat
-            self.guilds[str(guild.id)]["time"] = 0.0
-            self.guilds[str(guild.id)]["volume"] = 1.0
+            self.guilds[str(guild.id)] |= {
+                "connected": False,
+                "index": 0,
+                "keep": keep,
+                "queue": [],
+                "repeat": repeat,
+                "time": 0.0,
+                "volume": 1.0,
+            }
         self.lock.release()
 
     @Cog.listener("on_main_remove_guild_from_database")
