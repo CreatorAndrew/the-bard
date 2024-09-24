@@ -1,4 +1,7 @@
-from os.path import exists
+from sys import path
+from os.path import dirname, exists
+
+path.insert(0, dirname(path[0]))
 from sqlite3 import connect
 from yaml import safe_dump as dump, safe_load as load
 from utils import VARIABLES

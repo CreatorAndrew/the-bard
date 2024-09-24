@@ -1,3 +1,7 @@
+from sys import path
+from os.path import dirname
+
+path.insert(0, dirname(path[0]))
 from sqlite3 import connect
 from yaml import safe_load as load
 from utils import VARIABLES
@@ -86,21 +90,25 @@ for guild in data["guilds"]:
             (playlist["name"], guild["id"], guild["id"]),
         )
         for song in playlist["songs"]:
-            cursor.execute(
-                "insert into songs values((select count(song_id) from songs), ?, ?, ?, ?, ?, ?)",
-                (
-                    song["name"],
-                    song["duration"],
-                    song["guild_id"],
-                    song["channel_id"],
-                    song["message_id"],
-                    song["attachment_index"],
-                ),
-            )
+            try:
+                cursor.execute(
+                    "insert into songs values(?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        song["id"],
+                        song["name"],
+                        song["duration"],
+                        song["guild_id"],
+                        song["channel_id"],
+                        song["message_id"],
+                        song["attachment_index"],
+                    ),
+                )
+            except:
+                pass
             cursor.execute(
                 """
                 insert into pl_songs values(
-                    (select max(song_id) from songs),
+                    ?,
                     ?,
                     ?,
                     (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
@@ -111,6 +119,7 @@ for guild in data["guilds"]:
                     )
                     """,
                 (
+                    song["id"],
                     song["name"],
                     song["file"],
                     guild["id"],

@@ -103,21 +103,25 @@ for guild in data["guilds"]:
             (playlist["name"], guild["id"], guild["id"]),
         )
         for song in playlist["songs"]:
-            cursor.execute(
-                "insert into songs values((select count(song_id) from songs), %s, %s, %s, %s, %s, %s)",
-                (
-                    song["name"],
-                    song["duration"],
-                    song["guild_id"],
-                    song["channel_id"],
-                    song["message_id"],
-                    song["attachment_index"],
-                ),
-            )
+            try:
+                cursor.execute(
+                    "insert into songs values(%s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        song["id"],
+                        song["name"],
+                        song["duration"],
+                        song["guild_id"],
+                        song["channel_id"],
+                        song["message_id"],
+                        song["attachment_index"],
+                    ),
+                )
+            except:
+                pass
             cursor.execute(
                 """
                 insert into pl_songs values(
-                    (select max(song_id) from songs),
+                    %s,
                     %s,
                     %s,
                     (select pl_id from playlists where guild_id = %s and guild_pl_id = %s),
@@ -128,6 +132,7 @@ for guild in data["guilds"]:
                     )
                     """,
                 (
+                    song["id"],
                     song["name"],
                     song["file"],
                     guild["id"],

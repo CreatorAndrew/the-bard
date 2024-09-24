@@ -1,4 +1,7 @@
-from os.path import exists
+from sys import path
+from os.path import dirname, exists
+
+path.insert(0, dirname(path[0]))
 from sqlite3 import connect
 from yaml import safe_dump as dump, safe_load as load
 from utils import VARIABLES
@@ -7,6 +10,16 @@ FLAT_FILE = f"{VARIABLES["name"]}.yaml"
 if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
+
+overall_songs = []
+
+
+def omit_keys(*keys, dict: dict):
+    temp_dict = dict.copy()
+    for key in keys:
+        del temp_dict[key]
+    return temp_dict
+
 
 connection = connect(f"{VARIABLES["name"]}.db")
 cursor = connection.cursor()
@@ -31,17 +44,19 @@ for index, guild in enumerate(cursor.fetchall()):
             (guild[0], playlist[0]),
         )
         for song in cursor.fetchall():
-            songs.append(
-                {
-                    "name": song[0],
-                    "file": song[1],
-                    "duration": song[2],
-                    "guild_id": song[3],
-                    "channel_id": song[4],
-                    "message_id": song[5],
-                    "attachment_index": song[6],
-                }
-            )
+            song_dict = {
+                "id": len(overall_songs),
+                "name": song[0],
+                "file": song[1],
+                "duration": song[2],
+                "guild_id": song[3],
+                "channel_id": song[4],
+                "message_id": song[5],
+                "attachment_index": song[6],
+            }
+            overall_songs.append(song_dict)
+            overall_songs_mapped = list(map(lambda song: omit_keys("id", dict=song), overall_songs))
+            songs.append(overall_songs[overall_songs_mapped.index(omit_keys("id", dict=song_dict))])
         playlists.append({"name": playlist[1], "songs": songs})
     if guild[1] is not None:
         data["guilds"][index]["working_thread_id"] = guild[1]

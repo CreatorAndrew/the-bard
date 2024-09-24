@@ -9,6 +9,14 @@ from discord.ui import Select, View
 from utils import get_filename, page_selector, polished_message, polished_url
 
 
+def get_overall_song_count(data):
+    songs = []
+    for guild in data["guilds"]:
+        for playlist in guild["playlists"]:
+            songs += playlist["songs"]
+    return len(songs)
+
+
 # return a list of playlists for the calling guild
 async def playlists_command(self, context):
     await context.response.defer(ephemeral=True)
@@ -718,6 +726,7 @@ async def playlist_command(
                     guild["playlists"][select - 1]["songs"].insert(
                         song["index"] - 1,
                         {
+                            "id": get_overall_song_count(self.data),
                             "name": song["name"],
                             "file": url,
                             "duration": song["duration"],
@@ -1356,6 +1365,7 @@ async def playlist_add_files(self, context, message_regarded):
         urls.append(str(url))
         playlist.append(
             {
+                "id": get_overall_song_count(self.data),
                 "name": metadata["name"],
                 "file": None,
                 "duration": metadata["duration"],
