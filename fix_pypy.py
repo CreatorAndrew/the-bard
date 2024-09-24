@@ -1,6 +1,6 @@
-import platform
+from platform import python_implementation
 
-if platform.python_implementation() == "PyPy":
+if python_implementation() == "PyPy":
     from importlib.util import find_spec
     from os.path import dirname
 
