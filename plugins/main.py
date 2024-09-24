@@ -399,7 +399,10 @@ class Main(Cog):
             self.guilds[str(guild.id)] = {
                 "language": VARIABLES["default_language"],
                 "strings": load(
-                    open(f"{LANGUAGE_DIRECTORY}/{VARIABLES["default_language"]}.yaml", "r")
+                    open(
+                        f"{LANGUAGE_DIRECTORY}/{VARIABLES['default_language']}.yaml",
+                        "r",
+                    )
                 )["strings"],
             }
         self.bot.dispatch("main_add_guild", guild)
