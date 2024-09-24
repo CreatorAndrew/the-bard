@@ -7,7 +7,7 @@ from psycopg import connect
 from yaml import safe_load as load
 from utils import CREDENTIALS, VARIABLES
 
-data = load(open(f"{VARIABLES["name"]}.yaml", "r"))
+data = load(open(f"{VARIABLES['name']}.yaml", "r"))
 
 run(
     [

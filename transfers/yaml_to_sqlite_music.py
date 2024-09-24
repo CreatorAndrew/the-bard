@@ -6,9 +6,9 @@ from sqlite3 import connect
 from yaml import safe_load as load
 from utils import VARIABLES
 
-data = load(open(f"{VARIABLES["name"]}.yaml", "r"))
+data = load(open(f"{VARIABLES['name']}.yaml", "r"))
 
-DATABASE = f"{VARIABLES["name"]}.db"
+DATABASE = f"{VARIABLES['name']}.db"
 connection = connect(DATABASE)
 cursor = connection.cursor()
 try:
