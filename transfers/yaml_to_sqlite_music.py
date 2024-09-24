@@ -1,9 +1,10 @@
 import sqlite3
 from yaml import safe_load as load
+from utils import VARIABLES
 
-data = load(open("Bard.yaml", "r"))
+data = load(open(f"{VARIABLES["name"]}.yaml", "r"))
 
-DATABASE = "Bard.db"
+DATABASE = f"{VARIABLES["name"]}.db"
 connection = sqlite3.connect(DATABASE)
 cursor = connection.cursor()
 try:

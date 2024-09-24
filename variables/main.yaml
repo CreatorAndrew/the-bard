@@ -1,5 +1,7 @@
 # Set the token of the bot.
 token:
+# Set the internal name of the bot.
+name: Bard
 # Set the ID of the user who manages the bot.
 master_id:
 # Set the storage medium for storing guild and user data (possible values: postgresql, sqlite, yaml).

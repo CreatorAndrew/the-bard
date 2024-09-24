@@ -4,9 +4,9 @@ from os.path import dirname, exists
 path.insert(0, dirname(path[0]))
 import psycopg
 from yaml import safe_dump as dump, safe_load as load
-from utils import CREDENTIALS
+from utils import CREDENTIALS, VARIABLES
 
-FLAT_FILE = "Bard.yaml"
+FLAT_FILE = f"{VARIABLES["name"]}.yaml"
 if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))

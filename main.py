@@ -34,7 +34,7 @@ async def main():
         if VARIABLES["storage"] == "yaml":
             connection = None
             cursor = None
-            flat_file = "Bard.yaml"
+            flat_file = f"{VARIABLES["name"]}.yaml"
             if not exists(flat_file):
                 dump({"guilds": []}, open(flat_file, "w"), indent=4)
             data = load(open(flat_file, "r"))
@@ -66,7 +66,7 @@ async def main():
             elif VARIABLES["storage"] == "sqlite":
                 import aiosqlite
 
-                database = "Bard.db"
+                database = f"{VARIABLES["name"]}.db"
                 database_exists = exists(database)
                 connection = await aiosqlite.connect(database)
                 cursor = Cursor(connection, None, "?")

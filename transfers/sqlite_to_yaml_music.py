@@ -1,13 +1,14 @@
 from os.path import exists
 import sqlite3
 from yaml import safe_dump as dump, safe_load as load
+from utils import VARIABLES
 
-FLAT_FILE = "Bard.yaml"
+FLAT_FILE = f"{VARIABLES["name"]}.yaml"
 if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-connection = sqlite3.connect("Bard.db")
+connection = sqlite3.connect(f"{VARIABLES["name"]}.db")
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds_music")
