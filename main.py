@@ -42,10 +42,10 @@ async def main():
             data = None
             flat_file = None
             if VARIABLES["storage"] == "postgresql":
-                import subprocess
+                from subprocess import DEVNULL, run as shell, STDOUT
                 import psycopg
 
-                subprocess.run(
+                shell(
                     [
                         "psql",
                         "-c",
@@ -55,8 +55,8 @@ async def main():
                             f"dbname={VARIABLES['postgresql_credentials']['user']}",
                         ),
                     ],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.STDOUT,
+                    stdout=DEVNULL,
+                    stderr=STDOUT,
                 )
                 database_exists = False
                 connection = await psycopg.AsyncConnection.connect(
@@ -64,18 +64,18 @@ async def main():
                 )
                 cursor = Cursor(connection.cursor(), connection.cursor(), "%s")
             elif VARIABLES["storage"] == "sqlite":
-                import aiosqlite
+                from aiosqlite import connect
 
                 database = f"{VARIABLES["name"]}.db"
                 database_exists = exists(database)
-                connection = await aiosqlite.connect(database)
+                connection = await connect(database)
                 cursor = Cursor(connection, None, "?")
             if not database_exists:
                 try:
                     for item in LOAD_ORDER:
-                        tables_file = f"tables/{item}.yaml"
+                        tables_file = f"tables/{item}.sql"
                         if exists(tables_file):
-                            for statement in load(open(tables_file, "r")):
+                            for statement in open(tables_file, "r").read().split(';'):
                                 await cursor.execute(statement)
                 except:
                     pass

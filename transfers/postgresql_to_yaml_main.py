@@ -2,7 +2,7 @@ from sys import path
 from os.path import dirname, exists
 
 path.insert(0, dirname(path[0]))
-import psycopg
+from psycopg import connect
 from yaml import safe_dump as dump, safe_load as load
 from utils import CREDENTIALS, VARIABLES
 
@@ -11,7 +11,7 @@ if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-connection = psycopg.connect(CREDENTIALS)
+connection = connect(CREDENTIALS)
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds")

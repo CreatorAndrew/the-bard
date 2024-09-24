@@ -1,5 +1,5 @@
 from os.path import exists
-import sqlite3
+from sqlite3 import connect
 from yaml import safe_dump as dump, safe_load as load
 from utils import VARIABLES
 
@@ -8,7 +8,7 @@ if not exists(FLAT_FILE):
     dump({"guilds": []}, open(FLAT_FILE, "w"), indent=4)
 data = load(open(FLAT_FILE, "r"))
 
-connection = sqlite3.connect(f"{VARIABLES["name"]}.db")
+connection = connect(f"{VARIABLES["name"]}.db")
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds")

@@ -1,11 +1,11 @@
-import sqlite3
+from sqlite3 import connect
 from yaml import safe_load as load
 from utils import VARIABLES
 
 data = load(open(f"{VARIABLES["name"]}.yaml", "r"))
 
 DATABASE = f"{VARIABLES["name"]}.db"
-connection = sqlite3.connect(DATABASE)
+connection = connect(DATABASE)
 cursor = connection.cursor()
 try:
     cursor.execute(

@@ -2,14 +2,14 @@ from sys import path
 from os.path import dirname
 
 path.insert(0, dirname(path[0]))
-import subprocess
-import psycopg
+from subprocess import DEVNULL, run, STDOUT
+from psycopg import connect
 from yaml import safe_load as load
 from utils import CREDENTIALS, VARIABLES
 
 data = load(open(f"{VARIABLES["name"]}.yaml", "r"))
 
-subprocess.run(
+run(
     [
         "psql",
         "-c",
@@ -19,10 +19,10 @@ subprocess.run(
             f"dbname={VARIABLES['postgresql_credentials']['user']}",
         ),
     ],
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.STDOUT,
+    stdout=DEVNULL,
+    stderr=STDOUT,
 )
-connection = psycopg.connect(CREDENTIALS, autocommit=True)
+connection = connect(CREDENTIALS, autocommit=True)
 cursor = connection.cursor()
 try:
     cursor.execute(

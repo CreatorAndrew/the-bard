@@ -16,7 +16,6 @@ class Main(Cog):
         self.connection = bot.connection
         self.cursor = bot.cursor
         self.data = bot.data
-        self.default_language = "american_english"
         self.flat_file = bot.flat_file
         self.guilds = bot.guilds_
         self.init_guilds(bot.main_init_guilds)
@@ -372,7 +371,7 @@ class Main(Cog):
                 self.data["guilds"].append(
                     {
                         "id": guild.id,
-                        "language": self.default_language,
+                        "language": VARIABLES["default_language"],
                         "users": [],
                     }
                 )
@@ -387,7 +386,7 @@ class Main(Cog):
             try:
                 await self.cursor.execute(
                     "insert into guilds values(?, ?)",
-                    (guild.id, self.default_language),
+                    (guild.id, VARIABLES["default_language"]),
                 )
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
@@ -398,9 +397,9 @@ class Main(Cog):
                 pass
         if init_guild:
             self.guilds[str(guild.id)] = {
-                "language": self.default_language,
+                "language": VARIABLES["default_language"],
                 "strings": load(
-                    open(f"{LANGUAGE_DIRECTORY}/{self.default_language}.yaml", "r")
+                    open(f"{LANGUAGE_DIRECTORY}/{VARIABLES["default_language"]}.yaml", "r")
                 )["strings"],
             }
         self.bot.dispatch("main_add_guild", guild)
