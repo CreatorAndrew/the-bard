@@ -9,12 +9,12 @@ from discord.ui import Select, View
 from utils import get_filename, page_selector, polished_message, polished_url
 
 
-def get_overall_song_count(data):
+def get_next_song_id(data):
     songs = []
     for guild in data["guilds"]:
         for playlist in guild["playlists"]:
             songs += playlist["songs"]
-    return len(songs)
+    return sorted(songs, key=lambda song: song["id"], reverse=True)[0]["id"] + 1
 
 
 # return a list of playlists for the calling guild
@@ -718,6 +718,7 @@ async def playlist_command(
                     await declare_command_invalid()
                     return
                 if self.cursor is None:
+                    song_id = get_next_song_id(self.data)
                     song = {
                         "name": new_name,
                         "index": new_index,
@@ -726,7 +727,7 @@ async def playlist_command(
                     guild["playlists"][select - 1]["songs"].insert(
                         song["index"] - 1,
                         {
-                            "id": get_overall_song_count(self.data),
+                            "id": song_id,
                             "name": song["name"],
                             "file": url,
                             "duration": song["duration"],
@@ -1365,7 +1366,7 @@ async def playlist_add_files(self, context, message_regarded):
         urls.append(str(url))
         playlist.append(
             {
-                "id": get_overall_song_count(self.data),
+                "id": get_next_song_id(self.data),
                 "name": metadata["name"],
                 "file": None,
                 "duration": metadata["duration"],
@@ -1496,10 +1497,8 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
                 except:
                     working_thread_id = channel_id
                 await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
-                    dump({"song_url": url}),
-                    file=File(
-                        BytesIO(requests.get(url).content), await get_filename(url)
-                    ),
+                    dump({"song_id": song_id}),
+                    file=File(BytesIO(requests.get(url).content), get_filename(url)),
                 )
                 break
     else:
@@ -1514,7 +1513,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
         self.lock.release()
         await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
             dump({"song_id": song_id}),
-            file=File(BytesIO(requests.get(url).content), await get_filename(url)),
+            file=File(BytesIO(requests.get(url).content), get_filename(url)),
         )
 
 
@@ -1523,11 +1522,11 @@ async def renew_attachment_from_message(self, message):
         await self.lock.acquire()
         try:
             content = load(message.content)
-            if self.cursor is None and str(content["song_url"]):
+            if self.cursor is None and str(content["song_id"]):
                 for guild in self.data["guilds"]:
                     for playlist in guild["playlists"]:
                         for song in playlist["songs"]:
-                            if song["file"] == content["song_url"]:
+                            if song["id"] == content["song_id"]:
                                 song["channel_id"] = message.channel.id
                                 song["message_id"] = message.id
                                 song["file"] = None
