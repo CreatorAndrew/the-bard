@@ -1,5 +1,5 @@
 from asyncio import sleep
-import random
+from random import randint
 from yaml import safe_dump as dump
 from io import BytesIO
 import requests
@@ -662,7 +662,7 @@ async def shuffle_command(self, context, restart):
     guild = self.guilds[str(context.guild.id)]
     if guild["queue"]:
         for index in range(len(guild["queue"])):
-            temp_index = random.randint(0, len(guild["queue"]) - 1)
+            temp_index = randint(0, len(guild["queue"]) - 1)
             temp_song = guild["queue"][index]
             guild["queue"][index] = guild["queue"][temp_index]
             guild["queue"][temp_index] = temp_song
