@@ -66,6 +66,8 @@ To run it, type the following in your operating system's CLI at the project's di
 python3 main.py
 ```
 
+^^^ Replace `python3` with `pypy3` above if using PyPy. ^^^
+
 Make sure to add the bot token and ID of the host user to `variables.yaml`. The host user then needs to type `+sync_commands` to make the slash commands show up and update.
 
 Also make sure to type `+sync_guilds` and `+sync_users` after launching so that any guilds that added or removed this bot
