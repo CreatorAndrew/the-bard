@@ -1,5 +1,5 @@
 from sys import path
-from os.path import dirname
+from os.path import dirname, exists
 
 path.insert(0, dirname(path[0]))
 from subprocess import DEVNULL, run, STDOUT
@@ -25,27 +25,10 @@ run(
 connection = connect(CREDENTIALS, autocommit=True)
 cursor = connection.cursor()
 try:
-    cursor.execute(
-        """
-        create table guilds(
-            guild_id bigint not null,
-            guild_lang text not null,
-            primary key (guild_id)
-        )
-        """
-    )
-    cursor.execute("create table users(user_id bigint not null, primary key (user_id))")
-    cursor.execute(
-        """
-        create table guild_users(
-            guild_id bigint not null,
-            user_id bigint not null,
-            primary key (guild_id, user_id),
-            foreign key (guild_id) references guilds(guild_id) on delete cascade,
-            foreign key (user_id) references users(user_id) on delete cascade
-        )
-        """
-    )
+    sql_file = f"{path[0]}/tables/main.sql"
+    if exists(sql_file):
+        for statement in open(sql_file, "r").read().split(";"):
+            cursor.execute(statement)
 except:
     pass
 

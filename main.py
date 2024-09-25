@@ -72,10 +72,10 @@ async def main():
                 cursor = Cursor(connection, None, "?")
             if not database_exists:
                 try:
-                    for item in LOAD_ORDER:
-                        tables_file = f"tables/{item}.sql"
-                        if exists(tables_file):
-                            for statement in open(tables_file, "r").read().split(";"):
+                    for plugin in LOAD_ORDER:
+                        sql_file = f"tables/{plugin}.sql"
+                        if exists(sql_file):
+                            for statement in open(sql_file, "r").read().split(";"):
                                 await cursor.execute(statement)
                 except:
                     pass
@@ -85,9 +85,9 @@ async def main():
         bot.flat_file = flat_file
         bot.guilds_ = {}
         bot.lock = Lock()
-        for item in LOAD_ORDER:
-            if exists(f"plugins/{item}.py"):
-                await bot.load_extension(f"plugins.{item}")
+        for plugin in LOAD_ORDER:
+            if exists(f"plugins/{plugin}.py"):
+                await bot.load_extension(f"plugins.{plugin}")
         await bot.start(VARIABLES["token"])
 
 
