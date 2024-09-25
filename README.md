@@ -56,8 +56,8 @@ python3 -m pip install -r requirements.txt
 
 ### For PyPy
 ```
-pypy3 fix_pypy.py
 pypy3 -m pip install -r requirements.txt --no-deps
+pypy3 fix_pypy.py
 ```
 
 ## Usage
