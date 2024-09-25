@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+from sys import path
+from os.path import dirname
+
+path.insert(0, dirname(path[0]))
 from subprocess import DEVNULL, run, STDOUT
 from utils import LOAD_ORDER
 
@@ -26,7 +32,7 @@ choice = choices[int(input())]
 
 for plugin in LOAD_ORDER:
     run(
-        ["python3", f"transfers/{choice}_{plugin}.py"],
+        ["python3", f"{path[0]}/transfers/{choice}_{plugin}.py"],
         stdout=DEVNULL,
         stderr=STDOUT,
     )

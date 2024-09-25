@@ -1,12 +1,20 @@
+#!/usr/bin/env python
+
+from sys import path
+from os.path import dirname
+
+path.insert(0, dirname(path[0]))
 from os import listdir
 from yaml import safe_dump as dump, safe_load as load
 from utils import LANGUAGE_DIRECTORY, LOAD_ORDER
+
+LANGUAGE_FRAGMENTS_DIRECTORY = f"{path[0]}/languages/fragments"
 
 for language in map(
     lambda language: language[: language.index(f"_{LOAD_ORDER[0]}")],
     filter(
         lambda file: file.endswith(f"_{LOAD_ORDER[0]}.yaml"),
-        listdir("language_fragments"),
+        listdir(LANGUAGE_FRAGMENTS_DIRECTORY),
     ),
 ):
     strings = []
@@ -14,7 +22,9 @@ for language in map(
     new_data = {"strings": {}, "name": None}
 
     for plugin in LOAD_ORDER:
-        data = load(open(f"language_fragments/{language}_{plugin}.yaml", "r"))
+        data = load(
+            open(f"{LANGUAGE_FRAGMENTS_DIRECTORY}/{language}_{plugin}.yaml", "r")
+        )
         if new_data["name"] is None:
             new_data["name"] = data["name"]
         strings += data["strings"].items()

@@ -1,7 +1,13 @@
+#!/usr/bin/env python
+
+from sys import path
+from os.path import dirname
+
+path.insert(0, dirname(path[0]))
 from yaml import safe_load as load
 from utils import LOAD_ORDER
 
-VARIABLES_FILE = "variables.yaml"
+VARIABLES_FILE = f"{path[0]}/variables.yaml"
 
 try:
     lines = open(VARIABLES_FILE, "r").readlines()

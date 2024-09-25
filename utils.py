@@ -4,7 +4,7 @@ from discord import ButtonStyle, Locale
 from discord.app_commands import locale_str, TranslationContext, Translator
 from discord.ui import Button, Modal, TextInput, View
 
-LANGUAGE_DIRECTORY = "languages"
+LANGUAGE_DIRECTORY = "languages/complete"
 LOAD_ORDER = list(
     map(
         lambda line: line.replace("\r\n", "").replace("\n", ""),
