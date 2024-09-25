@@ -49,8 +49,15 @@ scoop install ffmpeg
 ---
 
 Also make sure to grab the Python dependencies by typing the following in your operating system's CLI at the project's directory:
+### For CPython:
 ```
-pip3 install -r requirements.txt
+python3 -m pip install -r requirements.txt
+```
+
+### For PyPy
+```
+pypy3 fix_pypy.py
+pypy3 -m pip install -r requirements.txt --no-deps
 ```
 
 ## Usage
@@ -59,7 +66,7 @@ To run it, type the following in your operating system's CLI at the project's di
 python3 main.py
 ```
 
-Make sure to add the bot token and ID of the host user to `Variables.yaml`. The host user then needs to type `+sync_commands` to make the slash commands show up and update.
+Make sure to add the bot token and ID of the host user to `variables.yaml`. The host user then needs to type `+sync_commands` to make the slash commands show up and update.
 
 Also make sure to type `+sync_guilds` and `+sync_users` after launching so that any guilds that added or removed this bot
 and/or any users that joined or left any guilds with this bot during downtime can be properly added to or removed from storage.
