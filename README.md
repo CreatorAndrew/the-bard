@@ -1,6 +1,6 @@
 # The Bard
 <p align="center"><img src="https://github.com/CreatorAndrew/the-bard/blob/main/bard.png" width="200"/></p>
-A music Discord bot that plays from file attachments and custom download URLs instead of YouTube links.
+A music Discord bot that plays from file attachments and custom download URLs instead of YouTube links
 
 ## YouTube Overview
 [![Preview](https://img.youtube.com/vi/5fFW8cCbjbc/maxresdefault.jpg)](https://www.youtube.com/watch?v=5fFW8cCbjbc)
