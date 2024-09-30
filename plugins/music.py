@@ -78,7 +78,8 @@ class Music(Cog):
             keep = 1
             repeat = 2
         for guild in guilds:
-            self.guilds[str(guild[id])] |= {
+            self.guilds[str(guild[id])] = {
+                **self.guilds[str(guild[id])],
                 "connected": False,
                 "index": 0,
                 "keep": guild[keep],
@@ -153,7 +154,8 @@ class Music(Cog):
             except:
                 pass
         if init_guild:
-            self.guilds[str(guild.id)] |= {
+            self.guilds[str(guild.id)] = {
+                **self.guilds[str(guild.id)],
                 "connected": False,
                 "index": 0,
                 "keep": keep,
