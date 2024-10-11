@@ -7,7 +7,7 @@ from yaml import safe_dump as dump, safe_load as load
 from discord import Attachment, File, Interaction
 from discord.app_commands import Choice, command
 from discord.ext.commands import Cog, command as message_command
-from utils import LANGUAGE_DIRECTORY, VARIABLES
+from utils import LANGUAGE_DIRECTORY, polished_message, VARIABLES
 
 
 class Main(Cog):
@@ -68,8 +68,9 @@ class Main(Cog):
                             pass
                     except:
                         await context.response.send_message(
-                            strings["invalid_language_file"].replace(
-                                "%{language_file}", filename
+                            polished_message(
+                                strings["invalid_language_file"],
+                                {"language_file": filename},
                             ),
                             file=File(
                                 open(
@@ -90,8 +91,9 @@ class Main(Cog):
                                 pass
                         except:
                             await context.response.send_message(
-                                strings["invalid_language_file"].replace(
-                                    "%{language_file}", filename
+                                polished_message(
+                                    strings["invalid_language_file"],
+                                    {"language_file": filename},
                                 ),
                                 file=File(
                                     open(
@@ -109,8 +111,8 @@ class Main(Cog):
                     )
                 else:
                     await context.response.send_message(
-                        strings["language_file_exists"].replace(
-                            "%{language_file}", filename
+                        polished_message(
+                            strings["language_file_exists"], {"language_file": filename}
                         )
                     )
                     self.lock.release()
@@ -125,9 +127,10 @@ class Main(Cog):
             language = set
             if not exists(f"{LANGUAGE_DIRECTORY}/{language}.yaml"):
                 await context.response.send_message(
-                    strings["invalid_language"]
-                    .replace("%{language}", language)
-                    .replace("%{bot}", self.bot.user.mention),
+                    polished_message(
+                        strings["invalid_language"],
+                        {"language": language, "bot": self.bot.user.mention},
+                    ),
                     file=File(
                         open(f"{LANGUAGE_DIRECTORY}/{current_language_file}", "r"),
                         filename=current_language_file,
@@ -138,11 +141,13 @@ class Main(Cog):
                 return
         elif add is None and set is None:
             await context.response.send_message(
-                strings["language"].replace(
-                    "%{language}",
-                    load(open(f"{LANGUAGE_DIRECTORY}/{current_language_file}", "r"))[
-                        "name"
-                    ],
+                polished_message(
+                    strings["language"],
+                    {
+                        "language": load(
+                            open(f"{LANGUAGE_DIRECTORY}/{current_language_file}", "r")
+                        )["name"]
+                    },
                 ),
                 ephemeral=True,
             )
@@ -172,9 +177,10 @@ class Main(Cog):
             )
             await self.connection.commit()
         await context.response.send_message(
-            language_data["strings"]["language_change"].replace(
-                "%{language}", language_data["name"]
-            )
+            polished_message(
+                language_data["strings"]["language_change"],
+                {"language": language_data["name"]},
+            ),
         )
         self.lock.release()
 
