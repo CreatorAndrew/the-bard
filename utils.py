@@ -53,6 +53,22 @@ class Cursor:
         if self.connection != self.cursor:
             self.cursor = cursor
 
+    async def execute_fetchall(self, statement, args=tuple()):
+        return await (
+            await self.connection.execute(
+                statement.replace("?", self.placeholder),
+                args,
+            )
+        ).fetchall()
+
+    async def execute_fetchone(self, statement, args=tuple()):
+        return await (
+            await self.connection.execute(
+                statement.replace("?", self.placeholder),
+                args,
+            )
+        ).fetchone()
+
     async def fetchall(self):
         return await self.cursor.fetchall()
 

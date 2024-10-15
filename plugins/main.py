@@ -284,8 +284,9 @@ class Main(Cog):
                     index += 1
                 dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                await self.cursor.execute("select guild_id from guilds")
-                for id in await self.cursor.fetchall():
+                for id in await self.cursor.execute_fetchall(
+                    "select guild_id from guilds"
+                ):
                     if id[0] not in ids:
                         del self.guilds[str(id[0])]
                         await self.remove_guild_from_database(id[0])
@@ -305,11 +306,7 @@ class Main(Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         await self.add_user(
-                            (
-                                _guild["users"]
-                                if self.cursor is None
-                                else guild
-                            ),
+                            (_guild["users"] if self.cursor is None else guild),
                             user,
                         )
                 ids = []
@@ -319,21 +316,15 @@ class Main(Cog):
                 if self.cursor is None:
                     index = 0
                     while index < len(_guild["users"]):
-                        if (
-                            _guild["users"][index]["id"]
-                            not in ids
-                        ):
-                            _guild["users"].remove(
-                                _guild["users"][index]
-                            )
+                        if _guild["users"][index]["id"] not in ids:
+                            _guild["users"].remove(_guild["users"][index])
                             index -= 1
                         index += 1
                 else:
-                    await self.cursor.execute(
+                    for id in await self.cursor.execute_fetchall(
                         "select user_id from guild_users where guild_id = ?",
                         (guild.id,),
-                    )
-                    for id in await self.cursor.fetchall():
+                    ):
                         if id[0] not in ids:
                             await self.cursor.execute(
                                 "delete from guild_users where guild_id = ? and user_id = ?",
@@ -427,6 +418,5 @@ class Main(Cog):
 async def setup(bot):
     bot.main_init_guilds = None
     if bot.cursor is not None:
-        await bot.cursor.execute("select guild_id, guild_lang from guilds")
-        bot.main_init_guilds = await bot.cursor.fetchall()
+        bot.main_init_guilds = await bot.cursor.execute_fetchall("select guild_id, guild_lang from guilds")
     await bot.add_cog(Main(bot))
