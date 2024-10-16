@@ -418,8 +418,7 @@ async def setup(bot):
     bot.music_init_guilds = None
     bot.use_lavalink = VARIABLES["multimedia_backend"] == "lavalink"
     if bot.cursor is not None:
-        await bot.cursor.execute(
+        bot.music_init_guilds = await bot.cursor.execute_fetchall(
             "select guild_id, keep_in_voice, repeat_queue from guilds_music"
         )
-        bot.music_init_guilds = await bot.cursor.fetchall()
     await bot.add_cog(Music(bot))
