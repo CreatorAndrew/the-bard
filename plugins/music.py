@@ -1,6 +1,6 @@
 from typing import List, Literal
 from yaml import safe_dump as dump
-from discord import Attachment, Interaction, Message
+from discord import Attachment, Interaction, Message, RawThreadUpdateEvent
 from discord.app_commands import Choice, command, ContextMenu, describe
 from discord.ext.commands import Cog
 from pymediainfo import MediaInfo
@@ -284,6 +284,31 @@ class Music(Cog):
         self, context: Interaction, current: str
     ) -> List[Choice[str]]:
         return await working_thread_autocompletion(context, current)
+
+    @Cog.listener("on_raw_thread_update")
+    async def keep_working_thread_open(self, payload: RawThreadUpdateEvent):
+        try:
+            if (
+                payload.thread_id
+                == (
+                    next(
+                        guild_searched["working_thread_id"]
+                        for guild_searched in self.data["guilds"]
+                        if guild_searched["id"] == payload.guild_id
+                    )
+                    if self.cursor is None
+                    else (
+                        await self.cursor.execute_fetchone(
+                            "select working_thread_id from guilds_music where guild_id = ?",
+                            (payload.guild_id,),
+                        )
+                    )[0]
+                )
+                and payload.thread.archived
+            ):
+                await payload.thread.edit(archived=False)
+        except:
+            pass
 
     @command(description="play_command_desc")
     async def play_command(
