@@ -25,7 +25,7 @@ connection = connect(CREDENTIALS)
 cursor = connection.cursor()
 
 cursor.execute("select * from guilds_music")
-for index, guild in enumerate(cursor.fetchall()):
+for guild in cursor.fetchall():
     playlists = []
     cursor.execute(
         "select guild_pl_id, pl_name from playlists where guild_id = %s order by guild_pl_id",
@@ -64,11 +64,16 @@ for index, guild in enumerate(cursor.fetchall()):
                 ]
             )
         playlists.append({"name": playlist[1], "songs": songs})
+    _guild = next(
+        guild_searched
+        for guild_searched in data["guilds"]
+        if guild_searched["id"] == guild[0]
+    )
     if guild[1] is not None:
-        data["guilds"][index]["working_thread_id"] = guild[1]
-    data["guilds"][index]["keep"] = bool(guild[2])
-    data["guilds"][index]["repeat"] = bool(guild[3])
-    data["guilds"][index]["playlists"] = playlists
+        _guild["working_thread_id"] = guild[1]
+    _guild["keep"] = bool(guild[2])
+    _guild["repeat"] = bool(guild[3])
+    _guild["playlists"] = playlists
 
 connection.close()
 
