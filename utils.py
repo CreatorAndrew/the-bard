@@ -57,7 +57,10 @@ class Cursor:
 
     async def execute(self, statement, args=tuple()):
         await self.__database_lock.acquire()
-        await self.__execute(statement, args)
+        try:
+            await self.__execute(statement, args)
+        except:
+            pass
         self.__database_lock.release()
 
     async def execute_fetchall(self, statement, args=tuple()):
