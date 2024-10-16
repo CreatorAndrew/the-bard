@@ -1,4 +1,5 @@
 from os.path import exists
+from asyncio import Lock
 from yaml import safe_load as load
 from discord import ButtonStyle, Locale
 from discord.app_commands import locale_str, TranslationContext, Translator
@@ -41,6 +42,7 @@ class CommandTranslator(Translator):
 
 class Cursor:
     def __init__(self, connection, cursor, placeholder):
+        self.__database_lock = Lock()
         self.connection = connection
         self.cursor = cursor
         self.placeholder = placeholder
@@ -54,20 +56,18 @@ class Cursor:
             self.cursor = cursor
 
     async def execute_fetchall(self, statement, args=tuple()):
-        return await (
-            await self.connection.execute(
-                statement.replace("?", self.placeholder),
-                args,
-            )
-        ).fetchall()
+        await self.__database_lock.acquire()
+        await self.execute(statement, args)
+        results = await self.fetchall()
+        self.__database_lock.release()
+        return results
 
     async def execute_fetchone(self, statement, args=tuple()):
-        return await (
-            await self.connection.execute(
-                statement.replace("?", self.placeholder),
-                args,
-            )
-        ).fetchone()
+        await self.__database_lock.acquire()
+        await self.execute(statement, args)
+        results = await self.fetchone()
+        self.__database_lock.release()
+        return results
 
     async def fetchall(self):
         return await self.cursor.fetchall()
