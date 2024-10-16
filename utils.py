@@ -47,7 +47,7 @@ class Cursor:
         self.cursor = cursor
         self.placeholder = placeholder
 
-    async def execute(self, statement, args=tuple()):
+    async def __execute(self, statement, args=tuple()):
         cursor = await self.connection.execute(
             statement.replace("?", self.placeholder),
             args,
@@ -55,16 +55,21 @@ class Cursor:
         if self.connection != self.cursor:
             self.cursor = cursor
 
+    async def execute(self, statement, args=tuple()):
+        await self.__database_lock.acquire()
+        await self.__execute(statement, args)
+        self.__database_lock.release()
+
     async def execute_fetchall(self, statement, args=tuple()):
         await self.__database_lock.acquire()
-        await self.execute(statement, args)
+        await self.__execute(statement, args)
         results = await self.fetchall()
         self.__database_lock.release()
         return results
 
     async def execute_fetchone(self, statement, args=tuple()):
         await self.__database_lock.acquire()
-        await self.execute(statement, args)
+        await self.__execute(statement, args)
         results = await self.fetchone()
         self.__database_lock.release()
         return results
