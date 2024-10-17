@@ -50,9 +50,6 @@ print(
 
 choice = choices[int(input())]
 
-if "to_yaml" in choice and YAML_PREEXISTENT:
-    remove(YAML_PATH)
-
 for plugin in LOAD_ORDER:
     run(
         ["python3", f"{path[0]}/transfers/{choice}_{plugin}.py"],
