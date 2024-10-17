@@ -15,10 +15,16 @@ if YAML_PREEXISTENT:
     remove(YAML_PATH)
 
 choices = [
+    "mysql_to_postgresql",
+    "mysql_to_sqlite",
+    "mysql_to_yaml",
+    "postgresql_to_mysql",
     "postgresql_to_sqlite",
     "postgresql_to_yaml",
+    "sqlite_to_mysql",
     "sqlite_to_postgresql",
     "sqlite_to_yaml",
+    "yaml_to_mysql",
     "yaml_to_postgresql",
     "yaml_to_sqlite",
 ]
@@ -26,12 +32,18 @@ choices = [
 print(
     "\n".join(
         [
-            "0. PostgreSQL to SQLite",
-            "1. PostgreSQL to YAML",
-            "2. SQLite to PostgreSQL",
-            "3. SQLite to YAML",
-            "4. YAML to PostgreSQL",
-            "5. YAML to SQLite",
+            " 0. MySQL to PostgreSQL",
+            " 1. MySQL to SQLite",
+            " 2. MySQL to YAML",
+            " 3. PostgreSQL to MySQL",
+            " 4. PostgreSQL to SQLite",
+            " 5. PostgreSQL to YAML",
+            " 6. SQLite to MySQL",
+            " 7. SQLite to PostgreSQL",
+            " 8. SQLite to YAML",
+            " 9. YAML to MySQL",
+            "10. YAML to PostgreSQL",
+            "11. YAML to SQLite",
             "",
             "Specify a transfer procedure by its option number: ",
         ]

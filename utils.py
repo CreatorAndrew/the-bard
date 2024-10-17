@@ -15,11 +15,11 @@ LOAD_ORDER = list(
 try:
     VARIABLES = load(open("variables.yaml", "r"))
     CREDENTIALS = f"""
-        dbname={VARIABLES["postgresql_credentials"]["database"]}
-        user={VARIABLES["postgresql_credentials"]["user"]}
-        password={VARIABLES["postgresql_credentials"]["password"]}
-        {"" if VARIABLES["postgresql_credentials"]["host"] is None else f"host={VARIABLES['postgresql_credentials']['host']}"}
-        {"" if VARIABLES["postgresql_credentials"]["port"] is None else f"port={VARIABLES['postgresql_credentials']['port']}"}
+        dbname={VARIABLES["database_credentials"]["database"]}
+        user={VARIABLES["database_credentials"]["user"]}
+        password={VARIABLES["database_credentials"]["password"]}
+        {"" if VARIABLES["database_credentials"]["host"] is None else f"host={VARIABLES['database_credentials']['host']}"}
+        {"" if VARIABLES["database_credentials"]["port"] is None else f"port={VARIABLES['database_credentials']['port']}"}
     """
 except:
     VARIABLES = {}

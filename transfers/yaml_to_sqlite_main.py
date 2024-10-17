@@ -8,13 +8,15 @@ from utils import VARIABLES
 
 data = load(open(f"{VARIABLES['name']}.yaml", "r"))
 
-DATABASE = f"{VARIABLES['name']}.db"
-connection = connect(DATABASE)
+connection = connect(f"{VARIABLES['name']}.db")
 cursor = connection.cursor()
 try:
     sql_file = f"{path[0]}/tables/main.sql"
     if exists(sql_file):
-        for statement in open(sql_file, "r").read().split(";"):
+        for statement in filter(
+            lambda statement: statement not in ["", "\n", "\r\n"],
+            open(sql_file, "r").read().split(";"),
+        ):
             cursor.execute(statement)
 except:
     pass

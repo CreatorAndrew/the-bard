@@ -216,10 +216,10 @@ async def playlist_command(
             await self.cursor.execute(
                 """
                 insert into playlists values(
-                    (select max(pl_id) from playlists) + 1,
+                    (select * from (select max(pl_id) from playlists) as max_pl_id) + 1,
                     ?,
                     ?,
-                    (select count(pl_id) from playlists where guild_id = ?)
+                    (select * from (select count(pl_id) from playlists where guild_id = ?) as count_pl_id)
                 )
                 """,
                 (new_name, context.guild.id, context.guild.id),
@@ -233,8 +233,10 @@ async def playlist_command(
                         ?,
                         (select max(pl_id) from playlists),
                         (
-                            select count(song_id) from pl_songs
-                            where pl_id = (select max(pl_id) from playlists)
+                            select * from (
+                                select count(song_id) from pl_songs
+                                where pl_id = (select max(pl_id) from playlists)
+                            ) as count_song_id
                         )
                     )
                     """,
@@ -248,7 +250,7 @@ async def playlist_command(
                     (new_index - 1, playlist_count, context.guild.id),
                 )
                 await self.cursor.execute(
-                    "update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)",
+                    "update playlists set guild_pl_id = ? where pl_id = (select * from (select max(pl_id) from playlists) as max_pl_id)",
                     (new_index - 1,),
                 )
         await context.followup.send(
@@ -285,10 +287,10 @@ async def playlist_command(
                 await self.cursor.execute(
                     """
                     insert into playlists values(
-                        (select max(pl_id) from playlists) + 1,
+                        (select * from (select max(pl_id) from playlists) as max_pl_id) + 1,
                         ?,
                         ?,
-                        (select count(pl_id) from playlists where guild_id = ?)
+                        (select * from (select count(pl_id) from playlists where guild_id = ?) as count_pl_id)
                     )
                     """,
                     (add, context.guild.id, context.guild.id),
@@ -300,7 +302,7 @@ async def playlist_command(
                         0,
                         ?,
                         ?,
-                        (select count(pl_id) from playlists where guild_id = ?)
+                        (select * from (select count(pl_id) from playlists where guild_id = ?) as count_pl_id)
                     )
                     """,
                     (add, context.guild.id, context.guild.id),
@@ -313,7 +315,7 @@ async def playlist_command(
                     (new_index - 1, playlist_count, context.guild.id),
                 )
                 await self.cursor.execute(
-                    "update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)",
+                    "update playlists set guild_pl_id = ? where pl_id = (select * from (select max(pl_id) from playlists) as max_pl_id)",
                     (new_index - 1,),
                 )
         await context.followup.send(
@@ -365,10 +367,10 @@ async def playlist_command(
                 await self.cursor.execute(
                     """
                     insert into playlists values(
-                        (select max(pl_id) from playlists) + 1,
+                        (select * from (select max(pl_id) from playlists) as max_pl_id) + 1,
                         ?,
                         ?,
-                        (select count(pl_id) from playlists where guild_id = ?)
+                        (select * from (select count(pl_id) from playlists where guild_id = ?) as count_pl_id)
                     )
                     """,
                     (new_name, context.guild.id, context.guild.id),
@@ -382,8 +384,10 @@ async def playlist_command(
                             ?,
                             (select max(pl_id) from playlists),
                             (
-                                select count(song_id) from pl_songs
-                                where pl_id = (select max(pl_id) from playlists)
+                                select * from (
+                                    select count(song_id) from pl_songs
+                                    where pl_id = (select max(pl_id) from playlists)
+                                ) as count_song_id
                             )
                         )
                         """,
@@ -397,7 +401,7 @@ async def playlist_command(
                         (new_index - 1, playlist_count, context.guild.id),
                     )
                     await self.cursor.execute(
-                        "update playlists set guild_pl_id = ? where pl_id = (select max(pl_id) from playlists)",
+                        "update playlists set guild_pl_id = ? where pl_id = (select * from (select max(pl_id) from playlists) as max_pl_id)",
                         (new_index - 1,),
                     )
             await context.followup.send(
@@ -429,9 +433,11 @@ async def playlist_command(
                             ?,
                             (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                             (
-                                select count(song_id) from pl_songs
-                                left outer join playlists on playlists.pl_id = pl_songs.pl_id
-                                where guild_id = ? and guild_pl_id = ?
+                                select * from (
+                                    select count(song_id) from pl_songs
+                                    left outer join playlists on playlists.pl_id = pl_songs.pl_id
+                                    where guild_id = ? and guild_pl_id = ?
+                                ) as count_song_id
                             )
                         )
                         """,
@@ -737,7 +743,7 @@ async def playlist_command(
                 else:
                     try:
                         await self.cursor.execute(
-                            "insert into songs values((select max(song_id) from songs) + 1, ?, ?, ?, ?, ?, ?)",
+                            "insert into songs values((select * from (select max(song_id) from songs) as max_song_id) + 1, ?, ?, ?, ?, ?, ?)",
                             (
                                 new_name,
                                 metadata["duration"],
@@ -767,9 +773,11 @@ async def playlist_command(
                             ?,
                             (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                             (
-                                select count(song_id) from pl_songs
-                                left outer join playlists on playlists.pl_id = pl_songs.pl_id
-                                where guild_id = ? and guild_pl_id = ?
+                                select * from (
+                                    select count(song_id) from pl_songs
+                                    left outer join playlists on playlists.pl_id = pl_songs.pl_id
+                                    where guild_id = ? and guild_pl_id = ?
+                                ) as count_song_id
                             )
                         )
                         """,
@@ -1404,7 +1412,7 @@ async def playlist_add_files(self, context, message_regarded):
         for song in playlist:
             try:
                 await self.cursor.execute(
-                    "insert into songs values((select max(song_id) from songs) + 1, ?, ?, ?, ?, ?, ?)",
+                    "insert into songs values((select * from (select max(song_id) from songs) as max_song_id) + 1, ?, ?, ?, ?, ?, ?)",
                     (
                         song["name"],
                         song["duration"],
@@ -1434,9 +1442,11 @@ async def playlist_add_files(self, context, message_regarded):
                     ?,
                     (select pl_id from playlists where guild_id = ? and guild_pl_id = ?),
                     (
-                        select count(song_id) from pl_songs
-                        left outer join playlists on playlists.pl_id = pl_songs.pl_id
-                        where guild_id = ? and guild_pl_id = ?
+                        select * from (
+                            select count(song_id) from pl_songs
+                            left outer join playlists on playlists.pl_id = pl_songs.pl_id
+                            where guild_id = ? and guild_pl_id = ?
+                        ) as count_song_id
                     )
                 )
                 """,

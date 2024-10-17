@@ -41,7 +41,39 @@ async def main():
         else:
             data = None
             flat_file = None
-            if VARIABLES["storage"] == "postgresql":
+            if VARIABLES["storage"] == "mysql":
+                from aiomysql import create_pool
+
+                pool = await create_pool(
+                    host=(
+                        "localhost"
+                        if VARIABLES["database_credentials"]["host"] is None
+                        else VARIABLES["database_credentials"]["host"]
+                    ),
+                    port=(
+                        3306
+                        if VARIABLES["database_credentials"]["port"] is None
+                        else VARIABLES["database_credentials"]["port"]
+                    ),
+                    user=VARIABLES["database_credentials"]["user"],
+                    password=VARIABLES["database_credentials"]["password"],
+                    autocommit=True,
+                )
+                connection = await pool.acquire()
+                _cursor = await connection.cursor()
+                try:
+                    await _cursor.execute(
+                        f"create database `{VARIABLES['database_credentials']['database']}`"
+                    )
+                except:
+                    database_exists = True
+                else:
+                    database_exists = False
+                await _cursor.execute(
+                    f"use `{VARIABLES['database_credentials']['database']}`"
+                )
+                cursor = Cursor(_cursor, _cursor, "%s")
+            elif VARIABLES["storage"] == "postgresql":
                 from subprocess import DEVNULL, run as shell, STDOUT
                 import psycopg
 
@@ -49,10 +81,10 @@ async def main():
                     [
                         "psql",
                         "-c",
-                        f"create database \"{VARIABLES['postgresql_credentials']['database']}\"",
+                        f"create database \"{VARIABLES['database_credentials']['database']}\"",
                         CREDENTIALS.replace(
-                            f"dbname={VARIABLES['postgresql_credentials']['database']}",
-                            f"dbname={VARIABLES['postgresql_credentials']['user']}",
+                            f"dbname={VARIABLES['database_credentials']['database']}",
+                            f"dbname={VARIABLES['database_credentials']['user']}",
                         ),
                     ],
                     stdout=DEVNULL,
@@ -75,7 +107,10 @@ async def main():
                     for plugin in LOAD_ORDER:
                         sql_file = f"tables/{plugin}.sql"
                         if exists(sql_file):
-                            for statement in open(sql_file, "r").read().split(";"):
+                            for statement in filter(
+                                lambda statement: statement not in ["", "\n", "\r\n"],
+                                open(sql_file, "r").read().split(";"),
+                            ):
                                 await cursor.execute(statement)
                 except:
                     pass

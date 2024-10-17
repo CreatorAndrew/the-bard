@@ -27,7 +27,10 @@ cursor = connection.cursor()
 try:
     sql_file = f"{path[0]}/tables/music.sql"
     if exists(sql_file):
-        for statement in open(sql_file, "r").read().split(";"):
+        for statement in filter(
+            lambda statement: statement not in ["", "\n", "\r\n"],
+            open(sql_file, "r").read().split(";"),
+        ):
             cursor.execute(statement)
 except:
     pass

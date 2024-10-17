@@ -2,28 +2,33 @@ from sys import path
 from os.path import dirname, exists
 
 path.insert(0, dirname(path[0]))
-from subprocess import DEVNULL, run, STDOUT
-from psycopg import connect
+from pymysql import connect
 from yaml import safe_load as load
-from utils import CREDENTIALS, VARIABLES
+from utils import VARIABLES
 
 data = load(open(f"{VARIABLES['name']}.yaml", "r"))
 
-run(
-    [
-        "psql",
-        "-c",
-        f"create database \"{VARIABLES['postgresql_credentials']['database']}\"",
-        CREDENTIALS.replace(
-            f"dbname={VARIABLES['postgresql_credentials']['database']}",
-            f"dbname={VARIABLES['postgresql_credentials']['user']}",
-        ),
-    ],
-    stdout=DEVNULL,
-    stderr=STDOUT,
+connection = connect(
+    host=(
+        "localhost"
+        if VARIABLES["database_credentials"]["host"] is None
+        else VARIABLES["database_credentials"]["host"]
+    ),
+    port=(
+        3306
+        if VARIABLES["database_credentials"]["port"] is None
+        else VARIABLES["database_credentials"]["port"]
+    ),
+    user=VARIABLES["database_credentials"]["user"],
+    password=VARIABLES["database_credentials"]["password"],
+    autocommit=True,
 )
-connection = connect(CREDENTIALS, autocommit=True)
 cursor = connection.cursor()
+try:
+    cursor.execute(f"create database `{VARIABLES['database_credentials']['database']}`")
+except:
+    pass
+cursor.execute(f"use `{VARIABLES['database_credentials']['database']}`")
 try:
     sql_file = f"{path[0]}/tables/main.sql"
     if exists(sql_file):

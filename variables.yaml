@@ -6,10 +6,10 @@ name: bard
 master_id:
 # Set the default language of the bot for each guild that adds it.
 default_language: american_english
-# Set the storage medium for storing guild and user data (possible values: postgresql, sqlite, yaml).
+# Set the storage medium for storing guild and user data (possible values: mysql, postgresql, sqlite, yaml).
 storage: sqlite
-# Set the credentials for the PostgreSQL database if it is the selected storage medium.
-postgresql_credentials:
+# Set the credentials for the database if the selected storage medium is MySQL or PostgreSQL.
+database_credentials:
     database:
     user:
     password:
