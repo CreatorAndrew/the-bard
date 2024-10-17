@@ -418,5 +418,7 @@ class Main(Cog):
 async def setup(bot):
     bot.main_init_guilds = None
     if bot.cursor is not None:
-        bot.main_init_guilds = await bot.cursor.execute_fetchall("select guild_id, guild_lang from guilds")
+        bot.main_init_guilds = await bot.cursor.execute_fetchall(
+            "select guild_id, guild_lang from guilds"
+        )
     await bot.add_cog(Main(bot))
