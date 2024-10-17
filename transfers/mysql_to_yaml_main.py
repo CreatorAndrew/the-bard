@@ -24,6 +24,7 @@ connection = connect(
     ),
     user=VARIABLES["database_credentials"]["user"],
     password=VARIABLES["database_credentials"]["password"],
+    database=VARIABLES["database_credentials"]["database"],
     autocommit=True,
 )
 cursor = connection.cursor()
