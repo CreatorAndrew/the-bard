@@ -11,9 +11,6 @@ from utils import LOAD_ORDER, VARIABLES
 YAML_PATH = f"{path[0]}/{VARIABLES['name']}.yaml"
 YAML_PREEXISTENT = exists(YAML_PATH)
 
-if YAML_PREEXISTENT:
-    remove(YAML_PATH)
-
 choices = [
     "mysql_to_postgresql",
     "mysql_to_sqlite",
@@ -52,6 +49,9 @@ print(
 )
 
 choice = choices[int(input())]
+
+if "to_yaml" in choice and YAML_PREEXISTENT:
+    remove(YAML_PATH)
 
 for plugin in LOAD_ORDER:
     run(
