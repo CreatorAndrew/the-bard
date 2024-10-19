@@ -13,10 +13,10 @@ run(
     [
         "psql",
         "-c",
-        f"create database \"{VARIABLES['postgresql_credentials']['database']}\"",
+        f"create database \"{VARIABLES['database_credentials']['database']}\"",
         CREDENTIALS.replace(
-            f"dbname={VARIABLES['postgresql_credentials']['database']}",
-            f"dbname={VARIABLES['postgresql_credentials']['user']}",
+            f"dbname={VARIABLES['database_credentials']['database']}",
+            f"dbname={VARIABLES['database_credentials']['user']}",
         ),
     ],
     stdout=DEVNULL,
