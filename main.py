@@ -72,12 +72,12 @@ async def main():
                 await _cursor.execute(
                     f"use `{VARIABLES['database_credentials']['database']}`"
                 )
-                cursor = Cursor(_cursor, _cursor, "%s")
+                cursor = Cursor(_cursor, _cursor, "%s", pool.acquire)
             elif VARIABLES["storage"] == "postgresql":
-                from subprocess import DEVNULL, run as shell, STDOUT
+                from subprocess import DEVNULL, run as execute, STDOUT
                 import psycopg
 
-                shell(
+                execute(
                     [
                         "psql",
                         "-c",
