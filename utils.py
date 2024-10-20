@@ -41,16 +41,27 @@ class CommandTranslator(Translator):
 
 
 class Cursor:
-    def __init__(self, connection, cursor, placeholder, pool_callback=None):
+    def __init__(
+        self,
+        connection,
+        cursor,
+        placeholder,
+        pool_acquire_callback=None,
+        pool_release_callback=None,
+    ):
         self.__database_lock = Lock()
+        self.__connection = connection
         self.connection = connection
         self.cursor = cursor
         self.placeholder = placeholder
-        self.pool_callback = pool_callback
+        self.pool_acquire_callback = pool_acquire_callback
+        self.pool_release_callback = pool_release_callback
 
     async def __execute(self, statement, args=tuple()):
-        if self.pool_callback is not None:
-            self.connection = self.cursor = (await self.pool_callback()).cursor()
+        if self.pool_acquire_callback is not None:
+            self.pool_release_callback(self.__connection)
+            self.__connection = await self.pool_acquire_callback()
+            self.connection = self.cursor = self.__connection.cursor()
             if VARIABLES["storage"] == "mysql":
                 self.connection = self.cursor = await self.cursor
                 await self.connection.execute(

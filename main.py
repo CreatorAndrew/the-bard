@@ -45,6 +45,8 @@ async def main():
                 from aiomysql import create_pool
 
                 pool = await create_pool(
+                    1,
+                    1,
                     host=(
                         "localhost"
                         if VARIABLES["database_credentials"]["host"] is None
@@ -72,7 +74,7 @@ async def main():
                 await _cursor.execute(
                     f"use `{VARIABLES['database_credentials']['database']}`"
                 )
-                cursor = Cursor(_cursor, _cursor, "%s", pool.acquire)
+                cursor = Cursor(connection, _cursor, "%s", pool.acquire, pool.release)
             elif VARIABLES["storage"] == "postgresql":
                 from subprocess import DEVNULL, run as execute, STDOUT
                 import psycopg
