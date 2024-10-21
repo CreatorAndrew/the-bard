@@ -53,7 +53,8 @@ loop_command_desc
 move
 move_command
 move_command_desc
-move_desc
+move_playlist_desc
+move_song_desc
 move_playlist
 new_index
 new_index_desc

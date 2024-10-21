@@ -35,7 +35,6 @@ from playback import (
     when_command,
 )
 from playlists import (
-    playlist_action_autocompletion,
     playlist_add_files,
     playlist_autocompletion,
     playlist_command,
@@ -173,27 +172,18 @@ class Music(Cog):
         )
 
     @command(description="playlists_command_desc")
-    async def playlists_command(self, context: Interaction):
-        await playlists_command(self, context)
-
-    @command(description="playlist_command_desc")
     @describe(from_guild="from_guild_desc")
     @describe(transfer="transfer_desc")
     @describe(add="add_desc")
     @describe(clone="clone_desc")
     @describe(into="into_desc")
-    @describe(move="move_desc")
+    @describe(move="move_playlist_desc")
     @describe(rename="rename_desc")
     @describe(remove="remove_desc")
     @describe(load="load_desc")
-    @describe(select="select_desc")
-    @describe(action="action_desc")
-    @describe(file="file_desc")
-    @describe(song_url="song_url_desc")
-    @describe(song_index="song_index_desc")
     @describe(new_name="new_name_desc")
     @describe(new_index="new_index_desc")
-    async def playlist_command(
+    async def playlists_command(
         self,
         context: Interaction,
         from_guild: str = None,
@@ -205,15 +195,10 @@ class Music(Cog):
         rename: int = None,
         remove: int = None,
         load: int = None,
-        select: int = None,
-        action: str = None,
-        file: Attachment = None,
-        song_url: str = None,
-        song_index: int = None,
         new_name: str = None,
         new_index: int = None,
     ):
-        await playlist_command(
+        await playlists_command(
             self,
             context,
             from_guild,
@@ -225,41 +210,66 @@ class Music(Cog):
             rename,
             remove,
             load,
-            select,
-            action,
-            file,
-            song_url,
-            song_index,
             new_name,
             new_index,
         )
 
-    @playlist_command.autocomplete("from_guild")
+    @command(description="playlist_command_desc")
+    @describe(select="select_desc")
+    @describe(file="file_desc")
+    @describe(song_url="song_url_desc")
+    @describe(move="move_song_desc")
+    @describe(rename="rename_desc")
+    @describe(remove="remove_desc")
+    @describe(new_name="new_name_desc")
+    @describe(new_index="new_index_desc")
+    async def playlist_command(
+        self,
+        context: Interaction,
+        select: int,
+        file: Attachment = None,
+        song_url: str = None,
+        move: int = None,
+        rename: int = None,
+        remove: int = None,
+        new_name: str = None,
+        new_index: int = None,
+    ):
+        await playlist_command(
+            self,
+            context,
+            select,
+            file,
+            song_url,
+            move,
+            rename,
+            remove,
+            new_name,
+            new_index,
+        )
+
+    @playlists_command.autocomplete("from_guild")
     async def playlist_guild_autocompletion(
         self, context: Interaction, current: str
     ) -> List[Choice[str]]:
         return await playlist_guild_autocompletion(self, context, current)
 
-    @playlist_command.autocomplete("transfer")
-    @playlist_command.autocomplete("clone")
-    @playlist_command.autocomplete("into")
-    @playlist_command.autocomplete("move")
-    @playlist_command.autocomplete("rename")
-    @playlist_command.autocomplete("remove")
-    @playlist_command.autocomplete("load")
+    @playlists_command.autocomplete("transfer")
+    @playlists_command.autocomplete("clone")
+    @playlists_command.autocomplete("into")
+    @playlists_command.autocomplete("move")
+    @playlists_command.autocomplete("rename")
+    @playlists_command.autocomplete("remove")
+    @playlists_command.autocomplete("load")
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(
         self, context: Interaction, current: str
     ) -> List[Choice[int]]:
         return await playlist_autocompletion(self, context, current)
 
-    @playlist_command.autocomplete("action")
-    async def playlist_action_autocompletion(
-        self, context: Interaction, current: str
-    ) -> List[Choice[str]]:
-        return await playlist_action_autocompletion(self, context, current)
-
-    @playlist_command.autocomplete("song_index")
+    @playlist_command.autocomplete("move")
+    @playlist_command.autocomplete("rename")
+    @playlist_command.autocomplete("remove")
     async def playlist_song_autocompletion(
         self, context: Interaction, current: str
     ) -> List[Choice[int]]:

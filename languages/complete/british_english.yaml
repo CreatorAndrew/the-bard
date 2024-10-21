@@ -65,9 +65,11 @@ strings:
     move: move
     move_command: move
     move_command_desc: Change a track's position within the queue
-    move_desc: Change a playlist's position in the order of playlists for this server
     move_playlist: 'Playlist ''%{playlist}'' is now #%{playlist_index} in the list
         of playlists.'
+    move_playlist_desc: Change a playlist's position in the order of playlists for
+        this server
+    move_song_desc: Change a track's position within a playlist
     new_index: index
     new_index_desc: Specify an index to move a playlist at or move or insert a track
         at within a playlist
@@ -101,7 +103,8 @@ strings:
     playlist_select_menu_placeholder: Select a playlist
     playlist_songs_header: 'List of tracks in playlist ''%{playlist}'' (#%{playlist_index}):'
     playlists_command: playlists
-    playlists_command_desc: Show the list of playlists for this server
+    playlists_command_desc: Add, reorder, rename, remove, or show the list of playlists
+        for this server
     playlists_header: 'Playlists for this server:'
     previous_command: previous
     previous_command_desc: Go back to the previous track in the queue
@@ -121,12 +124,12 @@ strings:
     remove: remove
     remove_command: remove
     remove_command_desc: Remove a track from the queue
-    remove_desc: Remove a playlist
+    remove_desc: Remove a playlist or track
     remove_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been deleted.
     rename: rename
     rename_command: rename
     rename_command_desc: Rename a track in the queue
-    rename_desc: Rename a playlist
+    rename_desc: Rename a playlist or track
     rename_playlist: Playlist '%{playlist}' (#%{playlist_index}) has been renamed
         to '%{name}'.
     repeat: Playlists currently%{do_not} repeat.
@@ -135,7 +138,7 @@ strings:
     rewind_command: rewind
     rewind_command_desc: Rewind the track
     select: select
-    select_desc: Select a playlist (use together with `action`)
+    select_desc: Select a playlist to modify or show the list of its tracks
     set: set
     shuffle: The queue has been shuffled.
     shuffle_command: shuffle
