@@ -32,10 +32,11 @@ else:
     """
     GET_SONGS_STATEMENT = """
         select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id,
-        message_id, attachment_index, song_url, song_duration from pl_songs
+        message_id, attachment_index, song_url, song_duration, pl_song_id from pl_songs
         left outer join songs on songs.song_id = pl_songs.song_id
         left outer join playlists on playlists.pl_id = pl_songs.pl_id
         where playlists.guild_id = ? and guild_pl_id = ?
+        order by pl_song_id
     """
     SONG_ID_KEY = 0
     SONG_NAME_KEY = 1
