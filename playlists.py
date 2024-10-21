@@ -9,13 +9,14 @@ from discord.ui import Select, View
 from utils import get_filename, page_selector, polished_message, polished_url, VARIABLES
 
 if VARIABLES["storage"] == "yaml":
-    SONG_DURATION_KEY = "duration"
+    SONG_ID_KEY = "id"
     SONG_NAME_KEY = "name"
     GUILD_ID_KEY = "guild_id"
     CHANNEL_ID_KEY = "channel_id"
     MESSAGE_ID_KEY = "message_id"
     ATTACHMENT_INDEX_KEY = "attachment_index"
     SONG_URL_KEY = "file"
+    SONG_DURATION_KEY = "duration"
 else:
     GET_PLAYLIST_ID_AND_NAME_AND_SONG_COUNT_STATEMENT = """
         select pl_songs.pl_id, pl_name, count(song_id) from pl_songs
@@ -30,19 +31,20 @@ else:
         order by pl_song_id
     """
     GET_SONGS_STATEMENT = """
-        select pl_songs.song_id, pl_songs.song_name, songs.guild_id,
-        channel_id, message_id, attachment_index, song_url from pl_songs
+        select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id,
+        message_id, attachment_index, song_url, song_duration from pl_songs
         left outer join songs on songs.song_id = pl_songs.song_id
         left outer join playlists on playlists.pl_id = pl_songs.pl_id
         where playlists.guild_id = ? and guild_pl_id = ?
     """
-    SONG_DURATION_KEY = 0
+    SONG_ID_KEY = 0
     SONG_NAME_KEY = 1
     GUILD_ID_KEY = 2
     CHANNEL_ID_KEY = 3
     MESSAGE_ID_KEY = 4
     ATTACHMENT_INDEX_KEY = 5
     SONG_URL_KEY = 6
+    SONG_DURATION_KEY = 7
 
 
 def get_next_song_id(data):
@@ -73,6 +75,7 @@ async def playlists_command(
     rename,
     remove,
     load,
+    list_songs,
     new_name,
     new_index,
 ):
@@ -97,13 +100,26 @@ async def playlists_command(
     # load a playlist
     elif load is not None:
         await load_playlist(self, context, load)
+    # return a list of tracks in the playlist
+    elif list_songs is not None:
+        await playlist_list_songs(self, context, list_songs)
     # return a list of playlists for the calling guild
     else:
         await list_playlists(self, context)
 
 
 async def playlist_command(
-    self, context, select, file, song_url, move, rename, remove, new_name, new_index
+    self,
+    context,
+    select,
+    file,
+    song_url,
+    move,
+    rename,
+    remove,
+    load,
+    new_name,
+    new_index,
 ):
     # add a track to the playlist
     if file is not None or song_url is not None:
@@ -119,6 +135,9 @@ async def playlist_command(
     # remove a track from the playlist
     elif remove is not None:
         await playlist_remove_song(self, context, select, remove)
+    # load a track into the queue
+    elif load is not None:
+        await load_playlist(self, context, select, lambda song: song["index"] == load)
     # return a list of tracks in the playlist
     else:
         await playlist_list_songs(self, context, select)
@@ -754,7 +773,7 @@ async def remove_playlist(self, context, playlist):
     self.lock.release()
 
 
-async def load_playlist(self, context, playlist):
+async def load_playlist(self, context, playlist, filter_callback=lambda x: True):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
     await self.lock.acquire()
@@ -777,16 +796,13 @@ async def load_playlist(self, context, playlist):
             guild["playlists"][playlist - 1]["songs"]
             if VARIABLES["storage"] == "yaml"
             else await self.cursor.execute_fetchall(
-                f"{GET_SONGS_STATEMENT} order by pl_song_id".replace(
-                    "pl_songs.song_id,", "song_duration,"
-                ),
-                (context.guild.id, playlist - 1),
+                GET_SONGS_STATEMENT, (context.guild.id, playlist - 1)
             )
         )
         self.lock.release()
         if songs:
             proper_songs = []
-            for song in songs:
+            for index, song in enumerate(songs, 1):
                 if song[SONG_URL_KEY] is None:
                     try:
                         song_message = self.messages[str(song[MESSAGE_ID_KEY])]
@@ -811,6 +827,7 @@ async def load_playlist(self, context, playlist):
                     song_file = song[SONG_URL_KEY]
                 proper_songs.append(
                     {
+                        "index": index,
                         "name": song[SONG_NAME_KEY],
                         "file": song_file,
                         "duration": song[SONG_DURATION_KEY],
@@ -848,7 +865,9 @@ async def load_playlist(self, context, playlist):
                         )
                 except:
                     pass
-            await self.play_song(context, playlist=proper_songs)
+            await self.play_song(
+                context, playlist=list(filter(filter_callback, proper_songs))
+            )
         else:
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id

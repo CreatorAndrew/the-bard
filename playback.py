@@ -68,7 +68,6 @@ async def play_command(self, context, file, song_url, new_name):
 
 async def play_song(self, context, url, name, playlist):
     try:
-
         async def add_time(guild, time):
             guild["time"] += time
 

@@ -181,6 +181,7 @@ class Music(Cog):
     @describe(rename="rename_desc")
     @describe(remove="remove_desc")
     @describe(load="load_desc")
+    @describe(list_songs="list_desc")
     @describe(new_name="new_name_desc")
     @describe(new_index="new_index_desc")
     async def playlists_command(
@@ -195,6 +196,7 @@ class Music(Cog):
         rename: int = None,
         remove: int = None,
         load: int = None,
+        list_songs: int = None,
         new_name: str = None,
         new_index: int = None,
     ):
@@ -210,6 +212,7 @@ class Music(Cog):
             rename,
             remove,
             load,
+            list_songs,
             new_name,
             new_index,
         )
@@ -221,6 +224,7 @@ class Music(Cog):
     @describe(move="move_song_desc")
     @describe(rename="rename_desc")
     @describe(remove="remove_desc")
+    @describe(load="load_desc")
     @describe(new_name="new_name_desc")
     @describe(new_index="new_index_desc")
     async def playlist_command(
@@ -232,6 +236,7 @@ class Music(Cog):
         move: int = None,
         rename: int = None,
         remove: int = None,
+        load: int = None,
         new_name: str = None,
         new_index: int = None,
     ):
@@ -244,6 +249,7 @@ class Music(Cog):
             move,
             rename,
             remove,
+            load,
             new_name,
             new_index,
         )
@@ -261,6 +267,7 @@ class Music(Cog):
     @playlists_command.autocomplete("rename")
     @playlists_command.autocomplete("remove")
     @playlists_command.autocomplete("load")
+    @playlists_command.autocomplete("list_songs")
     @playlist_command.autocomplete("select")
     async def playlist_autocompletion(
         self, context: Interaction, current: str
@@ -270,6 +277,7 @@ class Music(Cog):
     @playlist_command.autocomplete("move")
     @playlist_command.autocomplete("rename")
     @playlist_command.autocomplete("remove")
+    @playlist_command.autocomplete("load")
     async def playlist_song_autocompletion(
         self, context: Interaction, current: str
     ) -> List[Choice[int]]:

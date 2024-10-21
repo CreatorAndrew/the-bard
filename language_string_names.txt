@@ -44,7 +44,8 @@ keep_change
 keep_command
 keep_command_desc
 leave
-list
+list_desc
+list_songs
 load
 load_desc
 load_playlist
@@ -53,9 +54,9 @@ loop_command_desc
 move
 move_command
 move_command_desc
+move_playlist
 move_playlist_desc
 move_song_desc
-move_playlist
 new_index
 new_index_desc
 new_name

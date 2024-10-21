@@ -43,9 +43,10 @@ strings:
     keep_command_desc: Show or set whether to stay in a voice channel after all audio
         stops playing
     leave: leave
-    list: list
+    list_desc: Show the list of tracks in a playlist 
+    list_songs: list
     load: load
-    load_desc: Load a playlist
+    load_desc: Load a playlist or track
     load_playlist: The tracks belonging to playlist "%{playlist}" (#%{playlist_index})
         have been loaded into the queue.
     loop_command: loop
