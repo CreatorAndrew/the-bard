@@ -161,7 +161,10 @@ async def add_playlist(self, context, playlist, new_index):
             )
         )[0]
     # add a playlist
-    if playlist is not None:
+    if playlist is None:
+        await declare_command_invalid(self, context, strings)
+        return
+    else:
         if new_index is None:
             new_index = (playlist_count + 1) if VARIABLES["storage"] == "yaml" else None
         elif new_index < 1 or new_index > playlist_count + 1:
@@ -225,9 +228,6 @@ async def add_playlist(self, context, playlist, new_index):
                 {"playlist": playlist, "playlist_index": new_index},
             )
         )
-    else:
-        await declare_command_invalid(self, context, strings)
-        return
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
