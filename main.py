@@ -1,7 +1,6 @@
 from sys import platform
 from os.path import exists
 from asyncio import Lock, run
-from yaml import safe_dump as dump, safe_load as load
 from discord import Intents
 from discord.ext.commands import Bot
 from utils import CommandTranslator, CREDENTIALS, Cursor, LOAD_ORDER, VARIABLES
@@ -32,6 +31,8 @@ async def sync_commands(context):
 async def main():
     async with bot:
         if VARIABLES["storage"] == "yaml":
+            from yaml import safe_dump as dump, safe_load as load
+
             connection = None
             cursor = None
             flat_file = f"{VARIABLES['name']}.yaml"

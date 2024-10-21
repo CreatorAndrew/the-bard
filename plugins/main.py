@@ -23,7 +23,7 @@ class Main(Cog):
         self.set_language_options()
 
     def init_guilds(self, guilds):
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             guilds = self.data["guilds"]
             id = "id"
             language = "language"
@@ -162,7 +162,7 @@ class Main(Cog):
         language_data = load(open(f"{LANGUAGE_DIRECTORY}/{language}.yaml", "r"))
         guild["strings"] = language_data["strings"]
         guild["language"] = language
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             for guild_searched in self.data["guilds"]:
                 if guild_searched["id"] == context.guild.id:
                     guild_searched["language"] = language
@@ -208,7 +208,7 @@ class Main(Cog):
     @Cog.listener()
     async def on_guild_remove(self, guild):
         await self.lock.acquire()
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             ids = []
             for guild_searched in self.data["guilds"]:
                 ids.append(guild_searched["id"])
@@ -226,7 +226,7 @@ class Main(Cog):
     async def on_member_join(self, member):
         if member.id != self.bot.user.id:
             await self.lock.acquire()
-            if self.cursor is None:
+            if VARIABLES["storage"] == "yaml":
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         await self.add_user(guild, member)
@@ -243,7 +243,7 @@ class Main(Cog):
     async def on_member_remove(self, member):
         if member.id != self.bot.user.id:
             await self.lock.acquire()
-            if self.cursor is None:
+            if VARIABLES["storage"] == "yaml":
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         ids = []
@@ -274,7 +274,7 @@ class Main(Cog):
             ids = []
             async for guild in self.bot.fetch_guilds():
                 ids.append(guild.id)
-            if self.cursor is None:
+            if VARIABLES["storage"] == "yaml":
                 index = 0
                 while index < len(self.data["guilds"]):
                     if self.data["guilds"][index]["id"] not in ids:
@@ -298,7 +298,7 @@ class Main(Cog):
         if context.author.id == VARIABLES["master_id"]:
             await self.lock.acquire()
             async for guild in self.bot.fetch_guilds():
-                if self.cursor is None:
+                if VARIABLES["storage"] == "yaml":
                     for guild_searched in self.data["guilds"]:
                         if guild_searched["id"] == guild.id:
                             _guild = guild_searched
@@ -306,14 +306,14 @@ class Main(Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         await self.add_user(
-                            (_guild["users"] if self.cursor is None else guild),
+                            (_guild["users"] if VARIABLES["storage"] == "yaml" else guild),
                             user,
                         )
                 ids = []
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         ids.append(user.id)
-                if self.cursor is None:
+                if VARIABLES["storage"] == "yaml":
                     index = 0
                     while index < len(_guild["users"]):
                         if _guild["users"][index]["id"] not in ids:
@@ -333,7 +333,7 @@ class Main(Cog):
                     await self.cursor.execute(
                         "delete from users where user_id not in (select user_id from guild_users)"
                     )
-            if self.cursor is None:
+            if VARIABLES["storage"] == "yaml":
                 dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
                 await self.connection.commit()
@@ -342,7 +342,7 @@ class Main(Cog):
 
     async def add_guild(self, guild):
         init_guild = False
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             ids = []
             for guild_searched in self.data["guilds"]:
                 ids.append(guild_searched["id"])
@@ -395,7 +395,7 @@ class Main(Cog):
         self.bot.dispatch("main_remove_guild_from_database")
 
     async def add_user(self, guild, user):
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             ids = []
             for user_searched in guild["users"]:
                 ids.append(user_searched["id"])
@@ -417,7 +417,7 @@ class Main(Cog):
 
 async def setup(bot):
     bot.main_init_guilds = None
-    if bot.cursor is not None:
+    if VARIABLES["storage"] != "yaml":
         bot.main_init_guilds = await bot.cursor.execute_fetchall(
             "select guild_id, guild_lang from guilds"
         )

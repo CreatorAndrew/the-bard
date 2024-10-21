@@ -270,7 +270,7 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
         if playlist is None or playlist < 1 or playlist > from_guild_playlist_count:
             await declare_command_invalid(self, context, strings)
             return
-        if self.cursor is not None:
+        if VARIABLES["storage"] != "yaml":
             songs = await self.cursor.execute_fetchall(
                 GET_SONGS_STATEMENT_ABRIDGED, (int(from_guild), playlist - 1)
             )
@@ -399,7 +399,7 @@ async def clone_playlist(self, context, playlist, into, new_name, new_index):
     # clone a playlist or copy its tracks into another playlist
     if playlist is not None and 0 < playlist <= playlist_count:
         # clone a playlist
-        if self.cursor is not None:
+        if VARIABLES["storage"] != "yaml":
             songs = await self.cursor.execute_fetchall(
                 GET_SONGS_STATEMENT_ABRIDGED, (context.guild.id, playlist - 1)
             )
@@ -1135,7 +1135,7 @@ async def playlist_add_song(
             )
             if file is not None:
                 self.lock.release()
-                if self.cursor is not None:
+                if VARIABLES["storage"] != "yaml":
                     song_id = (
                         await self.cursor.execute_fetchone(
                             "select max(song_id) from songs"
