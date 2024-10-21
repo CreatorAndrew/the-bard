@@ -32,11 +32,10 @@ else:
     """
     GET_SONGS_STATEMENT = """
         select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id,
-        message_id, attachment_index, song_url, song_duration, pl_song_id from pl_songs
+        message_id, attachment_index, song_url, song_duration from pl_songs
         left outer join songs on songs.song_id = pl_songs.song_id
         left outer join playlists on playlists.pl_id = pl_songs.pl_id
         where playlists.guild_id = ? and guild_pl_id = ?
-        order by pl_song_id
     """
     SONG_ID_KEY = 0
     SONG_NAME_KEY = 1
@@ -138,7 +137,7 @@ async def playlist_command(
         await playlist_remove_song(self, context, select, remove)
     # load a track into the queue
     elif load is not None:
-        await load_playlist(self, context, select, lambda song: song["index"] == load)
+        await load_playlist(self, context, select, lambda song: song["index"] == load - 1)
     # return a list of tracks in the playlist
     else:
         await playlist_list_songs(self, context, select)
@@ -797,13 +796,14 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
             guild["playlists"][playlist - 1]["songs"]
             if VARIABLES["storage"] == "yaml"
             else await self.cursor.execute_fetchall(
-                GET_SONGS_STATEMENT, (context.guild.id, playlist - 1)
+                f"{GET_SONGS_STATEMENT} order by pl_song_id",
+                (context.guild.id, playlist - 1),
             )
         )
         self.lock.release()
         if songs:
             proper_songs = []
-            for index, song in enumerate(songs, 1):
+            for index, song in enumerate(songs):
                 if song[SONG_URL_KEY] is None:
                     try:
                         song_message = self.messages[str(song[MESSAGE_ID_KEY])]
