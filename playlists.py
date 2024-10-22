@@ -773,7 +773,7 @@ async def remove_playlist(self, context, playlist):
     self.lock.release()
 
 
-async def load_playlist(self, context, playlist, filter_callback=lambda: True):
+async def load_playlist(self, context, playlist, filter_callback=lambda x: True):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
     await self.lock.acquire()
