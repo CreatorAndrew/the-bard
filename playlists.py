@@ -24,18 +24,18 @@ else:
         where guild_id = ? and guild_pl_id = ?
         group by pl_songs.pl_id, pl_name
     """
-    GET_SONGS_STATEMENT_ABRIDGED = """
-        select song_id, song_name, song_url from pl_songs
-        left outer join playlists on playlists.pl_id = pl_songs.pl_id
-        where guild_id = ? and guild_pl_id = ?
-        order by pl_song_id
-    """
     GET_SONGS_STATEMENT = """
         select pl_songs.song_id, pl_songs.song_name, songs.guild_id, channel_id,
         message_id, attachment_index, song_url, song_duration from pl_songs
         left outer join songs on songs.song_id = pl_songs.song_id
         left outer join playlists on playlists.pl_id = pl_songs.pl_id
         where playlists.guild_id = ? and guild_pl_id = ?
+    """
+    GET_SONGS_STATEMENT_ABRIDGED = """
+        select song_id, song_name, song_url from pl_songs
+        left outer join playlists on playlists.pl_id = pl_songs.pl_id
+        where guild_id = ? and guild_pl_id = ?
+        order by pl_song_id
     """
     SONG_ID_KEY = 0
     SONG_NAME_KEY = 1
@@ -773,7 +773,7 @@ async def remove_playlist(self, context, playlist):
     self.lock.release()
 
 
-async def load_playlist(self, context, playlist, filter_callback=lambda x: True):
+async def load_playlist(self, context, playlist, filter_callback=lambda: True):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
     await self.lock.acquire()
