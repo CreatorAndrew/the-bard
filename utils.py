@@ -122,7 +122,7 @@ def get_url_query_parameter(url, param):
     return next(
         item.replace(f"{param}=", "", 1)
         for item in str(url).split("?")[1].split("&")
-        if item.startswith(param)
+        if item.startswith(f"{param}=")
     )
 
 
