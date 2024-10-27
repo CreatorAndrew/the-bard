@@ -2,6 +2,7 @@ from asyncio import sleep
 from datetime import datetime
 from io import BytesIO
 import requests
+from re import match
 from yaml import safe_dump as dump, safe_load as load
 from discord import File, SelectOption
 from discord.app_commands import Choice
@@ -53,6 +54,18 @@ def get_next_song_id(data):
         for playlist in guild["playlists"]:
             songs += playlist["songs"]
     return sorted(songs, key=lambda song: song["id"], reverse=True)[0]["id"] + 1
+
+
+def get_url_expiration(url):
+    params = url.split("?")[1].split("&")
+    return int(
+        next(
+            param.replace("ex=", "")
+            for param in params
+            if match("^(ex=).*(?<!ex=)$", param)
+        ),
+        16,
+    )
 
 
 async def declare_command_invalid(self, context, strings):
@@ -137,7 +150,9 @@ async def playlist_command(
         await playlist_remove_song(self, context, select, remove)
     # load a track into the queue
     elif load is not None:
-        await load_playlist(self, context, select, lambda song: song["index"] == load - 1)
+        await load_playlist(
+            self, context, select, lambda song: song["index"] == load - 1
+        )
     # return a list of tracks in the playlist
     else:
         await playlist_list_songs(self, context, select)
@@ -813,12 +828,16 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                         ):
                             raise Exception
                     except:
-                        song_message = {
-                            "message": await self.bot.get_guild(song[GUILD_ID_KEY])
+                        discord_message = (
+                            await self.bot.get_guild(song[GUILD_ID_KEY])
                             .get_channel_or_thread(song[CHANNEL_ID_KEY])
-                            .fetch_message(song[MESSAGE_ID_KEY]),
-                            "expiration": int(datetime.timestamp(datetime.now()))
-                            + 1209600,
+                            .fetch_message(song[MESSAGE_ID_KEY])
+                        )
+                        song_message = {
+                            "message": discord_message,
+                            "expiration": get_url_expiration(
+                                str(discord_message.attachments[song[ATTACHMENT_INDEX_KEY]])
+                            ),
                         }
                         self.messages[str(song[MESSAGE_ID_KEY])] = song_message
                     song_file = str(
@@ -1562,11 +1581,16 @@ async def playlist_list_songs(self, context, playlist):
                     ):
                         raise Exception
                 except:
-                    song_message = {
-                        "message": await self.bot.get_guild(song[GUILD_ID_KEY])
+                    discord_message = (
+                        await self.bot.get_guild(song[GUILD_ID_KEY])
                         .get_channel_or_thread(song[CHANNEL_ID_KEY])
-                        .fetch_message(song[MESSAGE_ID_KEY]),
-                        "expiration": int(datetime.timestamp(datetime.now())) + 1209600,
+                        .fetch_message(song[MESSAGE_ID_KEY])
+                    )
+                    song_message = {
+                        "message": discord_message,
+                        "expiration": get_url_expiration(
+                            str(discord_message.attachments[song[ATTACHMENT_INDEX_KEY]])
+                        ),
                     }
                     self.messages[str(song[MESSAGE_ID_KEY])] = song_message
                 song_file = str(
