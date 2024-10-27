@@ -2,7 +2,6 @@ from asyncio import sleep
 from datetime import datetime
 from io import BytesIO
 import requests
-from re import match
 from yaml import safe_dump as dump, safe_load as load
 from discord import File, SelectOption
 from discord.app_commands import Choice
@@ -61,10 +60,6 @@ def get_next_song_id(data):
         for playlist in guild["playlists"]:
             songs += playlist["songs"]
     return sorted(songs, key=lambda song: song["id"], reverse=True)[0]["id"] + 1
-
-
-def get_url_expiration(url):
-    return
 
 
 async def declare_command_invalid(self, context, strings):
@@ -832,7 +827,6 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                             .get_channel_or_thread(song[CHANNEL_ID_KEY])
                             .fetch_message(song[MESSAGE_ID_KEY])
                         )
-
                         song_message = {
                             "message": discord_message,
                             "expiration": int(
