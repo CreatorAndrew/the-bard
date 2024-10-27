@@ -57,11 +57,10 @@ def get_next_song_id(data):
 
 
 def get_url_expiration(url):
-    params = url.split("?")[1].split("&")
     return int(
         next(
             param.replace("ex=", "")
-            for param in params
+            for param in url.split("?")[1].split("&")
             if match("^(ex=).*(?<!ex=)$", param)
         ),
         16,
@@ -836,7 +835,11 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                         song_message = {
                             "message": discord_message,
                             "expiration": get_url_expiration(
-                                str(discord_message.attachments[song[ATTACHMENT_INDEX_KEY]])
+                                str(
+                                    discord_message.attachments[
+                                        song[ATTACHMENT_INDEX_KEY]
+                                    ]
+                                )
                             ),
                         }
                         self.messages[str(song[MESSAGE_ID_KEY])] = song_message
