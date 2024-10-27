@@ -1,6 +1,7 @@
 from os.path import exists
 from asyncio import Lock
 from yaml import safe_load as load
+from re import match
 from discord import ButtonStyle, Locale
 from discord.app_commands import locale_str, TranslationContext, Translator
 from discord.ui import Button, Modal, TextInput, View
@@ -116,6 +117,14 @@ def get_filename(file):
         return file[file.rindex("/") + 1 : file.rindex("?")]
     except:
         return file[file.rindex("/") + 1 :]
+
+
+def get_url_query_parameter(url, param):
+    return next(
+        item.replace(f"{param}=", "", 1)
+        for item in str(url).split("?")[1].split("&")
+        if match(f"^({param}=).*(?<!{param}=)$", item)
+    )
 
 
 async def page_selector(context, strings, pages, index, message=None):

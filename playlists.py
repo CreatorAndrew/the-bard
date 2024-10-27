@@ -7,7 +7,14 @@ from yaml import safe_dump as dump, safe_load as load
 from discord import File, SelectOption
 from discord.app_commands import Choice
 from discord.ui import Select, View
-from utils import get_filename, page_selector, polished_message, polished_url, VARIABLES
+from utils import (
+    get_filename,
+    get_url_query_parameter,
+    page_selector,
+    polished_message,
+    polished_url,
+    VARIABLES,
+)
 
 if VARIABLES["storage"] == "yaml":
     SONG_ID_KEY = "id"
@@ -57,14 +64,7 @@ def get_next_song_id(data):
 
 
 def get_url_expiration(url):
-    return int(
-        next(
-            param.replace("ex=", "")
-            for param in url.split("?")[1].split("&")
-            if match("^(ex=).*(?<!ex=)$", param)
-        ),
-        16,
-    )
+    return
 
 
 async def declare_command_invalid(self, context, strings):
@@ -832,14 +832,17 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                             .get_channel_or_thread(song[CHANNEL_ID_KEY])
                             .fetch_message(song[MESSAGE_ID_KEY])
                         )
+
                         song_message = {
                             "message": discord_message,
-                            "expiration": get_url_expiration(
-                                str(
+                            "expiration": int(
+                                get_url_query_parameter(
                                     discord_message.attachments[
                                         song[ATTACHMENT_INDEX_KEY]
-                                    ]
-                                )
+                                    ],
+                                    "ex",
+                                ),
+                                16,
                             ),
                         }
                         self.messages[str(song[MESSAGE_ID_KEY])] = song_message
@@ -1591,8 +1594,12 @@ async def playlist_list_songs(self, context, playlist):
                     )
                     song_message = {
                         "message": discord_message,
-                        "expiration": get_url_expiration(
-                            str(discord_message.attachments[song[ATTACHMENT_INDEX_KEY]])
+                        "expiration": int(
+                            get_url_query_parameter(
+                                discord_message.attachments[song[ATTACHMENT_INDEX_KEY]],
+                                "ex",
+                            ),
+                            16,
                         ),
                     }
                     self.messages[str(song[MESSAGE_ID_KEY])] = song_message
