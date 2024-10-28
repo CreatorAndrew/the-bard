@@ -55,6 +55,8 @@ else:
 
 
 def get_next_song_id(data):
+    if data is None:
+        return None
     songs = []
     for guild in data["guilds"]:
         for playlist in guild["playlists"]:
@@ -2140,7 +2142,7 @@ async def working_thread_command(self, context, set):
                             "bot": self.bot.user.mention,
                             "thread": self.bot.get_guild(context.guild.id)
                             .get_thread(
-                                working_thread_id=(
+                                (
                                     await self.cursor.execute_fetchone(
                                         "select working_thread_id from guilds_music where guild_id = ?",
                                         (context.guild.id,),
