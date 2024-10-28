@@ -2159,7 +2159,8 @@ async def working_thread_command(self, context, set):
                     polished_message(
                         strings["working_thread_not_assigned"],
                         {"bot": self.bot.user.mention},
-                    )
+                    ),
+                    ephemeral=True,
                 )
             self.lock.release()
             return
