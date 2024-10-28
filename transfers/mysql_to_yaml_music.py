@@ -60,7 +60,19 @@ for guild in cursor.fetchall():
         )
         for song in cursor.fetchall():
             song_dict = {
-                "id": len(overall_songs),
+                "id": len(
+                    set(
+                        map(
+                            lambda song: frozenset(song.items()),
+                            list(
+                                map(
+                                    lambda song: omit_keys("id", dict=song),
+                                    overall_songs,
+                                )
+                            ),
+                        )
+                    )
+                ),
                 "name": song[0],
                 "file": song[1],
                 "duration": song[2],
@@ -70,12 +82,11 @@ for guild in cursor.fetchall():
                 "attachment_index": song[6],
             }
             overall_songs.append(song_dict)
-            overall_songs_mapped = list(
-                map(lambda song: omit_keys("id", dict=song), overall_songs)
-            )
             songs.append(
                 overall_songs[
-                    overall_songs_mapped.index(omit_keys("id", dict=song_dict))
+                    list(
+                        map(lambda song: omit_keys("id", dict=song), overall_songs)
+                    ).index(omit_keys("id", dict=song_dict))
                 ]
             )
         playlists.append({"name": playlist[1], "songs": songs})
