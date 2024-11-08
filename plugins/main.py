@@ -2,7 +2,7 @@ from os import listdir
 from os.path import exists
 from asyncio import sleep
 from typing import List
-import requests
+from requests import get
 from yaml import safe_dump as dump, safe_load as load
 from discord import Attachment, File, Interaction
 from discord.app_commands import Choice, command
@@ -61,7 +61,7 @@ class Main(Cog):
             filename = str(add)[str(add).rindex("/") + 1 : str(add).index("?")]
             if filename.endswith(".yaml"):
                 if not exists(f"{LANGUAGE_DIRECTORY}/{filename}"):
-                    response = requests.get(str(add))
+                    response = get(str(add))
                     content = load(response.content.decode("utf-8"))
                     try:
                         if content["strings"]:
@@ -80,8 +80,7 @@ class Main(Cog):
                             ),
                             ephemeral=True,
                         )
-                        self.lock.release()
-                        return
+                        return self.lock.release()
                     for string in map(
                         lambda line: line.replace("\r\n", "").replace("\n", ""),
                         open("language_strings_names.txt", "r").readlines(),
@@ -104,8 +103,7 @@ class Main(Cog):
                                 ),
                                 ephemeral=True,
                             )
-                            self.lock.release()
-                            return
+                            return self.lock.release()
                     open(f"{LANGUAGE_DIRECTORY}/{filename}", "wb").write(
                         response.content
                     )
@@ -115,8 +113,7 @@ class Main(Cog):
                             strings["language_file_exists"], {"language_file": filename}
                         )
                     )
-                    self.lock.release()
-                    return
+                    return self.lock.release()
                 # ensure that the attached language file is fully transferred before the language is changed to it
                 while not exists(f"{LANGUAGE_DIRECTORY}/{filename}"):
                     await sleep(0.1)
@@ -137,8 +134,7 @@ class Main(Cog):
                     ),
                     ephemeral=True,
                 )
-                self.lock.release()
-                return
+                return self.lock.release()
         elif add is None and set is None:
             await context.response.send_message(
                 polished_message(
@@ -151,14 +147,12 @@ class Main(Cog):
                 ),
                 ephemeral=True,
             )
-            self.lock.release()
-            return
+            return self.lock.release()
         else:
             await context.response.send_message(
                 strings["invalid_command"], ephemeral=True
             )
-            self.lock.release()
-            return
+            return self.lock.release()
         language_data = load(open(f"{LANGUAGE_DIRECTORY}/{language}.yaml", "r"))
         guild["strings"] = language_data["strings"]
         guild["language"] = language
@@ -306,7 +300,11 @@ class Main(Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         await self.add_user(
-                            (_guild["users"] if VARIABLES["storage"] == "yaml" else guild),
+                            (
+                                _guild["users"]
+                                if VARIABLES["storage"] == "yaml"
+                                else guild
+                            ),
                             user,
                         )
                 ids = []

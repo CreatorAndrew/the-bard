@@ -2,7 +2,7 @@ from asyncio import sleep
 from random import randint
 from yaml import safe_dump as dump
 from io import BytesIO
-import requests
+from requests import get
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 from discord.app_commands import Choice
 from utils import page_selector, polished_message, polished_url, VARIABLES
@@ -68,6 +68,7 @@ async def play_command(self, context, file, song_url, new_name):
 
 async def play_song(self, context, url, name, playlist):
     try:
+
         async def add_time(guild, time):
             guild["time"] += time
 
@@ -102,18 +103,17 @@ async def play_song(self, context, url, name, playlist):
                         }
                     )
             else:
-                response = requests.get(url, stream=True)
+                response = get(url, stream=True)
                 try:
                     metadata = self.get_metadata(BytesIO(response.content), url)
                 except:
                     await context.followup.delete_message(
                         (await context.followup.send("...", silent=True)).id
                     )
-                    await context.followup.send(
+                    return await context.followup.send(
                         polished_message(guild["strings"]["invalid_url"], {"url": url}),
                         ephemeral=True,
                     )
-                    return
                 if name is None:
                     name = metadata["name"]
 
@@ -125,14 +125,13 @@ async def play_song(self, context, url, name, playlist):
                     await context.followup.delete_message(
                         (await context.followup.send("...", silent=True)).id
                     )
-                    await context.followup.send(
+                    return await context.followup.send(
                         polished_message(
                             guild["strings"]["invalid_song"],
                             {"song": polished_url(url, name)},
                         ),
                         ephemeral=True,
                     )
-                    return
                 await context.followup.send(
                     polished_message(
                         guild["strings"]["queue_add_song"],
@@ -246,7 +245,7 @@ async def insert_song(self, context, url, name, index, time, duration, silent):
             )
         )
     elif 0 < index < len(guild["queue"]) + 2:
-        response = requests.get(url, stream=True)
+        response = get(url, stream=True)
         try:
             if name is None or duration is None:
                 metadata = self.get_metadata(BytesIO(response.content), url)
@@ -255,22 +254,20 @@ async def insert_song(self, context, url, name, index, time, duration, silent):
                 if duration is None:
                     duration = metadata["duration"]
         except:
-            await context.response.send_message(
+            return await context.response.send_message(
                 polished_message(guild["strings"]["invalid_url"], {"url": url})
             )
-            return
         # verify that the URL file is a media container
         if not any(
             content_type in response.headers.get("Content-Type", "")
             for content_type in ["audio", "video"]
         ):
-            await context.response.send_message(
+            return await context.response.send_message(
                 polished_message(
                     guild["strings"]["invalid_song"],
                     {"song": polished_url(url, name)},
                 )
             )
-            return
         # add the track to the queue
         guild["queue"].insert(
             index - 1,
@@ -418,18 +415,16 @@ async def skip_command(self, context, by, to):
             if guild["index"] + by < len(guild["queue"]) and by > 0:
                 guild["index"] += by - 1
             else:
-                await context.response.send_message(
+                return await context.response.send_message(
                     guild["strings"]["invalid_command"], ephemeral=True
                 )
-                return
         else:
             if 0 < to <= len(guild["queue"]):
                 guild["index"] = to - 2
             else:
-                await context.response.send_message(
+                return await context.response.send_message(
                     guild["strings"]["invalid_command"], ephemeral=True
                 )
-                return
         await context.response.send_message(
             polished_message(
                 guild["strings"]["now_playing"],
@@ -461,10 +456,9 @@ async def previous_command(self, context, by):
         if guild["index"] - by >= 0 and by > 0:
             guild["index"] -= by + 1
         else:
-            await context.response.send_message(
+            return await context.response.send_message(
                 guild["strings"]["invalid_command"], ephemeral=True
             )
-            return
         await context.response.send_message(
             polished_message(
                 guild["strings"]["now_playing"],
@@ -685,8 +679,7 @@ async def queue_command(self, context):
     guild = self.guilds[str(context.guild.id)]
     message = guild["strings"]["queue_songs_header"] + "\n"
     if not guild["queue"]:
-        await context.followup.send(guild["strings"]["queue_no_songs"])
-        return
+        return await context.followup.send(guild["strings"]["queue_no_songs"])
     pages = []
     for index in range(len(guild["queue"])):
         previous_message = message
@@ -767,12 +760,11 @@ async def recruit_command(self, context):
     try:
         voice_channel = context.user.voice.channel
     except:
-        await context.response.send_message(
+        return await context.response.send_message(
             polished_message(
                 guild["strings"]["not_in_voice"], {"user": context.user.mention}
             )
         )
-        return
     if guild["connected"]:
         await context.response.send_message("...", ephemeral=True)
         await context.delete_original_response()
@@ -802,12 +794,11 @@ async def dismiss_command(self, context):
     try:
         voice_channel = context.user.voice.channel
     except:
-        await context.response.send_message(
+        return await context.response.send_message(
             polished_message(
                 guild["strings"]["not_in_voice"], {"user": context.user.mention}
             )
         )
-        return
     if guild["connected"]:
         await context.response.send_message(
             polished_message(
@@ -879,8 +870,7 @@ async def keep_command(self, context, set):
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     else:
         keep = bool(set)
         if self.cursor is None:
@@ -929,8 +919,7 @@ async def loop_command(self, context, set):
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     else:
         repeat = bool(set)
         if self.cursor is None:

@@ -1,7 +1,7 @@
 from asyncio import sleep
 from datetime import datetime
 from io import BytesIO
-import requests
+from requests import get
 from yaml import safe_dump as dump, safe_load as load
 from discord import File, SelectOption
 from discord.app_commands import Choice
@@ -173,14 +173,12 @@ async def add_playlist(self, context, playlist, new_index):
         )[0]
     # add a playlist
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     else:
         if new_index is None:
             new_index = (playlist_count + 1) if VARIABLES["storage"] == "yaml" else None
         elif new_index < 1 or new_index > playlist_count + 1:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             guild["playlists"].insert(new_index - 1, {"name": playlist, "songs": []})
         else:
@@ -279,8 +277,7 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
                 )
             )[0]
         if playlist is None or playlist < 1 or playlist > from_guild_playlist_count:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] != "yaml":
             songs = await self.cursor.execute_fetchall(
                 GET_SONGS_STATEMENT_ABRIDGED, (int(from_guild), playlist - 1)
@@ -299,8 +296,7 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
         if new_index is None:
             new_index = (playlist_count + 1) if VARIABLES["storage"] == "yaml" else None
         elif new_index < 1 or new_index > playlist_count + 1:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             guild["playlists"].insert(
                 new_index - 1,
@@ -381,8 +377,7 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
             )
         )
     else:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -432,8 +427,7 @@ async def clone_playlist(self, context, playlist, into, new_name, new_index):
                     (playlist_count + 1) if VARIABLES["storage"] == "yaml" else None
                 )
             elif new_index < 1 or new_index > playlist_count + 1:
-                await declare_command_invalid(self, context, strings)
-                return
+                return await declare_command_invalid(self, context, strings)
             if VARIABLES["storage"] == "yaml":
                 guild["playlists"].insert(
                     new_index - 1,
@@ -565,8 +559,7 @@ async def clone_playlist(self, context, playlist, into, new_name, new_index):
                 )
             )
     else:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -594,8 +587,7 @@ async def move_playlist(self, context, playlist, new_index):
     # change a playlist's position in the order of playlists
     if playlist is not None and 0 < playlist <= playlist_count:
         if new_index is None or new_index < 1 or new_index > playlist_count:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             playlist_copies = guild["playlists"].copy()
             guild["playlists"].remove(playlist_copies[playlist - 1])
@@ -635,8 +627,7 @@ async def move_playlist(self, context, playlist, new_index):
             )
         )
     else:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -664,8 +655,7 @@ async def rename_playlist(self, context, playlist, new_name):
     # rename a playlist
     if playlist is not None and 0 < playlist <= playlist_count:
         if new_name is None:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             await context.followup.send(
                 polished_message(
@@ -699,8 +689,7 @@ async def rename_playlist(self, context, playlist, new_name):
                 (new_name, context.guild.id, playlist - 1),
             )
     else:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -775,8 +764,7 @@ async def remove_playlist(self, context, playlist):
                 (playlist - 1, context.guild.id),
             )
     else:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -916,10 +904,8 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                 ),
                 ephemeral=True,
             )
-        return
     else:
         await declare_command_invalid(self, context, strings)
-        return
 
 
 async def list_playlists(self, context):
@@ -938,8 +924,7 @@ async def list_playlists(self, context):
         )
     message = guild["strings"]["playlists_header"] + "\n"
     if not (playlists or (VARIABLES["storage"] == "yaml" and _guild["playlists"])):
-        await context.followup.send(guild["strings"]["no_playlists"])
-        return
+        return await context.followup.send(guild["strings"]["no_playlists"])
     pages = []
     for index in range(
         len(_guild["playlists"] if VARIABLES["storage"] == "yaml" else playlists)
@@ -978,20 +963,20 @@ async def playlist_add_song(
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
             )
-            await context.followup.send(strings["invalid_command"], ephemeral=True)
-            return
-        response = requests.get(url, stream=True)
+            return await context.followup.send(
+                strings["invalid_command"], ephemeral=True
+            )
+        response = get(url, stream=True)
         try:
             metadata = self.get_metadata(BytesIO(response.content), url)
         except:
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
             )
-            await context.followup.send(
+            return await context.followup.send(
                 polished_message(strings["invalid_url"], {"url": url}),
                 ephemeral=True,
             )
-            return
         # verify that the URL file is a media container
         if not any(
             content_type in response.headers.get("Content-Type", "")
@@ -1000,14 +985,13 @@ async def playlist_add_song(
             await context.followup.delete_message(
                 (await context.followup.send("...", silent=True)).id
             )
-            await context.followup.send(
+            return await context.followup.send(
                 polished_message(
                     strings["invalid_song"],
                     {"song": polished_url(url, metadata["name"])},
                 ),
                 ephemeral=True,
             )
-            return
     await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
         for guild_searched in self.data["guilds"]:
@@ -1024,8 +1008,7 @@ async def playlist_add_song(
         )[0]
     # select a playlist to modify or show the contents of
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if 0 < playlist <= playlist_count:
         if VARIABLES["storage"] == "yaml":
             playlist_name = guild["playlists"][playlist - 1]["name"]
@@ -1044,8 +1027,7 @@ async def playlist_add_song(
             if new_index is None:
                 new_index = (song_count + 1) if VARIABLES["storage"] == "yaml" else None
             elif new_index < 1 or new_index > song_count + 1:
-                await declare_command_invalid(self, context, strings)
-                return
+                return await declare_command_invalid(self, context, strings)
             if VARIABLES["storage"] == "yaml":
                 song_id = get_next_song_id(self.data)
                 song = {
@@ -1162,10 +1144,9 @@ async def playlist_add_song(
                             "select max(song_id) from songs"
                         )
                     )[0]
-                await self.renew_attachment(
+                return await self.renew_attachment(
                     context.guild.id, context.channel.id, url, song_id
                 )
-                return
     else:
         await context.followup.delete_message(
             (await context.followup.send("...", silent=True)).id
@@ -1176,8 +1157,7 @@ async def playlist_add_song(
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -1204,8 +1184,7 @@ async def playlist_move_song(self, context, playlist, song_index, new_index):
         )[0]
     # select a playlist to modify or show the contents of
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if 0 < playlist <= playlist_count:
         if VARIABLES["storage"] == "yaml":
             playlist_name = guild["playlists"][playlist - 1]["name"]
@@ -1226,8 +1205,7 @@ async def playlist_move_song(self, context, playlist, song_index, new_index):
             or new_index < 1
             or new_index > song_count
         ):
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             song = guild["playlists"][playlist - 1]["songs"][song_index - 1]
         else:
@@ -1290,8 +1268,7 @@ async def playlist_move_song(self, context, playlist, song_index, new_index):
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -1318,8 +1295,7 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
         )[0]
     # select a playlist to modify or show the contents of
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if 0 < playlist <= playlist_count:
         if VARIABLES["storage"] == "yaml":
             playlist_name = guild["playlists"][playlist - 1]["name"]
@@ -1338,8 +1314,7 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
             or song_index > song_count
             or new_name is None
         ):
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             song = guild["playlists"][playlist - 1]["songs"][song_index - 1]
         else:
@@ -1397,8 +1372,7 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -1425,8 +1399,7 @@ async def playlist_remove_song(self, context, playlist, song_index):
         )[0]
     # select a playlist to modify or show the contents of
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if 0 < playlist <= playlist_count:
         if VARIABLES["storage"] == "yaml":
             playlist_name = guild["playlists"][playlist - 1]["name"]
@@ -1440,8 +1413,7 @@ async def playlist_remove_song(self, context, playlist, song_index):
             )
         # remove a track from the playlist
         if song_index is None or song_index < 1 or song_index > song_count:
-            await declare_command_invalid(self, context, strings)
-            return
+            return await declare_command_invalid(self, context, strings)
         if VARIABLES["storage"] == "yaml":
             song = guild["playlists"][playlist - 1]["songs"][song_index - 1]
         else:
@@ -1505,8 +1477,7 @@ async def playlist_remove_song(self, context, playlist, song_index):
             ),
             ephemeral=True,
         )
-        self.lock.release()
-        return
+        return self.lock.release()
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
     else:
@@ -1533,8 +1504,7 @@ async def playlist_list_songs(self, context, playlist):
         )[0]
     # select a playlist to modify or show the contents of
     if playlist is None:
-        await declare_command_invalid(self, context, strings)
-        return
+        return await declare_command_invalid(self, context, strings)
     if 0 < playlist <= playlist_count:
         if VARIABLES["storage"] == "yaml":
             playlist_name = guild["playlists"][playlist - 1]["name"]
@@ -1563,14 +1533,13 @@ async def playlist_list_songs(self, context, playlist):
         )
         self.lock.release()
         if not songs:
-            await context.followup.send(
+            return await context.followup.send(
                 polished_message(
                     strings["playlist_no_songs"],
                     {"playlist": playlist_name, "playlist_index": playlist},
                 ),
                 ephemeral=True,
             )
-            return
         pages = []
         for index, song in enumerate(songs, 1):
             previous_message = message
@@ -1627,8 +1596,7 @@ async def playlist_list_songs(self, context, playlist):
                     ]
                 )
         pages.append(message)
-        await page_selector(context, strings, pages, 0)
-        return
+        return await page_selector(context, strings, pages, 0)
     await context.followup.delete_message(
         (await context.followup.send("...", silent=True)).id
     )
@@ -1639,7 +1607,6 @@ async def playlist_list_songs(self, context, playlist):
         ephemeral=True,
     )
     self.lock.release()
-    return
 
 
 async def playlist_guild_autocompletion(self, context, current):
@@ -1766,44 +1733,38 @@ async def playlist_song_autocompletion(self, context, current):
 
 async def playlist_add_files(self, context, message_regarded):
     await context.response.defer()
-    guild = self.guilds[str(context.guild.id)]
-    strings = guild["strings"]
+    strings = self.guilds[str(context.guild.id)]["strings"]
     # show a dropdown menu of all the playlists for the calling guild
     playlist_options = [SelectOption(label=strings["cancel_option"])]
-    if VARIABLES["storage"] == "yaml":
-        for guild_searched in self.data["guilds"]:
-            if guild_searched["id"] == context.guild.id:
-                for index, playlist in enumerate(guild_searched["playlists"], 1):
-                    playlist_options.append(
-                        SelectOption(
-                            label=polished_message(
-                                strings["playlist"],
-                                {
-                                    "playlist": playlist["name"],
-                                    "playlist_index": index,
-                                },
-                            ),
-                            value=str(index),
-                        )
-                    )
-                break
-    else:
-        for index, playlist in enumerate(
-            await self.cursor.execute_fetchall(
+    for index, playlist in enumerate(
+        (
+            next(
+                guild_searched["playlists"]
+                for guild_searched in self.data["guilds"]
+                if guild_searched["id"] == context.guild.id
+            )
+            if VARIABLES["storage"] == "yaml"
+            else await self.cursor.execute_fetchall(
                 "select pl_name from playlists where guild_id = ? order by guild_pl_id",
                 (context.guild.id,),
-            ),
-            1,
-        ):
-            playlist_options.append(
-                SelectOption(
-                    label=polished_message(
-                        strings["playlist"],
-                        {"playlist": playlist[0], "playlist_index": index},
-                    ),
-                    value=str(index),
-                )
             )
+        ),
+        1,
+    ):
+        playlist_options.append(
+            SelectOption(
+                label=polished_message(
+                    strings["playlist"],
+                    {
+                        "playlist": playlist[
+                            "name" if VARIABLES["storage"] == "yaml" else 0
+                        ],
+                        "playlist_index": index,
+                    },
+                ),
+                value=str(index),
+            )
+        )
     playlist_menu = Select(
         placeholder=strings["playlist_select_menu_placeholder"],
         options=playlist_options,
@@ -1821,38 +1782,38 @@ async def playlist_add_files(self, context, message_regarded):
     await context.followup.delete_message(
         (await context.followup.send("...", silent=True)).id
     )
-    await context.followup.send("", view=view, ephemeral=True)
+    playlist_menu_message_id = (
+        await context.followup.send("", view=view, ephemeral=True)
+    ).id
     while not chosen:
         await sleep(0.1)
     if chosen[0] == strings["cancel_option"]:
-        return
+        return await context.followup.delete_message(playlist_menu_message_id)
     index = int(chosen[0])
 
     playlist = []
     urls = []
     for url in message_regarded.attachments:
-        response = requests.get(str(url), stream=True)
+        response = get(str(url), stream=True)
         try:
             metadata = self.get_metadata(BytesIO(response.content), str(url))
         except:
-            await context.followup.send(
+            return await context.followup.send(
                 polished_message(strings["invalid_url"], {"url": str(url)}),
                 ephemeral=True,
             )
-            return
         # verify that the URL file is a media container
         if not any(
             content_type in response.headers.get("Content-Type", "")
             for content_type in ["audio", "video"]
         ):
-            await context.followup.send(
+            return await context.followup.send(
                 polished_message(
                     strings["invalid_song"],
                     {"song": polished_url(str(url), metadata["name"])},
                 ),
                 ephemeral=True,
             )
-            return
 
         urls.append(str(url))
         playlist.append(
@@ -2011,7 +1972,7 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
         working_thread_id = channel_id
     await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
         dump({"song_id": song_id}),
-        file=File(BytesIO(requests.get(url).content), get_filename(url)),
+        file=File(BytesIO(get(url).content), get_filename(url)),
     )
 
 
@@ -2084,8 +2045,7 @@ async def working_thread_command(self, context, set):
                 ),
                 ephemeral=True,
             )
-        self.lock.release()
-        return
+        return self.lock.release()
     thread_nonexistent = True
     for thread in context.guild.threads:
         if set == thread.name:
