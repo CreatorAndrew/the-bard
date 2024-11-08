@@ -1643,7 +1643,7 @@ async def playlist_list_songs(self, context, playlist):
 
 
 async def playlist_guild_autocompletion(self, context, current):
-    guild_names = []
+    guilds = []
     if VARIABLES["storage"] == "yaml":
         guild_ids = []
         for guild in self.data["guilds"]:
@@ -1662,46 +1662,28 @@ async def playlist_guild_autocompletion(self, context, current):
         if (
             (current == "" or current.lower() in guild_name.lower())
             and guild_id[0] != context.guild.id
-            and len(guild_names) < 25
+            and len(guilds) < 25
         ):
-            guild_names.append(Choice(name=guild_name, value=str(guild_id[0])))
-    return guild_names
+            guilds.append(Choice(name=guild_name, value=str(guild_id[0])))
+    return guilds
 
 
 async def playlist_autocompletion(self, context, current):
-    strings = self.guilds[str(context.guild.id)]["strings"]
     playlists = []
-    if VARIABLES["storage"] == "yaml":
-        for guild in self.data["guilds"]:
-            if guild["id"] == (
-                context.guild.id
-                if context.namespace.from_guild is None
-                else int(context.namespace.from_guild)
-            ):
-                for index, playlist in enumerate(guild["playlists"], 1):
-                    polished_playlist_name = polished_message(
-                        strings["playlist"],
-                        {"playlist": playlist["name"], "playlist_index": index},
-                    )
-                    playlist["name"] = (
-                        playlist["name"][
-                            : 97 - len(polished_playlist_name) + len(playlist["name"])
-                        ]
-                        + "..."
-                        if len(polished_playlist_name) > 100
-                        else playlist["name"]
-                    )
-                    if (
-                        current == ""
-                        or current.lower() in polished_playlist_name.lower()
-                    ) and len(playlists) < 25:
-                        playlists.append(
-                            Choice(name=polished_playlist_name, value=index)
-                        )
-                break
-    else:
-        for index, playlist in enumerate(
-            list(
+    for index, playlist in enumerate(
+        (
+            next(
+                guild_searched["playlists"].copy()
+                for guild_searched in self.data["guilds"]
+                if guild_searched["id"]
+                == (
+                    context.guild.id
+                    if context.namespace.from_guild is None
+                    else int(context.namespace.from_guild)
+                )
+            )
+            if VARIABLES["storage"] == "yaml"
+            else list(
                 await self.cursor.execute_fetchall(
                     "select pl_name from playlists where guild_id = ? order by guild_pl_id",
                     (
@@ -1712,62 +1694,44 @@ async def playlist_autocompletion(self, context, current):
                         ),
                     ),
                 )
-            ),
-            1,
-        ):
-            playlist_name = list(playlist)
-            polished_playlist_name = polished_message(
-                strings["playlist"],
-                {"playlist": playlist_name[0], "playlist_index": index},
             )
-            playlist_name[0] = (
-                playlist_name[0][
-                    : 97 - len(polished_playlist_name) + len(playlist_name[0])
-                ]
-                + "..."
-                if len(polished_playlist_name) > 100
-                else playlist_name[0]
-            )
-            if (
-                current == "" or current.lower() in polished_playlist_name.lower()
-            ) and len(playlists) < 25:
-                playlists.append(Choice(name=polished_playlist_name, value=index))
+        ),
+        1,
+    ):
+        playlist_name = (
+            [playlist["name"]] if VARIABLES["storage"] == "yaml" else list(playlist)
+        )
+        polished_playlist_name = polished_message(
+            self.guilds[str(context.guild.id)]["strings"]["playlist"],
+            {"playlist": playlist_name[0], "playlist_index": index},
+        )
+        playlist_name[0] = (
+            playlist_name[0][: 97 - len(polished_playlist_name) + len(playlist_name[0])]
+            + "..."
+            if len(polished_playlist_name) > 100
+            else playlist_name[0]
+        )
+        if (current == "" or current.lower() in polished_playlist_name.lower()) and len(
+            playlists
+        ) < 25:
+            playlists.append(Choice(name=polished_playlist_name, value=index))
     return playlists
 
 
 async def playlist_song_autocompletion(self, context, current):
-    strings = self.guilds[str(context.guild.id)]["strings"]
     songs = []
-    if VARIABLES["storage"] == "yaml":
-        for guild in self.data["guilds"]:
-            if guild["id"] == context.guild.id:
-                try:
-                    for index, song in enumerate(
-                        guild["playlists"][context.namespace.select - 1]["songs"], 1
-                    ):
-                        polished_song_name = polished_message(
-                            strings["song"], {"song": song["name"], "index": index}
-                        )
-                        song["name"] = (
-                            song["name"][
-                                : 97 - len(polished_song_name) + len(song["name"])
-                            ]
-                            + "..."
-                            if len(polished_song_name) > 100
-                            else song["name"]
-                        )
-                        if (
-                            current == ""
-                            or current.lower() in polished_song_name.lower()
-                        ) and len(songs) < 25:
-                            songs.append(Choice(name=polished_song_name, value=index))
-                except:
-                    pass
-                break
-    else:
-        try:
-            for index, song in enumerate(
-                list(
+    try:
+        for index, song in enumerate(
+            (
+                next(
+                    guild_searched["playlists"][context.namespace.select - 1][
+                        "songs"
+                    ].copy()
+                    for guild_searched in self.data["guilds"]
+                    if guild_searched["id"] == context.guild.id
+                )
+                if VARIABLES["storage"] == "yaml"
+                else list(
                     await self.cursor.execute_fetchall(
                         """
                         select song_name from pl_songs
@@ -1777,25 +1741,26 @@ async def playlist_song_autocompletion(self, context, current):
                         """,
                         (context.guild.id, context.namespace.select - 1),
                     )
-                ),
-                1,
-            ):
-                song_name = list(song)
-                polished_song_name = polished_message(
-                    strings["song"], {"song": song_name[0], "index": index}
                 )
-                song_name[0] = (
-                    song_name[0][: 97 - len(polished_song_name) + len(song_name[0])]
-                    + "..."
-                    if len(polished_song_name) > 100
-                    else song_name[0]
-                )
-                if (
-                    current == "" or current.lower() in polished_song_name.lower()
-                ) and len(songs) < 25:
-                    songs.append(Choice(name=polished_song_name, value=index))
-        except:
-            pass
+            ),
+            1,
+        ):
+            song_name = [song["name"]] if VARIABLES["storage"] == "yaml" else list(song)
+            polished_song_name = polished_message(
+                self.guilds[str(context.guild.id)]["strings"]["song"],
+                {"song": song_name[0], "index": index},
+            )
+            song_name[0] = (
+                song_name[0][: 97 - len(polished_song_name) + len(song_name[0])] + "..."
+                if len(polished_song_name) > 100
+                else song_name[0]
+            )
+            if (current == "" or current.lower() in polished_song_name.lower()) and len(
+                songs
+            ) < 25:
+                songs.append(Choice(name=polished_song_name, value=index))
+    except:
+        pass
     return songs
 
 
@@ -2027,32 +1992,27 @@ async def playlist_add_files(self, context, message_regarded):
 
 
 async def renew_attachment(self, guild_id, channel_id, url, song_id):
-    if VARIABLES["storage"] == "yaml":
-        for guild in self.data["guilds"]:
-            if guild["id"] == guild_id:
-                try:
-                    working_thread_id = guild["working_thread_id"]
-                except:
-                    working_thread_id = channel_id
-                await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
-                    dump({"song_id": song_id}),
-                    file=File(BytesIO(requests.get(url).content), get_filename(url)),
-                )
-                break
-    else:
-        try:
-            working_thread_id = (
+    try:
+        working_thread_id = (
+            next(
+                guild_searched["working_thread_id"]
+                for guild_searched in self.data["guilds"]
+                if guild_searched["id"] == guild_id
+            )
+            if VARIABLES["storage"] == "yaml"
+            else (
                 await self.cursor.execute_fetchone(
                     "select working_thread_id from guilds_music where guild_id = ?",
                     (guild_id,),
                 )
             )[0]
-        except:
-            working_thread_id = channel_id
-        await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
-            dump({"song_id": song_id}),
-            file=File(BytesIO(requests.get(url).content), get_filename(url)),
         )
+    except:
+        working_thread_id = channel_id
+    await self.bot.get_guild(guild_id).get_thread(working_thread_id).send(
+        dump({"song_id": song_id}),
+        file=File(BytesIO(requests.get(url).content), get_filename(url)),
+    )
 
 
 async def renew_attachment_from_message(self, message):
@@ -2088,100 +2048,69 @@ async def working_thread_command(self, context, set):
     await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     if VARIABLES["storage"] == "yaml":
-        for guild in self.data["guilds"]:
-            if guild["id"] == context.guild.id:
-                if set is None:
-                    try:
-                        await context.response.send_message(
-                            polished_message(
-                                strings["working_thread"],
-                                {
-                                    "bot": self.bot.user.mention,
-                                    "thread": self.bot.get_guild(guild["id"])
-                                    .get_thread(guild["working_thread_id"])
-                                    .jump_url,
-                                },
-                            ),
-                            ephemeral=True,
+        guild = next(
+            guild_searched
+            for guild_searched in self.data["guilds"]
+            if guild_searched["id"] == context.guild.id
+        )
+    if set is None:
+        try:
+            await context.response.send_message(
+                polished_message(
+                    strings["working_thread"],
+                    {
+                        "bot": self.bot.user.mention,
+                        "thread": self.bot.get_guild(context.guild.id)
+                        .get_thread(
+                            guild["working_thread_id"]
+                            if VARIABLES["storage"] == "yaml"
+                            else (
+                                await self.cursor.execute_fetchone(
+                                    "select working_thread_id from guilds_music where guild_id = ?",
+                                    (context.guild.id,),
+                                )
+                            )[0]
                         )
-                    except:
-                        await context.response.send_message(
-                            polished_message(
-                                strings["working_thread_not_assigned"],
-                                {"bot": self.bot.user.mention},
-                            ),
-                            ephemeral=True,
-                        )
-                    break
-                thread_nonexistent = True
-                for thread in context.guild.threads:
-                    if set == thread.name:
-                        guild["working_thread_id"] = thread.id
-                        dump(self.data, open(self.flat_file, "w"), indent=4)
-                        await context.response.send_message(
-                            polished_message(
-                                strings["working_thread_change"],
-                                {
-                                    "bot": self.bot.user.mention,
-                                    "thread": thread.jump_url,
-                                },
-                            )
-                        )
-                        thread_nonexistent = False
-                        break
-                if thread_nonexistent:
-                    await context.response.send_message(strings["invalid_command"])
-                break
-    else:
-        if set is None:
-            try:
-                await context.response.send_message(
-                    polished_message(
-                        strings["working_thread"],
-                        {
-                            "bot": self.bot.user.mention,
-                            "thread": self.bot.get_guild(context.guild.id)
-                            .get_thread(
-                                (
-                                    await self.cursor.execute_fetchone(
-                                        "select working_thread_id from guilds_music where guild_id = ?",
-                                        (context.guild.id,),
-                                    )
-                                )[0]
-                            )
-                            .jump_url,
-                        },
-                    ),
-                    ephemeral=True,
-                )
-            except:
-                await context.response.send_message(
-                    polished_message(
-                        strings["working_thread_not_assigned"],
-                        {"bot": self.bot.user.mention},
-                    ),
-                    ephemeral=True,
-                )
-            self.lock.release()
-            return
-        thread_nonexistent = True
-        for thread in context.guild.threads:
-            if set == thread.name:
+                        .jump_url,
+                    },
+                ),
+                ephemeral=True,
+            )
+        except:
+            await context.response.send_message(
+                polished_message(
+                    strings["working_thread_not_assigned"],
+                    {"bot": self.bot.user.mention},
+                ),
+                ephemeral=True,
+            )
+        self.lock.release()
+        return
+    thread_nonexistent = True
+    for thread in context.guild.threads:
+        if set == thread.name:
+            if VARIABLES["storage"] == "yaml":
+                guild["working_thread_id"] = thread.id
+                dump(self.data, open(self.flat_file, "w"), indent=4)
+            else:
                 await self.cursor.execute(
                     "update guilds_music set working_thread_id = ? where guild_id = ?",
                     (thread.id, context.guild.id),
                 )
                 await self.connection.commit()
-                await context.response.send_message(
-                    polished_message(
-                        strings["working_thread_change"],
-                        {"bot": self.bot.user.mention, "thread": thread.jump_url},
-                    )
+            await context.response.send_message(
+                polished_message(
+                    strings["working_thread_change"],
+                    {
+                        "bot": self.bot.user.mention,
+                        "thread": thread.jump_url,
+                    },
                 )
-                thread_nonexistent = False
-                break
-        if thread_nonexistent:
-            await context.response.send_message(strings["invalid_command"])
+            )
+            thread_nonexistent = False
+            break
+    if thread_nonexistent:
+        await context.response.send_message(strings["invalid_command"])
     self.lock.release()
 
 
