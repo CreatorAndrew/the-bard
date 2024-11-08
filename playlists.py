@@ -1787,8 +1787,9 @@ async def playlist_add_files(self, context, message_regarded):
     ).id
     while not chosen:
         await sleep(0.1)
+    await context.followup.delete_message(playlist_menu_message_id)
     if chosen[0] == strings["cancel_option"]:
-        return await context.followup.delete_message(playlist_menu_message_id)
+        return
     index = int(chosen[0])
 
     playlist = []
