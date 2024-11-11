@@ -69,18 +69,16 @@ async def main():
                         f"create database `{VARIABLES['database_credentials']['database']}`"
                     )
                 except:
-                    database_exists = True
-                else:
-                    database_exists = False
+                    pass
                 await _cursor.execute(
                     f"use `{VARIABLES['database_credentials']['database']}`"
                 )
                 cursor = Cursor(connection, _cursor, "%s", pool.acquire, pool.release)
             elif VARIABLES["storage"] == "postgresql":
-                from subprocess import DEVNULL, run as execute, STDOUT
+                from subprocess import DEVNULL, run as _run, STDOUT
                 import psycopg
 
-                execute(
+                _run(
                     [
                         "psql",
                         "-c",
@@ -93,7 +91,6 @@ async def main():
                     stdout=DEVNULL,
                     stderr=STDOUT,
                 )
-                database_exists = False
                 connection = await psycopg.AsyncConnection.connect(
                     CREDENTIALS, autocommit=True
                 )
@@ -102,21 +99,19 @@ async def main():
                 from aiosqlite import connect
 
                 database = f"{VARIABLES['name']}.db"
-                database_exists = exists(database)
                 connection = await connect(database)
                 cursor = Cursor(connection, None, "?")
-            if not database_exists:
-                try:
-                    for plugin in LOAD_ORDER:
-                        sql_file = f"tables/{plugin}.sql"
-                        if exists(sql_file):
-                            for statement in filter(
-                                lambda statement: statement not in ["", "\n", "\r\n"],
-                                open(sql_file, "r").read().split(";"),
-                            ):
-                                await cursor.execute(statement)
-                except:
-                    pass
+            for plugin in LOAD_ORDER:
+                sql_file = f"tables/{plugin}.sql"
+                if exists(sql_file):
+                    for statement in filter(
+                        lambda statement: statement not in ["", "\n", "\r\n"],
+                        open(sql_file, "r").read().split(";"),
+                    ):
+                        try:
+                            await cursor.execute(statement)
+                        except:
+                            pass
         bot.connection = connection
         bot.cursor = cursor
         bot.data = data

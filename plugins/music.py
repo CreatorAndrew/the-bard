@@ -67,7 +67,7 @@ class Music(Cog):
         bot.tree.add_command(self.playlist_add_files_context_menu)
 
     def init_guilds(self, guilds):
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             guilds = self.data["guilds"]
             id = "id"
             keep = "keep"
@@ -133,14 +133,22 @@ class Music(Cog):
         init_guild = False
         keep = False
         repeat = False
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             for guild_searched in self.data["guilds"]:
                 if guild_searched["id"] == guild.id:
-                    guild_searched["keep"] = keep
-                    guild_searched["playlists"] = []
-                    guild_searched["repeat"] = repeat
-                    dump(self.data, open(self.flat_file, "w"), indent=4)
-                    init_guild = True
+                    try:
+                        assert not any(
+                            key
+                            for key in guild_searched.keys()
+                            if key in ["keep", "playlists", "repeat"]
+                        )
+                        guild_searched["keep"] = keep
+                        guild_searched["playlists"] = []
+                        guild_searched["repeat"] = repeat
+                        dump(self.data, open(self.flat_file, "w"), indent=4)
+                        init_guild = True
+                    except:
+                        pass
                     break
         else:
             try:
@@ -314,7 +322,7 @@ class Music(Cog):
                         for guild_searched in self.data["guilds"]
                         if guild_searched["id"] == payload.guild_id
                     )
-                    if self.cursor is None
+                    if VARIABLES["storage"] == "yaml"
                     else (
                         await self.cursor.execute_fetchone(
                             "select working_thread_id from guilds_music where guild_id = ?",
@@ -460,7 +468,7 @@ class Music(Cog):
 async def setup(bot):
     bot.music_init_guilds = None
     bot.use_lavalink = VARIABLES["multimedia_backend"] == "lavalink"
-    if bot.cursor is not None:
+    if VARIABLES["storage"] != "yaml":
         bot.music_init_guilds = await bot.cursor.execute_fetchall(
             "select guild_id, keep_in_voice, repeat_queue from guilds_music"
         )

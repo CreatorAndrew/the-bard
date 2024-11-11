@@ -64,8 +64,7 @@ class Main(Cog):
                     response = get(str(add))
                     content = load(response.content.decode("utf-8"))
                     try:
-                        if content["strings"]:
-                            pass
+                        assert content["strings"]
                     except:
                         await context.response.send_message(
                             polished_message(
@@ -86,8 +85,7 @@ class Main(Cog):
                         open("language_strings_names.txt", "r").readlines(),
                     ):
                         try:
-                            if content["strings"][string]:
-                                pass
+                            assert content["strings"][string]
                         except:
                             await context.response.send_message(
                                 polished_message(
@@ -300,11 +298,7 @@ class Main(Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         await self.add_user(
-                            (
-                                _guild["users"]
-                                if VARIABLES["storage"] == "yaml"
-                                else guild
-                            ),
+                            _guild if VARIABLES["storage"] == "yaml" else guild,
                             user,
                         )
                 ids = []
