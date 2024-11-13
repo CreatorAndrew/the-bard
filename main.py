@@ -24,8 +24,9 @@ async def sync_commands(context):
         await bot.tree.set_translator(CommandTranslator())
         await bot.tree.sync()
         bot.dispatch("sync_commands", context)
+        command_quantity = len(bot.tree.get_commands())
         await context.reply(
-            f"Synced {len(bot.tree.get_commands())} command{'' if len(bot.tree.get_commands()) == 1 else 's'}"
+            f"Synced {command_quantity} command{'' if command_quantity == 1 else 's'}"
         )
 
 
