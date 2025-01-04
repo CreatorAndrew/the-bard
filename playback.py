@@ -848,7 +848,8 @@ async def disconnect_when_alone(self, member, before, after):
 
 
 async def keep_command(self, context, set):
-    await self.lock.acquire()
+    if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     try:
         voice_channel = context.user.voice.channel.jump_url
@@ -870,7 +871,9 @@ async def keep_command(self, context, set):
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     else:
         keep = bool(set)
         if self.cursor is None:
@@ -899,11 +902,13 @@ async def keep_command(self, context, set):
             },
         )
     )
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()
 
 
 async def loop_command(self, context, set):
-    await self.lock.acquire()
+    if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     if set is None:
         await context.response.send_message(
@@ -919,7 +924,9 @@ async def loop_command(self, context, set):
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     else:
         repeat = bool(set)
         if self.cursor is None:
@@ -944,4 +951,5 @@ async def loop_command(self, context, set):
             {"now_or_no_longer": (strings["now"] if repeat else strings["no_longer"])},
         )
     )
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()

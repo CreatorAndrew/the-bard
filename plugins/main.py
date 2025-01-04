@@ -53,7 +53,8 @@ class Main(Cog):
     async def language_command(
         self, context: Interaction, set: str = None, add: Attachment = None
     ):
-        await self.lock.acquire()
+        if VARIABLES["storage"] == "yaml":
+            await self.lock.acquire()
         guild = self.guilds[str(context.guild.id)]
         current_language_file = guild["language"] + ".yaml"
         strings = guild["strings"]
@@ -79,7 +80,9 @@ class Main(Cog):
                             ),
                             ephemeral=True,
                         )
-                        return self.lock.release()
+                        if VARIABLES["storage"] == "yaml":
+                            return self.lock.release()
+                        return
                     for string in map(
                         lambda line: line.replace("\r\n", "").replace("\n", ""),
                         open("language_strings_names.txt", "r").readlines(),
@@ -101,7 +104,9 @@ class Main(Cog):
                                 ),
                                 ephemeral=True,
                             )
-                            return self.lock.release()
+                            if VARIABLES["storage"] == "yaml":
+                                return self.lock.release()
+                            return
                     open(f"{LANGUAGE_DIRECTORY}/{filename}", "wb").write(
                         response.content
                     )
@@ -111,7 +116,9 @@ class Main(Cog):
                             strings["language_file_exists"], {"language_file": filename}
                         )
                     )
-                    return self.lock.release()
+                    if VARIABLES["storage"] == "yaml":
+                        return self.lock.release()
+                    return
                 # ensure that the attached language file is fully transferred before the language is changed to it
                 while not exists(f"{LANGUAGE_DIRECTORY}/{filename}"):
                     await sleep(0.1)
@@ -132,7 +139,9 @@ class Main(Cog):
                     ),
                     ephemeral=True,
                 )
-                return self.lock.release()
+                if VARIABLES["storage"] == "yaml":
+                    return self.lock.release()
+                return
         elif add is None and set is None:
             await context.response.send_message(
                 polished_message(
@@ -145,12 +154,16 @@ class Main(Cog):
                 ),
                 ephemeral=True,
             )
-            return self.lock.release()
+            if VARIABLES["storage"] == "yaml":
+                return self.lock.release()
+            return
         else:
             await context.response.send_message(
                 strings["invalid_command"], ephemeral=True
             )
-            return self.lock.release()
+            if VARIABLES["storage"] == "yaml":
+                return self.lock.release()
+            return
         language_data = load(open(f"{LANGUAGE_DIRECTORY}/{language}.yaml", "r"))
         guild["strings"] = language_data["strings"]
         guild["language"] = language
@@ -174,7 +187,8 @@ class Main(Cog):
                 {"language": language_data["name"]},
             ),
         )
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
 
     @language_command.autocomplete("set")
     async def language_name_autocompletion(
@@ -191,51 +205,53 @@ class Main(Cog):
     # add a guild that added this bot to the database or flat file for guilds
     @Cog.listener()
     async def on_guild_join(self, guild):
-        await self.lock.acquire()
+        if VARIABLES["storage"] == "yaml":
+            await self.lock.acquire()
         await self.add_guild(guild)
         self.bot.dispatch("main_guild_join")
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
 
     # remove a guild that removed this bot from the database or flat file for guilds
     @Cog.listener()
     async def on_guild_remove(self, guild):
-        await self.lock.acquire()
         if VARIABLES["storage"] == "yaml":
+            await self.lock.acquire()
             ids = []
             for guild_searched in self.data["guilds"]:
                 ids.append(guild_searched["id"])
             if guild.id in ids:
                 self.data["guilds"].remove(self.data["guilds"][ids.index(guild.id)])
             dump(self.data, open(self.flat_file, "w"), indent=4)
+            self.lock.release()
         else:
             await self.remove_guild_from_database(guild.id)
         del self.guilds[str(guild.id)]
         self.bot.dispatch("main_guild_remove")
-        self.lock.release()
 
     # add a user that joined a guild with this bot to the database or flat file for guilds
     @Cog.listener()
     async def on_member_join(self, member):
         if member.id != self.bot.user.id:
-            await self.lock.acquire()
             if VARIABLES["storage"] == "yaml":
+                await self.lock.acquire()
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         await self.add_user(guild, member)
                         break
                 dump(self.data, open(self.flat_file, "w"), indent=4)
+                self.lock.release()
             else:
                 await self.add_user(member.guild, member)
                 await self.connection.commit()
             self.bot.dispatch("main_member_join")
-            self.lock.release()
 
     # remove a user that left a guild with this bot from the database or flat file for guilds
     @Cog.listener()
     async def on_member_remove(self, member):
         if member.id != self.bot.user.id:
-            await self.lock.acquire()
             if VARIABLES["storage"] == "yaml":
+                await self.lock.acquire()
                 for guild in self.data["guilds"]:
                     if guild["id"] == member.guild.id:
                         ids = []
@@ -245,6 +261,7 @@ class Main(Cog):
                             guild["users"].remove(guild["users"][ids.index(member.id)])
                         break
                 dump(self.data, open(self.flat_file, "w"), indent=4)
+                self.lock.release()
             else:
                 await self.cursor.execute(
                     "delete from guild_users where user_id = ? and guild_id = ?",
@@ -255,18 +272,17 @@ class Main(Cog):
                 )
                 await self.connection.commit()
             self.bot.dispatch("main_member_remove")
-            self.lock.release()
 
     @message_command()
     async def sync_guilds(self, context):
         if context.author.id == VARIABLES["master_id"]:
-            await self.lock.acquire()
             async for guild in self.bot.fetch_guilds():
                 await self.add_guild(guild)
             ids = []
             async for guild in self.bot.fetch_guilds():
                 ids.append(guild.id)
             if VARIABLES["storage"] == "yaml":
+                await self.lock.acquire()
                 index = 0
                 while index < len(self.data["guilds"]):
                     if self.data["guilds"][index]["id"] not in ids:
@@ -275,6 +291,7 @@ class Main(Cog):
                         index -= 1
                     index += 1
                 dump(self.data, open(self.flat_file, "w"), indent=4)
+                self.lock.release()
             else:
                 for id in await self.cursor.execute_fetchall(
                     "select guild_id from guilds"
@@ -283,12 +300,12 @@ class Main(Cog):
                         del self.guilds[str(id[0])]
                         await self.remove_guild_from_database(id[0])
             await context.reply("Synced all guilds")
-            self.lock.release()
 
     @message_command()
     async def sync_users(self, context):
         if context.author.id == VARIABLES["master_id"]:
-            await self.lock.acquire()
+            if VARIABLES["storage"] == "yaml":
+                await self.lock.acquire()
             async for guild in self.bot.fetch_guilds():
                 if VARIABLES["storage"] == "yaml":
                     for guild_searched in self.data["guilds"]:
@@ -330,7 +347,8 @@ class Main(Cog):
             else:
                 await self.connection.commit()
             await context.reply("Synced all users")
-            self.lock.release()
+            if VARIABLES["storage"] == "yaml":
+                self.lock.release()
 
     async def add_guild(self, guild):
         init_guild = False

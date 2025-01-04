@@ -69,7 +69,8 @@ async def declare_command_invalid(self, context, strings):
         (await context.followup.send("...", silent=True)).id
     )
     await context.followup.send(strings["invalid_command"], ephemeral=True)
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()
 
 
 async def playlists_command(
@@ -157,8 +158,8 @@ async def playlist_command(
 async def add_playlist(self, context, playlist, new_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -239,16 +240,16 @@ async def add_playlist(self, context, playlist, new_index):
         )
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def import_playlist(self, context, from_guild, playlist, new_name, new_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -380,16 +381,16 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
         return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def clone_playlist(self, context, playlist, into, new_name, new_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -562,16 +563,16 @@ async def clone_playlist(self, context, playlist, into, new_name, new_index):
         return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def move_playlist(self, context, playlist, new_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -630,16 +631,16 @@ async def move_playlist(self, context, playlist, new_index):
         return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def rename_playlist(self, context, playlist, new_name):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -692,16 +693,16 @@ async def rename_playlist(self, context, playlist, new_name):
         return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def remove_playlist(self, context, playlist):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -767,16 +768,16 @@ async def remove_playlist(self, context, playlist):
         return await declare_command_invalid(self, context, strings)
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def load_playlist(self, context, playlist, filter_callback=lambda x: True):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -799,7 +800,8 @@ async def load_playlist(self, context, playlist, filter_callback=lambda x: True)
                 (context.guild.id, playlist - 1),
             )
         )
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
         if songs:
             proper_songs = []
             for index, song in enumerate(songs):
@@ -992,8 +994,8 @@ async def playlist_add_song(
                 ),
                 ephemeral=True,
             )
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -1137,8 +1139,9 @@ async def playlist_add_song(
                 )
             )
             if file is not None:
-                self.lock.release()
-                if VARIABLES["storage"] != "yaml":
+                if VARIABLES["storage"] == "yaml":
+                    self.lock.release()
+                else:
                     song_id = (
                         await self.cursor.execute_fetchone(
                             "select max(song_id) from songs"
@@ -1157,19 +1160,21 @@ async def playlist_add_song(
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def playlist_move_song(self, context, playlist, song_index, new_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -1268,19 +1273,21 @@ async def playlist_move_song(self, context, playlist, song_index, new_index):
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def playlist_rename_song(self, context, playlist, song_index, new_name):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -1372,19 +1379,21 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def playlist_remove_song(self, context, playlist, song_index):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -1477,19 +1486,21 @@ async def playlist_remove_song(self, context, playlist, song_index):
             ),
             ephemeral=True,
         )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
+        self.lock.release()
     else:
         await self.connection.commit()
-    self.lock.release()
 
 
 async def playlist_list_songs(self, context, playlist):
     await context.response.defer()
     strings = self.guilds[str(context.guild.id)]["strings"]
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 guild = guild_searched
@@ -1531,7 +1542,8 @@ async def playlist_list_songs(self, context, playlist):
                 (context.guild.id, playlist - 1),
             )
         )
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
         if not songs:
             return await context.followup.send(
                 polished_message(
@@ -1606,7 +1618,8 @@ async def playlist_list_songs(self, context, playlist):
         ),
         ephemeral=True,
     )
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()
 
 
 async def playlist_guild_autocompletion(self, context, current):
@@ -1829,8 +1842,8 @@ async def playlist_add_files(self, context, message_regarded):
                 "attachment_index": message_regarded.attachments.index(url),
             }
         )
-    await self.lock.acquire()
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         for guild_searched in self.data["guilds"]:
             if guild_searched["id"] == context.guild.id:
                 message = ""
@@ -1950,7 +1963,8 @@ async def playlist_add_files(self, context, message_regarded):
         if message:
             await context.followup.send(message)
         await self.connection.commit()
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()
 
 
 async def renew_attachment(self, guild_id, channel_id, url, song_id):
@@ -1979,7 +1993,8 @@ async def renew_attachment(self, guild_id, channel_id, url, song_id):
 
 async def renew_attachment_from_message(self, message):
     if message.author.id == self.bot.user.id:
-        await self.lock.acquire()
+        if VARIABLES["storage"] == "yaml":
+            await self.lock.acquire()
         try:
             content = load(message.content)
             if VARIABLES["storage"] == "yaml" and str(content["song_id"]):
@@ -2003,13 +2018,14 @@ async def renew_attachment_from_message(self, message):
                 await self.connection.commit()
         except:
             pass
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
 
 
 async def working_thread_command(self, context, set):
-    await self.lock.acquire()
     strings = self.guilds[str(context.guild.id)]["strings"]
     if VARIABLES["storage"] == "yaml":
+        await self.lock.acquire()
         guild = next(
             guild_searched
             for guild_searched in self.data["guilds"]
@@ -2046,7 +2062,9 @@ async def working_thread_command(self, context, set):
                 ),
                 ephemeral=True,
             )
-        return self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            return self.lock.release()
+        return
     thread_nonexistent = True
     for thread in context.guild.threads:
         if set == thread.name:
@@ -2072,7 +2090,8 @@ async def working_thread_command(self, context, set):
             break
     if thread_nonexistent:
         await context.response.send_message(strings["invalid_command"])
-    self.lock.release()
+    if VARIABLES["storage"] == "yaml":
+        self.lock.release()
 
 
 async def working_thread_autocompletion(context, current):

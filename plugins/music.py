@@ -129,7 +129,8 @@ class Music(Cog):
 
     @Cog.listener("on_main_add_guild")
     async def add_guild(self, guild):
-        await self.lock.acquire()
+        if VARIABLES["storage"] == "yaml":
+            await self.lock.acquire()
         init_guild = False
         keep = False
         repeat = False
@@ -171,7 +172,8 @@ class Music(Cog):
                 "time": 0.0,
                 "volume": 1.0,
             }
-        self.lock.release()
+        if VARIABLES["storage"] == "yaml":
+            self.lock.release()
 
     @Cog.listener("on_main_remove_guild_from_database")
     async def remove_songs_not_in_playlists(self):
