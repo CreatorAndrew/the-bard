@@ -131,28 +131,31 @@ async def playlist_command(
     new_name,
     new_index,
 ):
-    # add a track to the playlist
-    if file is not None or song_url is not None:
-        await playlist_add_song(
-            self, context, select, file, song_url, new_name, new_index
-        )
-    # change the position of a track within the playlist
-    elif move is not None:
-        await playlist_move_song(self, context, select, move, new_index)
-    # rename a track in the playlist
-    elif rename is not None:
-        await playlist_rename_song(self, context, select, rename, new_name)
-    # remove a track from the playlist
-    elif remove is not None:
-        await playlist_remove_song(self, context, select, remove)
-    # load a track into the queue
-    elif load is not None:
-        await load_playlist(
-            self, context, select, lambda song: song["index"] == load - 1
-        )
-    # return a list of tracks in the playlist
-    else:
-        await playlist_list_songs(self, context, select)
+    try:
+        # add a track to the playlist
+        if file is not None or song_url is not None:
+            await playlist_add_song(
+                self, context, select, file, song_url, new_index, new_name
+            )
+        # change the position of a track within the playlist
+        elif move is not None:
+            await playlist_move_song(self, context, select, move, new_index)
+        # rename a track in the playlist
+        elif rename is not None:
+            await playlist_rename_song(self, context, select, rename, new_name)
+        # remove a track from the playlist
+        elif remove is not None:
+            await playlist_remove_song(self, context, select, remove)
+        # load a track into the queue
+        elif load is not None:
+            await load_playlist(
+                self, context, select, lambda song: song["index"] == load - 1
+            )
+        # return a list of tracks in the playlist
+        else:
+            await playlist_list_songs(self, context, select)
+    except Exception as e:
+        print(e)
 
 
 async def add_playlist(self, context, playlist, new_index):
@@ -1333,6 +1336,7 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
                 message_id,
                 attachment_index,
                 song_file,
+                duration,
             ) = await self.cursor.execute_fetchone(
                 f"{GET_SONGS_STATEMENT} and pl_song_id = ?",
                 (context.guild.id, playlist - 1, song_index - 1),
@@ -1434,6 +1438,7 @@ async def playlist_remove_song(self, context, playlist, song_index):
                 message_id,
                 attachment_index,
                 song_file,
+                duration,
             ) = await self.cursor.execute_fetchone(
                 f"{GET_SONGS_STATEMENT} and pl_song_id = ?",
                 (context.guild.id, playlist - 1, song_index - 1),
