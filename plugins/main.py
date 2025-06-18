@@ -180,7 +180,8 @@ class Main(Cog):
                 "update guilds set guild_lang = ? where guild_id = ?",
                 (language, context.guild.id),
             )
-            await self.connection.commit()
+            if VARIABLES["storage"] == "sqlite":
+                await self.connection.commit()
         await context.response.send_message(
             polished_message(
                 language_data["strings"]["language_change"],
@@ -243,7 +244,8 @@ class Main(Cog):
                 self.lock.release()
             else:
                 await self.add_user(member.guild, member)
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
             self.bot.dispatch("main_member_join")
 
     # remove a user that left a guild with this bot from the database or flat file for guilds
@@ -270,7 +272,8 @@ class Main(Cog):
                 await self.cursor.execute(
                     "delete from users where user_id not in (select user_id from guild_users)"
                 )
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
             self.bot.dispatch("main_member_remove")
 
     @message_command()
@@ -345,7 +348,8 @@ class Main(Cog):
             if VARIABLES["storage"] == "yaml":
                 dump(self.data, open(self.flat_file, "w"), indent=4)
             else:
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
             await context.reply("Synced all users")
             if VARIABLES["storage"] == "yaml":
                 self.lock.release()
@@ -380,7 +384,8 @@ class Main(Cog):
                 async for user in guild.fetch_members(limit=guild.member_count):
                     if user.id != self.bot.user.id:
                         await self.add_user(guild, user)
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
                 init_guild = True
             except:
                 pass
@@ -401,7 +406,8 @@ class Main(Cog):
         await self.cursor.execute(
             "delete from users where user_id not in (select user_id from guild_users)"
         )
-        await self.connection.commit()
+        if VARIABLES["storage"] == "sqlite":
+            await self.connection.commit()
         self.bot.dispatch("main_remove_guild_from_database")
 
     async def add_user(self, guild, user):

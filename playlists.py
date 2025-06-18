@@ -244,7 +244,7 @@ async def add_playlist(self, context, playlist, new_index):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -385,7 +385,7 @@ async def import_playlist(self, context, from_guild, playlist, new_name, new_ind
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -567,7 +567,7 @@ async def clone_playlist(self, context, playlist, into, new_name, new_index):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -635,7 +635,7 @@ async def move_playlist(self, context, playlist, new_index):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -697,7 +697,7 @@ async def rename_playlist(self, context, playlist, new_name):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -772,7 +772,7 @@ async def remove_playlist(self, context, playlist):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -1169,7 +1169,7 @@ async def playlist_add_song(
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -1282,7 +1282,7 @@ async def playlist_move_song(self, context, playlist, song_index, new_index):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -1389,7 +1389,7 @@ async def playlist_rename_song(self, context, playlist, song_index, new_name):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -1497,7 +1497,7 @@ async def playlist_remove_song(self, context, playlist, song_index):
     if VARIABLES["storage"] == "yaml":
         dump(self.data, open(self.flat_file, "w"), indent=4)
         self.lock.release()
-    else:
+    elif VARIABLES["storage"] == "sqlite":
         await self.connection.commit()
 
 
@@ -1967,7 +1967,8 @@ async def playlist_add_files(self, context, message_regarded):
                 message = new_message
         if message:
             await context.followup.send(message)
-        await self.connection.commit()
+        if VARIABLES["storage"] == "sqlite":
+            await self.connection.commit()
     if VARIABLES["storage"] == "yaml":
         self.lock.release()
 
@@ -2020,7 +2021,8 @@ async def renew_attachment_from_message(self, message):
                     "update songs set message_id = ? where song_id = ?",
                     (message.id, content["song_id"]),
                 )
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
         except:
             pass
         if VARIABLES["storage"] == "yaml":
@@ -2081,7 +2083,8 @@ async def working_thread_command(self, context, set):
                     "update guilds_music set working_thread_id = ? where guild_id = ?",
                     (thread.id, context.guild.id),
                 )
-                await self.connection.commit()
+                if VARIABLES["storage"] == "sqlite":
+                    await self.connection.commit()
             await context.response.send_message(
                 polished_message(
                     strings["working_thread_change"],

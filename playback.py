@@ -876,7 +876,7 @@ async def keep_command(self, context, set):
         return
     else:
         keep = bool(set)
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             for guild in self.data["guilds"]:
                 if guild["id"] == context.guild.id:
                     guild["keep"] = keep
@@ -890,7 +890,8 @@ async def keep_command(self, context, set):
                 "update guilds_music set keep_in_voice = ? where guild_id = ?",
                 (keep, context.guild.id),
             )
-            await self.connection.commit()
+            if VARIABLES["storage"] == "sqlite":
+                await self.connection.commit()
             self.guilds[str(context.guild.id)]["keep"] = keep
     await context.response.send_message(
         polished_message(
@@ -929,7 +930,7 @@ async def loop_command(self, context, set):
         return
     else:
         repeat = bool(set)
-        if self.cursor is None:
+        if VARIABLES["storage"] == "yaml":
             for guild in self.data["guilds"]:
                 if guild["id"] == context.guild.id:
                     guild["repeat"] = repeat
@@ -943,7 +944,8 @@ async def loop_command(self, context, set):
                 "update guilds_music set repeat_queue = ? where guild_id = ?",
                 (repeat, context.guild.id),
             )
-            await self.connection.commit()
+            if VARIABLES["storage"] != "mysql":
+                await self.connection.commit()
             self.guilds[str(context.guild.id)]["repeat"] = repeat
     await context.response.send_message(
         polished_message(
