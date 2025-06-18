@@ -157,8 +157,6 @@ class Music(Cog):
                     "insert into guilds_music values(?, ?, ?, ?)",
                     (guild.id, None, keep, repeat),
                 )
-                if VARIABLES["storage"] == "sqlite":
-                    await self.connection.commit()
                 init_guild = True
             except:
                 pass

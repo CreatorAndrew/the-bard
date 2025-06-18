@@ -70,6 +70,8 @@ class Cursor:
         cursor = await self.connection.execute(
             statement.replace("?", self.placeholder), args
         )
+        if VARIABLES["storage"] == "sqlite":
+            await self.connection.commit()
         if self.connection != self.cursor:
             self.cursor = cursor
 

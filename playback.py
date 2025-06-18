@@ -890,8 +890,6 @@ async def keep_command(self, context, set):
                 "update guilds_music set keep_in_voice = ? where guild_id = ?",
                 (keep, context.guild.id),
             )
-            if VARIABLES["storage"] == "sqlite":
-                await self.connection.commit()
             self.guilds[str(context.guild.id)]["keep"] = keep
     await context.response.send_message(
         polished_message(
@@ -944,8 +942,6 @@ async def loop_command(self, context, set):
                 "update guilds_music set repeat_queue = ? where guild_id = ?",
                 (repeat, context.guild.id),
             )
-            if VARIABLES["storage"] != "mysql":
-                await self.connection.commit()
             self.guilds[str(context.guild.id)]["repeat"] = repeat
     await context.response.send_message(
         polished_message(
